@@ -487,53 +487,8 @@ namespace Inkton.Nester.ViewModels
         async public void Reload()
         {
             await InitAsync();
-            await InitAsync();
 
             await ServicesViewModel.QueryServicesAsync();
-        }
-
-        public async Task QueryMetricsAsync(long beginId, long endId)
-        {
-            if (LogViewModel.NestLogs != null)
-            {
-                LogViewModel.NestLogs.Clear();
-            }
-            if (LogViewModel.SystemCPULogs != null)
-            {
-                LogViewModel.SystemCPULogs.Clear();
-            }
-            if (LogViewModel.DiskSpaceLogs != null)
-            {
-                LogViewModel.DiskSpaceLogs.Clear();
-            }
-            if (LogViewModel.SystemIPV4Logs != null)
-            {
-                LogViewModel.SystemIPV4Logs.Clear();
-            }
-            if (LogViewModel.SystemRAMLogs != null)
-            {
-                LogViewModel.SystemRAMLogs.Clear();
-            }
-
-            await LogViewModel.QueryNestLogsAsync(
-                string.Format("id >= {0} and id < {1}",
-                        beginId, endId
-                    ));
-
-            beginId /= 1000;
-            endId /= 1000;
-
-            string filter = string.Format("id >= {0} and id < {1}",
-                        beginId, endId
-                    );
-
-            await LogViewModel.QuerySystemCPULogsAsync(filter);
-
-            await LogViewModel.QueryDiskSpaceLogsAsync(filter);
-
-            await LogViewModel.QuerSystemIPV4LogsAsync(filter);
-
-            await LogViewModel.QuerSystemRAMLogsAsync(filter);
         }
 
         public async Task<Cloud.ServerStatus> QueryAppNotificationsAsync(App app = null,
@@ -543,60 +498,29 @@ namespace Inkton.Nester.ViewModels
             Notification notificationSeed = new Notification();
             notificationSeed.App = theApp;
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-               throwIfError, notificationSeed, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Notification>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, notificationSeed, doCache);
 
             if (status.Code == 0)
             {
                 _notifications = status.PayloadToList<Notification>();
-                _notifications.All(x => { x.App = theApp; return true; });
-            }
-
-            return status;
-        }
-
-        public Cloud.ServerStatus QueryApp(App app = null,
-            bool bCache = false, bool throwIfError = true)
-        {
-            App theApp = app == null ? _editApp : app;
-            Cloud.ServerStatus status = Cloud.Result.WaitForObject(throwIfError,
-                theApp, new Cloud.CachedHttpRequest<App>(
-                    NesterControl.Service.QueryAsync), bCache);
-
-            if (status.Code == 0)
-            {
-                EditApp = status.PayloadToObject<App>();
-
-                if (app != null)
-                {
-                    Cloud.Object.PourPropertiesTo(EditApp, app);
-                }
-
-                if (_editApp.UserId == NesterControl.User.Id)
-                {
-                    _editApp.Owner = NesterControl.User;
-                }
             }
 
             return status;
         }
 
         public async Task<Cloud.ServerStatus> QueryAppAsync(App app = null,
-            bool bCache = false, bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theApp, new Cloud.CachedHttpRequest<App>(
-                    NesterControl.Service.QueryAsync), bCache);
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
+                    NesterControl.Service.QueryAsync), doCache);
 
             if (status.Code == 0)
             {
                 EditApp = status.PayloadToObject<App>();
-
-                if (app != null)
-                {
-                    Cloud.Object.PourPropertiesTo(EditApp, app);
-                }
 
                 if (_editApp.UserId == NesterControl.User.Id)
                 {
@@ -611,8 +535,9 @@ namespace Inkton.Nester.ViewModels
              bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theApp, new Cloud.CachedHttpRequest<App>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
                     NesterControl.Service.RemoveAsync), doCache);
 
             if (status.Code == 0)
@@ -627,18 +552,14 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theApp, new Cloud.CachedHttpRequest<App>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
                     NesterControl.Service.UpdateAsync), doCache);
 
             if (status.Code == 0)
             {
                 EditApp = status.PayloadToObject<App>();
-
-                if (app != null)
-                {
-                    Cloud.Object.PourPropertiesTo(EditApp, app);
-                }
             }
 
             return status;
@@ -649,19 +570,15 @@ namespace Inkton.Nester.ViewModels
         {
             App theApp = app == null ? _editApp : app;
             theApp.ServiceTierId = _selectedAppServiceTier.Id;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theApp, new Cloud.CachedHttpRequest<App>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
                     NesterControl.Service.CreateAsync), doCache);
 
             if (status.Code == 0)
             {
                 EditApp = status.PayloadToObject<App>();
                 _editApp.Owner = NesterControl.User;
-
-                if (app != null)
-                {
-                    Cloud.Object.PourPropertiesTo(EditApp, theApp);
-                }
 
                 if (throwIfError && _editApp.Status != "assigned")
                 {
@@ -681,8 +598,8 @@ namespace Inkton.Nester.ViewModels
             Forest forestSeeder = new Forest();
             forestSeeder.AppServiceTier = teir;
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                 throwIfError, forestSeeder, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, forestSeeder, doCache);
 
             return status;
         }

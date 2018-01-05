@@ -39,7 +39,7 @@ namespace Inkton.Nester.ViewModels
             _editPaymentMethod.Owner = NesterControl.User;
         }
 
-        public PaymentMethod PaymentMethod
+        public PaymentMethod EditPaymentMethod
         {
             get
             {
@@ -73,8 +73,8 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> QueryPaymentMethodAsync(
             bool dCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
+            Cloud.ServerStatus status = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
+                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
                     NesterControl.Service.QueryAsync), dCache, null, null);
 
             if (status.Code >= 0)
@@ -113,8 +113,8 @@ namespace Inkton.Nester.ViewModels
             data.Add("exp_year", expiryYear.ToString());
             data.Add("cvc", cvc);
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
+            Cloud.ServerStatus status = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
+                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
                     NesterControl.Service.CreateAsync), doCache, data);
 
             if (status.Code >= 0)

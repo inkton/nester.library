@@ -38,7 +38,7 @@ namespace Inkton.Nester
 
         User User
         {
-            get;
+            get; set;
         }
 
         AppViewModel Target

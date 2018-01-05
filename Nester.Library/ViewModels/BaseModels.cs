@@ -1,4 +1,5 @@
-﻿
+﻿using Inkton.Nester.Models;
+
 namespace Inkton.Nester.ViewModels
 {
     public class BaseModels
@@ -21,6 +22,17 @@ namespace Inkton.Nester.ViewModels
             _paymentViewModel = paymentViewModel;
             _targetViewModel = targetViewModel;
             _allApps = allApps;
+        }
+
+        public User Owner
+        {
+            set {
+                if (_targetViewModel != null && 
+                    _targetViewModel.EditApp != null)
+                {
+                    _targetViewModel.EditApp.Owner = value;
+                }
+            }
         }
 
         public AuthViewModel AuthViewModel

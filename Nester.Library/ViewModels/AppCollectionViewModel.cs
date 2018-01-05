@@ -53,8 +53,8 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> LoadApps(
             bool doCache = true, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, _editApp, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<App>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, _editApp, doCache);
 
             if (status.Code == 0)
             {
@@ -76,8 +76,9 @@ namespace Inkton.Nester.ViewModels
         {
             AppViewModel appModel = new AppViewModel();
             appModel.EditApp = app;
-            await appModel.InitAsync();
             AddModel(appModel);
+
+            await appModel.InitAsync();
             return appModel;
         }
 

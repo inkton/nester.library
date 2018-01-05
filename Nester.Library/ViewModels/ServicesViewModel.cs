@@ -68,8 +68,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             AppService serviceSeed = new AppService();
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, serviceSeed, doCache);
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppService>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, serviceSeed, doCache);
 
             if (status.Code < 0)
             {
@@ -83,14 +84,13 @@ namespace Inkton.Nester.ViewModels
             {
                 tierSeed.Service = service;
 
-                status = await Cloud.Result.WaitForObjectListAsync(
-                    true, tierSeed);
-                if (status.Code != 0)
-                {
-                    return status;
-                }
+                status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
+                    NesterControl.Service, throwIfError, tierSeed, doCache);
 
-                service.Tiers = status.PayloadToList<AppServiceTier>();
+                if (status.Code == 0)
+                {
+                    service.Tiers = status.PayloadToList<AppServiceTier>();
+                }
             }
 
             return status;
@@ -102,8 +102,8 @@ namespace Inkton.Nester.ViewModels
             Forest forestSeeder = new Forest();
             forestSeeder.AppServiceTier = teir;
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                 throwIfError, forestSeeder, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, forestSeeder, doCache);
 
             return status;
         }
@@ -116,15 +116,9 @@ namespace Inkton.Nester.ViewModels
             subscription.ServiceTier = tier;
             subscription.AppServiceTierId = tier.Id;
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
+                throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
                     NesterControl.Service.CreateAsync), doCache);
-
-            if (status.Code == 0)
-            {
-                Cloud.Object.PourPropertiesTo(
-                    status.PayloadToObject<AppServiceSubscription>(), subscription);
-            }
 
             return status;
         }
@@ -132,9 +126,10 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> RemoveSubscription(AppServiceSubscription subscription,
              bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
+                throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
                     NesterControl.Service.RemoveAsync), doCache);
+
             return status;
         }
 
@@ -149,8 +144,8 @@ namespace Inkton.Nester.ViewModels
             AppServiceSubscription subSeeder = new AppServiceSubscription();
             subSeeder.App = (app == null ? _editApp : app);
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                 throwIfError, subSeeder, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceSubscription>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, subSeeder, doCache);
 
             if (status.Code >= 0)
             {

@@ -124,8 +124,8 @@ namespace Inkton.Nester.ViewModels
             NestPlatform platformSeed = new NestPlatform();
             platformSeed.App = _editApp;
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, platformSeed, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<NestPlatform>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, platformSeed, doCache);
 
             if (status.Code >= 0)
             {
@@ -159,8 +159,8 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             _editNest.App = _editApp;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, _editNest, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Nest>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, _editNest, doCache);
 
             if (status.Code >= 0)
             {
@@ -172,22 +172,18 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<Cloud.ServerStatus> QueryNestAsync(Nest nest = null,
-             bool dCache = false, bool throwIfError = true)
+             bool doCache = false, bool throwIfError = true)
         {
             Nest theNest = nest == null ? _editNest : nest;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theNest, new Cloud.CachedHttpRequest<Nest>(
-                    NesterControl.Service.QueryAsync), dCache, null, null);
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
+                    NesterControl.Service.QueryAsync), doCache, null, null);
 
             if (status.Code >= 0)
             {
                 _editNest = status.PayloadToObject<Nest>();
                 SetNestHosts(_editNest);
-
-                if (nest != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editNest, nest);
-                }
             }
 
             return status;
@@ -197,8 +193,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Nest theNest = nest == null ? _editNest : nest;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theNest, new Cloud.CachedHttpRequest<Nest>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
                     NesterControl.Service.CreateAsync), doCache);
 
             if (status.Code >= 0)
@@ -208,7 +205,6 @@ namespace Inkton.Nester.ViewModels
 
                 if (nest != null)
                 {
-                    Cloud.Object.PourPropertiesTo(_editNest, nest);
                     _nests.Add(_editNest);               
                 }
 
@@ -222,8 +218,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Nest theNest = nest == null ? _editNest : nest;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theNest, new Cloud.CachedHttpRequest<Nest>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
                     NesterControl.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
@@ -233,7 +230,6 @@ namespace Inkton.Nester.ViewModels
 
                 if (nest != null)
                 {
-                    Cloud.Object.PourPropertiesTo(_editNest, nest);
                     _nests.Add(_editNest);
                 }
 
@@ -247,8 +243,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Nest theNest = nest == null ? _editNest : nest;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theNest, new Cloud.CachedHttpRequest<Nest>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
                     NesterControl.Service.RemoveAsync), doCache);
 
             if (status.Code >= 0)

@@ -27,6 +27,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Inkton.Nester.Models;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -190,8 +191,8 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> QueryInvitationsAsync(
             bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, _editInvitation, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Invitation>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, _editInvitation, doCache);
 
             if (status.Code >= 0)
             {
@@ -204,8 +205,8 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> QueryContactsAsync(
             bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, _editContact, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Contact>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, _editContact, doCache);
 
             if (status.Code >= 0)
             {
@@ -239,19 +240,14 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Contact theContact = contact == null ? _editContact : contact;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theContact, new Cloud.CachedHttpRequest<Contact>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Contact>.WaitForObjectAsync(
+                throwIfError, theContact, new Cloud.CachedHttpRequest<Contact>(
                     NesterControl.Service.QueryAsync), doCache, null, null);
 
             if (status.Code >= 0)
             {
                 _editContact = status.PayloadToObject<Contact>();
-
-                if (contact != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editContact, contact);
-                }
-
                 await QueryPermissionsAsync(_editContact, throwIfError);
             }
 
@@ -263,18 +259,14 @@ namespace Inkton.Nester.ViewModels
         {
             Contact theContact = contact == null ? _editContact : contact;
             bool leaving = theContact.UserId != null;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theContact, new Cloud.CachedHttpRequest<Contact>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Contact>.WaitForObjectAsync(
+                throwIfError, theContact, new Cloud.CachedHttpRequest<Contact>(
                     NesterControl.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
             {
                 _editContact = status.PayloadToObject<Contact>();
-
-                if (contact != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editContact, contact);
-                }
 
                 if (!leaving)
                 {
@@ -289,8 +281,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Contact theContact = contact == null ? _editContact : contact;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theContact, new Cloud.CachedHttpRequest<Contact>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Contact>.WaitForObjectAsync(
+                throwIfError, theContact, new Cloud.CachedHttpRequest<Contact>(
                     NesterControl.Service.CreateAsync), doCache);
 
             if (status.Code >= 0)
@@ -299,7 +292,6 @@ namespace Inkton.Nester.ViewModels
 
                 if (contact != null)
                 {
-                    Cloud.Object.PourPropertiesTo(_editContact, contact);
                     _contacts.Add(_editContact);
                 }
 
@@ -313,8 +305,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Contact theContact = contact == null ? _editContact : contact;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theContact, new Cloud.CachedHttpRequest<Contact>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Contact>.WaitForObjectAsync(
+                throwIfError, theContact, new Cloud.CachedHttpRequest<Contact>(
                     NesterControl.Service.RemoveAsync), doCache);
 
             if (status.Code >= 0)
@@ -329,9 +322,11 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Contact theContact = contact == null ? _editContact : contact;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theContact, new Cloud.CachedHttpRequest<Contact>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Contact>.WaitForObjectAsync(
+                throwIfError, theContact, new Cloud.CachedHttpRequest<Contact>(
                     NesterControl.Service.UpdateAsync), doCache);
+
             return status;
         }
 
@@ -343,8 +338,8 @@ namespace Inkton.Nester.ViewModels
             seedPermission.Contact = theContact;
             ObservableCollection<Permission> permissions = new ObservableCollection<Permission>();
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                 throwIfError, seedPermission, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Permission>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, seedPermission, doCache);
 
             if (status.Code >= 0)
             {
@@ -402,12 +397,12 @@ namespace Inkton.Nester.ViewModels
                 {
                     permission["app_permission_tag"] = seedPermission.AppPermissionTag;
 
-                    status = await Cloud.Result.WaitForObjectAsync(false,
-                        seedPermission, new Cloud.CachedHttpRequest<Permission>(
+                    status = await Cloud.ResultSingle<Permission>.WaitForObjectAsync(
+                        false, seedPermission, new Cloud.CachedHttpRequest<Permission>(
                             NesterControl.Service.CreateAsync), doCache, permission);
 
-                    if (status.Code != Cloud.Result.NEST_RESULT_SUCCESS &&
-                        status.Code != Cloud.Result.NEST_RESULT_ERROR_PERM_FOUND)
+                    if (status.Code != Cloud.ServerStatus.NEST_RESULT_SUCCESS &&
+                        status.Code != Cloud.ServerStatus.NEST_RESULT_ERROR_PERM_FOUND)
                     {
                         break;
                     }
@@ -416,12 +411,12 @@ namespace Inkton.Nester.ViewModels
                 }
                 else
                 {
-                    status = await Cloud.Result.WaitForObjectAsync(false,
-                        seedPermission, new Cloud.CachedHttpRequest<Permission>(
+                    status = await Cloud.ResultSingle<Permission>.WaitForObjectAsync(
+                        false, seedPermission, new Cloud.CachedHttpRequest<Permission>(
                             NesterControl.Service.RemoveAsync), doCache);
 
-                    if (status.Code != Cloud.Result.NEST_RESULT_SUCCESS &&
-                        status.Code != Cloud.Result.NEST_RESULT_ERROR_PERM_NFOUND)
+                    if (status.Code != Cloud.ServerStatus.NEST_RESULT_SUCCESS &&
+                        status.Code != Cloud.ServerStatus.NEST_RESULT_ERROR_PERM_NFOUND)
                     {
                         break;
                     }
@@ -437,14 +432,13 @@ namespace Inkton.Nester.ViewModels
             Collaboration theCollaboration = collaboration == null ? _collaboration : collaboration;
             theCollaboration.AccountId = "0";
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theCollaboration, new Cloud.CachedHttpRequest<Collaboration>(
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Collaboration>.WaitForObjectAsync(
+                false, theCollaboration, new Cloud.CachedHttpRequest<Collaboration>(
                     NesterControl.Service.QueryAsync), doCache, null, null);
 
             if (status.Code >= 0)
             {
                 _collaboration = status.PayloadToObject<Collaboration>();
-                Cloud.Object.PourPropertiesTo(_collaboration, theCollaboration);
             }
 
             return status;

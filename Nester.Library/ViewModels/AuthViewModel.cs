@@ -55,10 +55,26 @@ namespace Inkton.Nester.ViewModels
 
         public void Reset()
         {
-            NesterControl.Service.ClearSession();
-
+            NesterControl.Service.Permit = null;
             _permit.SecurityCode = null;
             _permit.Token = null;
+        }
+
+        public void ChangePermit(Permit newPermit)
+        {
+            NesterControl.User = newPermit.Owner;
+
+            if (NesterControl.BaseModels.TargetViewModel != null)
+                NesterControl.BaseModels.TargetViewModel
+                    .EditApp.Owner = newPermit.Owner;
+            if (NesterControl.BaseModels.PaymentViewModel != null)
+                NesterControl.BaseModels.PaymentViewModel
+                    .EditPaymentMethod.Owner = newPermit.Owner;
+            if (NesterControl.BaseModels.AllApps != null)
+                NesterControl.BaseModels.AllApps
+                    .EditApp.Owner = newPermit.Owner;
+            if (NesterControl.Service != null)
+                NesterControl.Service.Permit = newPermit;
         }
 
         public Cloud.ServerStatus Signup(
@@ -67,12 +83,16 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = 
                 NesterControl.Service.Signup(_permit);
 
-            if (status.Code < 0 && throwIfError)
+            if (status.Code < 0)
             {
-                Cloud.Result.ThrowError(status);
+                if (throwIfError)
+                    status.Throw();
+            }
+            else
+            {
+                ChangePermit(status.PayloadToObject<Permit>());
             }
 
-            Cloud.Object.CopyPropertiesTo(_permit.Owner, NesterControl.User);
             return status;
         }
 
@@ -82,12 +102,16 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await 
                 NesterControl.Service.RecoverPasswordAsync(_permit);
 
-            if (status.Code < 0 && throwIfError)
+            if (status.Code < 0)
             {
-                Cloud.Result.ThrowError(status);
+                if (throwIfError)
+                    status.Throw();
+            }
+            else
+            {
+                ChangePermit(status.PayloadToObject<Permit>());
             }
 
-            Cloud.Object.CopyPropertiesTo(_permit.Owner, NesterControl.User);
             return status;
         }
 
@@ -97,12 +121,16 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status =
                 NesterControl.Service.QueryToken(_permit);
 
-            if (status.Code < 0 && throwIfError)
+            if (status.Code < 0)
             {
-                Cloud.Result.ThrowError(status);
+                if (throwIfError)
+                    status.Throw();
+            }
+            else
+            {
+                ChangePermit(status.PayloadToObject<Permit>());
             }
 
-            Cloud.Object.CopyPropertiesTo(_permit.Owner, NesterControl.User);
             return status;
         }
 
@@ -112,12 +140,16 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status =
                 await NesterControl.Service.QueryTokenAsync(_permit);
 
-            if (status.Code < 0 && throwIfError)
+            if (status.Code < 0)
             {
-                Cloud.Result.ThrowError(status);
+                if (throwIfError)
+                    status.Throw();
+            }
+            else
+            {
+                ChangePermit(status.PayloadToObject<Permit>());
             }
 
-            Cloud.Object.CopyPropertiesTo(_permit.Owner, NesterControl.User);
             return status;
         }
 
@@ -127,9 +159,14 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await
                 NesterControl.Service.ResetTokenAsync(_permit);
 
-            if (status.Code < 0 && throwIfError)
+            if (status.Code < 0)
             {
-                Cloud.Result.ThrowError(status);
+                if (throwIfError)
+                    status.Throw();
+            }
+            else
+            {
+                ChangePermit(_permit);
             }
 
             return status;
@@ -138,14 +175,9 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> UpdateUserAsync(User user,
             bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                user, new Cloud.CachedHttpRequest<User>(
+            Cloud.ServerStatus status = await Cloud.ResultSingle<User>.WaitForObjectAsync(
+                throwIfError, user, new Cloud.CachedHttpRequest<User>(
                     NesterControl.Service.UpdateAsync), doCache);
-
-            if (status.Code >= 0)
-            {
-                Cloud.Object.PourPropertiesTo(status.PayloadToObject<User>(), user);
-            }
 
             return status;
         }
@@ -156,8 +188,8 @@ namespace Inkton.Nester.ViewModels
             UserEvent userEventSeed = new UserEvent();
             userEventSeed.Owner = _permit.Owner;
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, userEventSeed, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<UserEvent>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, userEventSeed, doCache);
 
             if (status.Code >= 0)
             {

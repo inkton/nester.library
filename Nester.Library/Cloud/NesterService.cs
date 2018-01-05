@@ -53,7 +53,7 @@ namespace Inkton.Nester.Cloud
     public delegate Task<Cloud.ServerStatus> HttpRequest<T>(T seed,
         IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new();
     public delegate Task<Cloud.ServerStatus> CachedHttpRequest<T>(T seed,
-        IDictionary<string, string> data, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new();
+        IDictionary<string, string> data, string subPath = null, bool doCache = true);
 
     public class NesterService
     {
@@ -89,9 +89,10 @@ namespace Inkton.Nester.Cloud
             set { _basicAuth = value; }
         }
 
-        public void ClearSession()
+        public Permit Permit
         {
-            _permit = null;
+            get { return _permit; }
+            set { _permit = value; }
         }
 
         public async Task<string> GetIPAsync(string host)
@@ -124,7 +125,7 @@ namespace Inkton.Nester.Cloud
                 data.Add("territory_iso_code", permit.Owner.TerritoryISOCode);
             }
 
-            ServerStatus status = Result.WaitAsync(
+            ServerStatus status = Object.WaitAsync(
                 Task<ServerStatus>.Run(async () => await PostAsync(permit, data))
                 ).Result;
 
@@ -156,11 +157,6 @@ namespace Inkton.Nester.Cloud
 
             ServerStatus status = await PutAsync(permit, data);
 
-            if (status.Code == 0)
-            {
-                _permit = status.PayloadToObject<Permit>();
-            }
-
             return status;
         }
 
@@ -173,7 +169,7 @@ namespace Inkton.Nester.Cloud
 
         private void LogConnectFailure(
             ref Cloud.ServerStatus result, Exception ex)
-        {
+        {       
             if (ex is FlurlHttpException)
             {
                 FlurlHttpException httpEx = ex as FlurlHttpException;
@@ -198,14 +194,9 @@ namespace Inkton.Nester.Cloud
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("password", _permit.Password);
 
-            ServerStatus status = Result.WaitAsync(
+            ServerStatus status = Object.WaitAsync(
                 Task<ServerStatus>.Run(async () => await GetAsync(_permit, data))
                 ).Result;
-
-            if (status.Code == 0)
-            {
-                _permit = status.PayloadToObject<Permit>();
-            }
 
             return status;
         }
@@ -222,11 +213,6 @@ namespace Inkton.Nester.Cloud
 
             ServerStatus status = await GetAsync(_permit, data);
 
-            if (status.Code == 0)
-            {
-                _permit = status.PayloadToObject<Permit>();
-            }
-
             return status;
         }
 
@@ -238,12 +224,6 @@ namespace Inkton.Nester.Cloud
 
             Cloud.ServerStatus status = await DeleteAsync(_permit, data);
 
-            if (status.Code == 0)
-            {
-                newPermit.Token = _permit.Token;
-                _permit = newPermit;
-            }
-
             return status;
         }
 
@@ -251,7 +231,7 @@ namespace Inkton.Nester.Cloud
             IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
-                Result.NEST_RESULT_ERROR_LOCAL);
+                ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
             try
             {
@@ -261,12 +241,25 @@ namespace Inkton.Nester.Cloud
                     fullUrl = fullUrl + subPath;
                 }
 
-                string json = await fullUrl.SetQueryParams(data)
-                                .WithHeader("Accept", GetVersionHeader())
-                                .PostJsonAsync(seed)
-                                .ReceiveString();
+                string json = string.Empty;
 
-                result = Result.ConvertObject(json, seed);
+                if (_basicAuth.Enabled)
+                {
+                    json = await fullUrl.SetQueryParams(data)
+                        .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
+                        .WithHeader("Accept", GetVersionHeader())
+                        .PostJsonAsync(seed)
+                        .ReceiveString();
+                }
+                else
+                {
+                    json = await fullUrl.SetQueryParams(data)
+                        .WithHeader("Accept", GetVersionHeader())
+                        .PostJsonAsync(seed)
+                        .ReceiveString();
+                }
+
+                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
             }
             catch (Exception ex)
             {
@@ -280,7 +273,7 @@ namespace Inkton.Nester.Cloud
             IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
-                Result.NEST_RESULT_ERROR_LOCAL);
+                ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
             try
             {
@@ -307,7 +300,7 @@ namespace Inkton.Nester.Cloud
                             .ReceiveString();
                 }
 
-                result = Result.ConvertObject(json, seed);
+                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
             }
             catch (Exception ex)
             {
@@ -321,7 +314,7 @@ namespace Inkton.Nester.Cloud
             IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
-                Result.NEST_RESULT_ERROR_LOCAL);
+                ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
             try
             {
@@ -333,12 +326,26 @@ namespace Inkton.Nester.Cloud
 
                 string objJson = JsonConvert.SerializeObject(seed);
                 var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
-                string json = await fullUrl.SetQueryParams(data)
-                                .WithHeader("Accept", GetVersionHeader())
-                                .PutAsync(httpContent)
-                                .ReceiveString();
 
-                result = Result.ConvertObject(json, seed);
+                string json = string.Empty;
+
+                if (_basicAuth.Enabled)
+                {
+                    json = await fullUrl.SetQueryParams(data)
+                        .WithHeader("Accept", GetVersionHeader())
+                        .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
+                        .PutAsync(httpContent)
+                        .ReceiveString();
+                }
+                else
+                {
+                    json = await fullUrl.SetQueryParams(data)
+                        .WithHeader("Accept", GetVersionHeader())
+                        .PutAsync(httpContent)
+                        .ReceiveString();
+                }
+
+                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
             }
             catch (Exception ex)
             {
@@ -352,7 +359,7 @@ namespace Inkton.Nester.Cloud
             IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
-                Result.NEST_RESULT_ERROR_LOCAL);
+                ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
             try
             {
@@ -364,12 +371,25 @@ namespace Inkton.Nester.Cloud
 
                 string objJson = JsonConvert.SerializeObject(seed);
                 var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
-                string json = await fullUrl.SetQueryParams(data)
-                                .WithHeader("Accept", GetVersionHeader())
-                                .DeleteAsync()
-                                .ReceiveString();
+                string json = string.Empty;
 
-                result = Result.ConvertObject(json, seed);
+                if (_basicAuth.Enabled)
+                {
+                    json = await fullUrl.SetQueryParams(data)
+                        .WithHeader("Accept", GetVersionHeader())
+                        .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
+                        .DeleteAsync()
+                        .ReceiveString();
+                }
+                else
+                {
+                    json = await fullUrl.SetQueryParams(data)
+                        .WithHeader("Accept", GetVersionHeader())
+                        .DeleteAsync()
+                        .ReceiveString();
+                }
+
+                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
             }
             catch (Exception ex)
             {
@@ -385,7 +405,7 @@ namespace Inkton.Nester.Cloud
         {
             int retryCount = 3;
             Cloud.ServerStatus result = new Cloud.ServerStatus(
-                Result.NEST_RESULT_ERROR_LOCAL);
+                ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
             if (data == null)
             {
@@ -455,12 +475,12 @@ namespace Inkton.Nester.Cloud
                 seed, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ServerStatus> QueryAsyncList<T>(T seed,
+        public async Task<Cloud.ServerStatus> QueryAsyncListAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
         {
             int retryCount = 3;
             Cloud.ServerStatus result = new Cloud.ServerStatus(
-                   Result.NEST_RESULT_ERROR_LOCAL);
+                   ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
             if (data == null)
             {
@@ -505,7 +525,7 @@ namespace Inkton.Nester.Cloud
                                 .GetAsync().ReceiveString();
                     }
 
-                    result = Result.ConvertObjectList(json, seed);
+                    result = ResultMultiple<T>.ConvertObject(json, seed);
                 }
                 catch (Exception ex)
                 {
@@ -559,5 +579,4 @@ namespace Inkton.Nester.Cloud
                 seed, data, subPath, doCache);
         }
     }
-
 }

@@ -112,8 +112,8 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> QueryDomainsAsync(
             bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, _editDomain, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppDomain>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, _editDomain, doCache);
 
             if (status.Code >= 0)
             {
@@ -128,8 +128,8 @@ namespace Inkton.Nester.ViewModels
                     AppDomainCertificate seedCert = new AppDomainCertificate();
                     seedCert.AppDomain = domain;
 
-                    status = await Cloud.Result.WaitForObjectListAsync(
-                        throwIfError, seedCert);
+                    status = await Cloud.ResultMultiple<AppDomainCertificate>.WaitForObjectAsync(
+                        NesterControl.Service, throwIfError, seedCert);
 
                     if (status.Code >= 0)
                     {
@@ -152,8 +152,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             AppDomain theDomain = domain == null ? _editDomain : domain;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theDomain, new Cloud.CachedHttpRequest<AppDomain>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
+                throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
                     NesterControl.Service.QueryAsync), doCache, null, null);
 
             if (status.Code >= 0)
@@ -163,8 +164,8 @@ namespace Inkton.Nester.ViewModels
                 AppDomainCertificate seedCert = new AppDomainCertificate();
                 seedCert.AppDomain = _editDomain;
 
-                status = await Cloud.Result.WaitForObjectListAsync(
-                    throwIfError, seedCert);
+                status = await Cloud.ResultMultiple<AppDomainCertificate>.WaitForObjectAsync(
+                    NesterControl.Service, throwIfError, seedCert, doCache);
 
                 if (status.Code >= 0)
                 {
@@ -177,11 +178,6 @@ namespace Inkton.Nester.ViewModels
                         theDomain.Certificate.AppDomain = theDomain;
                     }
                 }
-
-                if (domain != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editDomain, domain);
-                }
             }
 
             return status;
@@ -191,8 +187,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             AppDomain theDomain = domain == null ? _editDomain : domain;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theDomain, new Cloud.CachedHttpRequest<AppDomain>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
+                throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
                     NesterControl.Service.CreateAsync), doCache);
 
             if (status.Code >= 0)
@@ -201,7 +198,6 @@ namespace Inkton.Nester.ViewModels
 
                 if (domain != null)
                 {
-                    Cloud.Object.PourPropertiesTo(_editDomain, domain);
                     _domains.Add(domain);
                 }
             }
@@ -213,18 +209,14 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             AppDomainCertificate theCert = cert == null ? _editDomain.Certificate : cert;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                    theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
-                        NesterControl.Service.CreateAsync));
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomainCertificate>.WaitForObjectAsync(
+                throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
+                    NesterControl.Service.CreateAsync));
 
             if (status.Code >= 0)
             {
                 _editDomain.Certificate = status.PayloadToObject<AppDomainCertificate>();
-
-                if (cert != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editDomain.Certificate, cert);
-                }
             }
 
             return status;
@@ -234,8 +226,9 @@ namespace Inkton.Nester.ViewModels
              bool doCache = false, bool throwIfError = true)
          {
             AppDomain theDomain = domain == null ? _editDomain : domain;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theDomain, new Cloud.CachedHttpRequest<AppDomain>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
+                throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
                     NesterControl.Service.RemoveAsync), doCache);
 
             if (status.Code >= 0)
@@ -255,8 +248,9 @@ namespace Inkton.Nester.ViewModels
              bool doCache = false, bool throwIfError = true)
         {
             AppDomainCertificate theCert = cert == null ? _editDomain.Certificate : cert;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomainCertificate>.WaitForObjectAsync(
+                throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
                     NesterControl.Service.RemoveAsync), doCache);
 
             if (status.Code >= 0)
@@ -274,8 +268,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             AppDomain theDomain = domain == null ? _editDomain : domain;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theDomain, new Cloud.CachedHttpRequest<AppDomain>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
+                throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
                     NesterControl.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
@@ -286,11 +281,6 @@ namespace Inkton.Nester.ViewModels
                  * certificates.
                 */
                 _editDomain.Certificate = null;
-
-                if (domain != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editDomain, domain);
-                }
             }
 
             return status;
@@ -300,19 +290,14 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             AppDomainCertificate theCert = cert == null ? _editDomain.Certificate : cert;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomainCertificate>.WaitForObjectAsync(
+                throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
                     NesterControl.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
             {
                 _editDomain.Certificate = status.PayloadToObject<AppDomainCertificate>();
-
-                if (cert != null)
-                {
-                    Cloud.Object.PourPropertiesTo(
-                        _editDomain.Certificate, cert);
-                }
             }
 
             return status;

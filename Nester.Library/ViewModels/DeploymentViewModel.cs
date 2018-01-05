@@ -153,8 +153,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             Forest forestSeed = new Forest();
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, forestSeed, doCache);
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, forestSeed, doCache);
 
             if (status.Code >= 0)
             {
@@ -178,8 +179,8 @@ namespace Inkton.Nester.ViewModels
             SoftwareFramework.Version versionSeed = new SoftwareFramework.Version();
             versionSeed.Framework = frameworkSeed;
 
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, versionSeed, doCache);
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<SoftwareFramework.Version>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, versionSeed, doCache);
 
             if (status.Code >= 0)
             {
@@ -193,8 +194,9 @@ namespace Inkton.Nester.ViewModels
             Deployment deployment = null, bool doCache = false, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectListAsync(
-                throwIfError, theDeployment, doCache);
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<Deployment>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, theDeployment, doCache);
             _editApp.Deployment = null;
 
             if (status.Code >= 0)
@@ -205,22 +207,17 @@ namespace Inkton.Nester.ViewModels
                     _editDeployment = _deployments.First();
                     _editApp.Deployment = _editDeployment;
                 }
-
-                if (deployment != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editApp.Deployment, deployment);
-                }
             }
 
             return status;
         }
 
         public async Task<Cloud.ServerStatus> QueryDevkitAsync(Devkit devkit,
-            bool bCache = false, bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                devkit, new Cloud.CachedHttpRequest<Devkit>(
-                    NesterControl.Service.QueryAsync), bCache);
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Devkit>.WaitForObjectAsync(
+                throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit>(
+                    NesterControl.Service.QueryAsync), doCache);
 
             return status;
         }
@@ -229,8 +226,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theDeployment, new Cloud.CachedHttpRequest<Deployment>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
                     NesterControl.Service.CreateAsync), doCache);
 
             if (status.Code >= 0)
@@ -240,7 +238,6 @@ namespace Inkton.Nester.ViewModels
 
                 if (deployment != null)
                 {
-                    Cloud.Object.PourPropertiesTo(_editDeployment, deployment);
                     _deployments.Add(_editDeployment);
                 }
             }
@@ -252,19 +249,15 @@ namespace Inkton.Nester.ViewModels
              bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theDeployment, new Cloud.CachedHttpRequest<Deployment>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
                     NesterControl.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
             {
                 _editDeployment = status.PayloadToObject<Deployment>();
                 _editApp.Deployment = _editDeployment;
-
-                if (deployment != null)
-                {
-                    Cloud.Object.PourPropertiesTo(_editDeployment, deployment);
-                }
             }
 
             return status;
@@ -274,8 +267,9 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            Cloud.ServerStatus status = await Cloud.Result.WaitForObjectAsync(throwIfError,
-                theDeployment, new Cloud.CachedHttpRequest<Deployment>(
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
                     NesterControl.Service.RemoveAsync), doCache);
 
             if (status.Code == 0)

@@ -241,7 +241,15 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public AppServiceTier SelectedAppServiceTier
+        public ObservableCollection<ServicesViewModel.ServiceTableItem> AppFeaturesTable
+        {
+            get
+            {
+                return _servicesViewModel.CreateServicesTable(AppServiceTiers);
+            }
+        }
+
+        public ServicesViewModel.ServiceTableItem SelectedAppService
         {
             get
             {
@@ -252,7 +260,8 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return subscription.ServiceTier;
+                        return _servicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
                     }
                 }
                 else
@@ -260,11 +269,12 @@ namespace Inkton.Nester.ViewModels
                     _selectedAppServiceTier = AppServiceTiers.First();
                 }
 
-                return _selectedAppServiceTier;
+                return _servicesViewModel.CreateServiceItem(
+                    _selectedAppServiceTier);
             }
             set
             {
-                SetProperty(ref _selectedAppServiceTier, value);
+                SetProperty(ref _selectedAppServiceTier, value.Tier);
             }
         }
 
@@ -273,7 +283,7 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return _servicesViewModel.TranslateFeaturesAll(
-                    SelectedAppServiceTier.Service);
+                    SelectedAppService.Tier.Service);
             }
         }
 
@@ -282,7 +292,7 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return _servicesViewModel.TranslateFeaturesIncluded(
-                    SelectedAppServiceTier);
+                    SelectedAppService.Tier);
             }
         }
 
@@ -333,7 +343,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public AppServiceTier SelectedMariaDBTier
+        public ServicesViewModel.ServiceTableItem SelectedMariaDBService
         {
             get
             {
@@ -344,7 +354,8 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return subscription.ServiceTier;
+                        return _servicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
                     }
                 }
 
@@ -356,7 +367,7 @@ namespace Inkton.Nester.ViewModels
 
         #region Letsencrypt Tier
 
-        public AppServiceTier SelectedLetsencryptTier
+        public ServicesViewModel.ServiceTableItem SelectedLetsencryptService
         {
             get
             {
@@ -367,7 +378,8 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return subscription.ServiceTier;
+                        return _servicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
                     }
                 }
 
@@ -379,7 +391,7 @@ namespace Inkton.Nester.ViewModels
 
         #region Logging Tier
 
-        public AppServiceTier SelectedLoggingTier
+        public ServicesViewModel.ServiceTableItem SelectedLoggingService
         {
             get
             {
@@ -390,7 +402,8 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return subscription.ServiceTier;
+                        return _servicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
                     }
                 }
 
@@ -402,7 +415,7 @@ namespace Inkton.Nester.ViewModels
 
         #region RabbitMQ Tier
 
-        public AppServiceTier SelectedRabbitMQTier
+        public ServicesViewModel.ServiceTableItem SelectedRabbitMQService
         {
             get
             {
@@ -413,7 +426,8 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return subscription.ServiceTier;
+                        return _servicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
                     }
                 }
 
@@ -425,7 +439,7 @@ namespace Inkton.Nester.ViewModels
 
         #region Git Tier
 
-        public AppServiceTier SelectedGitServiceTier
+        public ServicesViewModel.ServiceTableItem SelectedGitService
         {
             get
             {
@@ -436,7 +450,8 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return subscription.ServiceTier;
+                        return _servicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
                     }
                 }
 
@@ -456,7 +471,7 @@ namespace Inkton.Nester.ViewModels
                 return status;
             }
 
-            _mariaDBEnabled = SelectedMariaDBTier != null;
+            _mariaDBEnabled = SelectedMariaDBService != null;
 
             await _deploymentViewModel.InitAsync();
             await _servicesViewModel.InitAsync();

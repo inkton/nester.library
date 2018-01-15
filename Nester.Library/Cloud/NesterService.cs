@@ -446,7 +446,7 @@ namespace Inkton.Nester.Cloud
                 }
 
                 // Token expired, get another
-                QueryToken();
+                _permit = QueryToken().PayloadToObject<Permit>();
             }
 
             return result;
@@ -559,7 +559,7 @@ namespace Inkton.Nester.Cloud
                 }
 
                 // Token expired, get another
-                QueryToken();
+                _permit = QueryToken().PayloadToObject<Permit>();
             }
 
             return result;

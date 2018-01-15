@@ -34,6 +34,25 @@ namespace Inkton.Nester.ViewModels
     {
         private ObservableCollection<AppService> _appServices;
 
+        public class ServiceTableItem
+        {
+            public string Name { get; set; }
+
+            public string ProvidedBy { get; set; }
+
+            public string Period { get; set; }
+
+            public decimal Cost { get; set; }
+
+            public string Type { get; set; }            
+
+            public string[] FeaturesAll { get; set; }
+
+            public string[] FeaturesIncluded { get; set; }
+
+            public AppServiceTier Tier { get; set; }
+        }
+
         public ServicesViewModel(App app) : base(app)
         {
             _appServices = new ObservableCollection<AppService>();
@@ -173,6 +192,37 @@ namespace Inkton.Nester.ViewModels
 
             return status;
         }
+
+        public ServiceTableItem CreateServiceItem(AppServiceTier tier)
+        {
+            ServiceTableItem item = new ServiceTableItem();
+
+            item.Name = tier.Name;
+            item.ProvidedBy = tier.Service.Name;
+            item.Period = tier.Period;
+            item.Cost = tier.ItemCost;
+            item.Type = tier.Type;
+            item.FeaturesAll = TranslateFeaturesAll(tier.Service);
+            item.FeaturesIncluded = TranslateFeaturesIncluded(tier);
+            item.Tier = tier;
+
+            return item;
+        }
+
+        public ObservableCollection<ServiceTableItem> CreateServicesTable(
+            ObservableCollection<AppServiceTier> tiers)
+        {
+            ObservableCollection<ServiceTableItem> table = 
+                new ObservableCollection<ServiceTableItem>();
+
+            foreach (var tier in tiers)
+            {
+                table.Add(CreateServiceItem(tier));
+            }
+
+            return table;
+        }
+
         public string[] TranslateFeaturesAll(AppService service)
         {
             List<string> values = JsonConvert.DeserializeObject<List<string>>(

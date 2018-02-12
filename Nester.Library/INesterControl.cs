@@ -31,43 +31,74 @@ namespace Inkton.Nester
 {
     public interface INesterControl
     {
+        /// <summary>
+        /// Holds, the authentication, 
+        /// app and payment contexts
+        /// <summary>
         BaseModels BaseModels
         {
             get;
         }
 
+        /// <summary>
+        /// The nest.yt platform user
+        /// </summary>
         User User
         {
             get; set;
         }
 
+        /// <summary>
+        /// The current application
+        /// <summary>
         AppViewModel Target
         {
             get; set;
         }
 
+        /// <summary>
+        /// A connection to the nest.yt platform 
+        /// to draw app meta data
+        /// <summary>
         NesterService Service
         {
             get;
         }
 
+        /// <summary>
+        /// A connection to the current app
+        /// <summary>
         NesterService DeployedApp
         {
             get;
         }
 
+        /// <summary>
+        /// The storage service used for cacheing
+        /// <summary>
         StorageService StorageService
         {
             get;
         }
 
+        /// <summary>
+        /// The local path where data is cached
+        /// </summary>
         string StoragePath
         {
             get;
         }
 
+        /// <summary>
+        /// The Resource Manager for the app
+        /// </summary>
+        /// <returns>Resource Manager</returns>
         ResourceManager GetResourceManager();
 
+        /// <summary>
+        /// Reset the view optionally with app
+        /// <summary>
         Task ResetViewAsync(AppViewModel appModel = null);
     }
 }
+        

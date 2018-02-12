@@ -75,6 +75,8 @@ namespace Inkton.Nester.ViewModels
                     .EditApp.Owner = newPermit.Owner;
             if (NesterControl.Service != null)
                 NesterControl.Service.Permit = newPermit;
+
+            Cloud.Object.CopyPropertiesTo(newPermit, _permit);
         }
 
         public Cloud.ServerStatus Signup(
@@ -90,7 +92,8 @@ namespace Inkton.Nester.ViewModels
             }
             else
             {
-                ChangePermit(status.PayloadToObject<Permit>());
+                Cloud.Object.CopyPropertiesTo(
+                    _permit.Owner, NesterControl.User);
             }
 
             return status;
@@ -186,7 +189,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.Owner = _permit.Owner;
+            userEventSeed.Owner = NesterControl.User;
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<UserEvent>.WaitForObjectAsync(
                 NesterControl.Service, throwIfError, userEventSeed, doCache);

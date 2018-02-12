@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Inkton.Nester</RootNamespace>
     <PackageId>Nester.Library</PackageId>
     <Authors>Inkton</Authors>
@@ -25,13 +25,11 @@
     <Compile Include="../../nester.model/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Flurl" Version="2.5.2" />
     <PackageReference Include="Flurl.Http" Version="2.1.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.4.0" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.0.1" />
     <PackageReference Include="Microsoft.Win32.Primitives" Version="4.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="Syncfusion.Xamarin.SfChart" Version="15.4.0.20" />
     <PackageReference Include="System.AppContext" Version="4.3.0" />
     <PackageReference Include="System.Collections" Version="4.3.0" />
     <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />

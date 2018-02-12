@@ -231,6 +231,8 @@ namespace Inkton.Nester.ViewModels
                         _editApp.OwnerCapabilities = contact.OwnerCapabilities;
                     }
                 }
+
+                OnPropertyChanged("Contacts");
             }
 
             return status;
@@ -249,6 +251,9 @@ namespace Inkton.Nester.ViewModels
             {
                 _editContact = status.PayloadToObject<Contact>();
                 await QueryPermissionsAsync(_editContact, throwIfError);
+
+                if (contact != null)
+                    Cloud.Object.CopyPropertiesTo(_editContact, contact);
             }
 
             return status;
@@ -288,14 +293,15 @@ namespace Inkton.Nester.ViewModels
 
             if (status.Code >= 0)
             {
-                _editContact = status.PayloadToObject<Contact>();
+                EditContact = status.PayloadToObject<Contact>();
+                await QueryPermissionsAsync(_editContact, throwIfError);
 
                 if (contact != null)
                 {
-                    _contacts.Add(_editContact);
+                    Cloud.Object.CopyPropertiesTo(_editContact, contact);
+                    _contacts.Add(contact);
+                    OnPropertyChanged("Contacts");
                 }
-
-                await QueryPermissionsAsync(contact, throwIfError);
             }
 
             return status;
@@ -312,7 +318,11 @@ namespace Inkton.Nester.ViewModels
 
             if (status.Code >= 0)
             {
-                _contacts.Remove(theContact);
+                if (contact != null)
+                {
+                    _contacts.Remove(contact);
+                    OnPropertyChanged("Contacts");
+                }                
             }
 
             return status;

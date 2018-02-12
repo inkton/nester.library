@@ -25,7 +25,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Syncfusion.SfChart.XForms;
 using Inkton.Nester.Models;
 
 namespace Inkton.Nester.ViewModels
@@ -38,6 +37,19 @@ namespace Inkton.Nester.ViewModels
         private ObservableCollection<SystemCPULog> _systemCpuLogs;
         private ObservableCollection<SystemIPV4Log> _ipv4Logs;
 
+        [Flags]
+        public enum QueryIndex : byte
+        {
+            QueryIndexNestLog = 0x01,
+            QueryIndexDiskSpace = 0x02,
+            QueryIndexRam = 0x04,
+            QueryIndexCpu = 0x08,
+            QueryIndexIpV4 = 0x10,
+            QueryIndexAll = QueryIndexNestLog | QueryIndexDiskSpace |
+                            QueryIndexRam | QueryIndexCpu | QueryIndexIpV4
+        }
+
+        private QueryIndex _queryIndexs = QueryIndex.QueryIndexAll;
         private NestLog _editNestLog;
 
         private MultiCategoryData _diskSpaceData;
@@ -49,11 +61,8 @@ namespace Inkton.Nester.ViewModels
 
         public class DataSeries
         {
-            protected ChartSeries _series;
-
-            public DataSeries(ChartSeries series)
+            public DataSeries()
             {
-                _series = series;
             }
         }
 
@@ -61,15 +70,20 @@ namespace Inkton.Nester.ViewModels
         {
             protected Log _dataLog;
 
-            public MultiCategoryData(ChartSeries series)
-                :base(series)
+            public MultiCategoryData()
             {
             }
-
-            public void AddLog(Log log)
+            
+            public Log DataLog
             {
-                _dataLog = log;
-                _series.ItemsSource = log.Fields;
+                get
+                {
+                    return _dataLog;
+                }
+                set
+                {
+                    _dataLog = value;
+                }
             }
         }
 
@@ -85,11 +99,9 @@ namespace Inkton.Nester.ViewModels
 
                 public ObservableCollection<Point> Values;
 
-                public DataSeriesPoints(ChartSeries series)
-                    :base(series)
+                public DataSeriesPoints()
                 {
                     Values = new ObservableCollection<Point>();
-                    _series.ItemsSource = Values;
                 }
 
                 public void Clear()
@@ -105,7 +117,7 @@ namespace Inkton.Nester.ViewModels
             {
             }
 
-            public Dictionary<string, DataSeriesPoints> NamedSeries
+            public Dictionary<string, DataSeriesPoints> Series
             {
                 get
                 {
@@ -113,11 +125,9 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            public void Init(string name, ChartSeries series)
+            public void Init(string name)
             {
-                series.Label = name;
-                series.EnableTooltip = true;
-                _namedSeries[name] = new MultiSeriesData.DataSeriesPoints(series);
+                _namedSeries[name] = new MultiSeriesData.DataSeriesPoints();
             }
 
             public void AddLog(Log log)
@@ -166,6 +176,18 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public QueryIndex QueryIndexs
+        {
+            get
+            {
+                return _queryIndexs;
+            }
+            set
+            {
+                SetProperty(ref _queryIndexs, value);
+            }
+        }
+
         public NestLog EditNestLog
         {
             get
@@ -186,11 +208,77 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public MultiSeriesData CpuSeries
+        {
+            get
+            {
+                return _cpuSeries;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> CpuSeriesUser
+        {
+            get
+            {
+                if (_cpuSeries == null)
+                    return null;
+                return _cpuSeries.Series["User"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> CpuSeriesSystem
+        {
+            get
+            {
+                if (_cpuSeries == null)
+                    return null;
+                return _cpuSeries.Series["System"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> CpuSeriesIRQ
+        {
+            get
+            {
+                if (_cpuSeries == null)
+                    return null;
+                return _cpuSeries.Series["IRQ"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> CpuSeriesNice
+        {
+            get
+            {
+                if (_cpuSeries == null)
+                    return null;
+                return _cpuSeries.Series["Nice"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> CpuSeriesIOWait
+        {
+            get
+            {
+                if (_cpuSeries == null)
+                    return null;
+                return _cpuSeries.Series["IOWait"].Values;
+            }
+        }
+
         public ObservableCollection<SystemCPULog> SystemCPULogs
         {
             get
             {
                 return _systemCpuLogs;
+            }
+        }
+
+        public MultiCategoryData DiskSpaceSeries
+        {
+            get
+            {
+                return _diskSpaceData;
             }
         }
 
@@ -202,11 +290,87 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public MultiSeriesData Ipv4Series
+        {
+            get
+            {
+                return _ipv4Series;
+            }
+        }
+        
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> Ipv4SeriesSent
+        {
+            get
+            {
+                if (_ipv4Series == null)
+                    return null;
+                return _ipv4Series.Series["Sent"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> Ipv4SeriesReceived
+        {
+            get
+            {
+                if (_ipv4Series == null)
+                    return null;
+                return _ipv4Series.Series["Received"].Values;
+            }
+        }
+
         public ObservableCollection<SystemIPV4Log> SystemIPV4Logs
         {
             get
             {
                 return _ipv4Logs;
+            }
+        }
+
+        public MultiSeriesData RamSeries
+        {
+            get
+            {
+                return _ramSeries;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> RamSeriesFree
+        {
+            get
+            {
+                if (_ramSeries == null)
+                    return null;
+                return _ramSeries.Series["Free"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> RamSeriesUsed
+        {
+            get
+            {
+                if (_ramSeries == null)
+                    return null;
+                return _ramSeries.Series["Used"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> RamSeriesCached
+        {
+            get
+            {
+                if (_ramSeries == null)
+                    return null;
+                return _ramSeries.Series["Cached"].Values;
+            }
+        }
+
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> RamSeriesBuffers
+        {
+            get
+            {
+                if (_ramSeries == null)
+                    return null;
+                return _ramSeries.Series["Buffers"].Values;
             }
         }
 
@@ -218,81 +382,33 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public void SetupDiskSpaceSeries(ChartSeries series)
-        {
-            _diskSpaceData = new MultiCategoryData(series);
-        }
-
-        public void SetupCPUSeries(
-            ChartSeries user,
-            ChartSeries system,
-            ChartSeries irq,
-            ChartSeries nice,
-            ChartSeries iowait
-            )
-        {
-            _cpuSeries = new MultiSeriesData();
-
-            _cpuSeries.Init("User", user);
-            _cpuSeries.Init("System", system);
-            _cpuSeries.Init("IRQ", irq);
-            _cpuSeries.Init("Nice", nice);
-            _cpuSeries.Init("IOWait", iowait);
-        }
-
-        public void SetupRAMSeries(
-            ChartSeries free,
-            ChartSeries used,
-            ChartSeries cached,
-            ChartSeries buffers
-            )
-        {
-            _ramSeries = new MultiSeriesData();
-
-            _ramSeries.Init("Free", free);
-            _ramSeries.Init("Used", used);
-            _ramSeries.Init("Cached", cached);
-            _ramSeries.Init("Buffers", buffers);
-        }
-
-        public void SetupIpv4Series(
-            ChartSeries sent,
-            ChartSeries received
-            )
-        {
-            _ipv4Series = new MultiSeriesData();
-
-            _ipv4Series.Init("Sent", sent);
-            _ipv4Series.Init("Received", received);
-        }
-
         public async Task QueryMetricsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool throwIfError = true)
         {
-            if (_cpuSeries != null)
+            if ((_queryIndexs & QueryIndex.QueryIndexCpu) == QueryIndex.QueryIndexCpu)
             {
                 await QuerySystemCPULogsAsync(
                     filter, orderBy, limit, throwIfError);
             }
 
-            if (_diskSpaceData != null)
+            if ((_queryIndexs & QueryIndex.QueryIndexDiskSpace) == QueryIndex.QueryIndexDiskSpace)
             {
                 await QueryDiskSpaceLogsAsync(
                     filter, orderBy, limit, throwIfError);
             }
 
-            if (_ipv4Series != null)
+            if ((_queryIndexs & QueryIndex.QueryIndexIpV4) == QueryIndex.QueryIndexIpV4)
             {
                 await QuerSystemIPV4LogsAsync(
-                     filter, orderBy, limit, throwIfError);
+                        filter, orderBy, limit, throwIfError);
             }
 
-            if (_ramSeries != null)
+            if ((_queryIndexs & QueryIndex.QueryIndexRam) == QueryIndex.QueryIndexRam)
             {
                 await QuerSystemRAMLogsAsync(
-                     filter, orderBy, limit, throwIfError);
-            }
+                        filter, orderBy, limit, throwIfError);
+             }
         }
 
         public async Task QueryAsync(
@@ -300,11 +416,11 @@ namespace Inkton.Nester.ViewModels
         {
             await QueryNestLogsAsync(string.Format("id > {0}",
                         UnixEpochSecsSince * 1000000 // to microseconds
-                    ), "id asc", 10000000, throwIfError);
+                    ), "id asc", 200, throwIfError);
 
             await QueryMetricsAsync(string.Format("id > {0}",
                         UnixEpochSecsSince
-                    ), "id asc", 10000000, throwIfError);
+                    ), "id asc", 200, throwIfError);
         }
 
         public async Task QueryAsync(
@@ -357,11 +473,6 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool throwIfError = true)
         {
-            if (NestLogs != null)
-            {
-                NestLogs.Clear();
-            }
-
             string sql = FormSql("nest_log", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<NestLog>(
                 sql, throwIfError);
@@ -376,23 +487,28 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool throwIfError = true)
         {
-            if (SystemCPULogs != null)
-            {
-                SystemCPULogs.Clear();
-            }
+            _cpuSeries = new MultiSeriesData();
+            _cpuSeries.Init("User");
+            _cpuSeries.Init("System");
+            _cpuSeries.Init("IRQ");
+            _cpuSeries.Init("Nice");
+            _cpuSeries.Init("IOWait");
 
             string sql = FormSql("system_cpu", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<SystemCPULog>(
                 sql, throwIfError);
 
             _systemCpuLogs = status.PayloadToList<SystemCPULog>();
-            _cpuSeries.Clear();
 
             if (_systemCpuLogs.Any())
             {
                 _systemCpuLogs.All(log => { _cpuSeries.AddLog(log); return true; });
 
-                OnPropertyChanged("SystemCPULogs");
+                OnPropertyChanged("CpuSeriesUser");
+                OnPropertyChanged("CpuSeriesSystem");
+                OnPropertyChanged("CpuSeriesIRQ");
+                OnPropertyChanged("CpuSeriesNice");
+                OnPropertyChanged("CpuSeriesIOWait");
             }
 
             return status;
@@ -402,10 +518,7 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool throwIfError = true)
         {
-            if (DiskSpaceLogs != null)
-            {
-                DiskSpaceLogs.Clear();
-            }
+            _diskSpaceData = new MultiCategoryData();
 
             string sql = FormSql("disk_space", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<DiskSpaceLog>(
@@ -415,9 +528,9 @@ namespace Inkton.Nester.ViewModels
 
             if (_diskSpaceLogs.Any())
             {
-                _diskSpaceData.AddLog(_diskSpaceLogs.Last());
+                _diskSpaceData.DataLog = _diskSpaceLogs.Last();
 
-                OnPropertyChanged("DiskSpaceLogs");
+                OnPropertyChanged("DiskSpaceSeries");
             }
 
             return status;
@@ -427,23 +540,22 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool throwIfError = true)
         {
-            if (SystemIPV4Logs != null)
-            {
-                SystemIPV4Logs.Clear();
-            }
+            _ipv4Series = new MultiSeriesData();
+            _ipv4Series.Init("Sent");
+            _ipv4Series.Init("Received");
 
             string sql = FormSql("system_ipv4", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<SystemIPV4Log>(
                 sql, throwIfError);
 
             _ipv4Logs = status.PayloadToList<SystemIPV4Log>();
-            _ipv4Series.Clear();
 
             if (_ipv4Logs.Any())
             {
                 _ipv4Logs.All(log => { _ipv4Series.AddLog(log); return true; });
 
-                OnPropertyChanged("SystemIPV4Logs");
+                OnPropertyChanged("Ipv4SeriesSent");
+                OnPropertyChanged("Ipv4SeriesReceived");
             }
 
             return status;
@@ -453,23 +565,26 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool throwIfError = true)
         {
-            if (SystemRAMLogs != null)
-            {
-                SystemRAMLogs.Clear();
-            }
+            _ramSeries = new MultiSeriesData();
+            _ramSeries.Init("Free");
+            _ramSeries.Init("Used");
+            _ramSeries.Init("Cached");
+            _ramSeries.Init("Buffers");
 
             string sql = FormSql("system_ram", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<SystemRAMLog>(
                 sql, throwIfError);
 
             _systemRamLogs = status.PayloadToList<SystemRAMLog>();
-            _ramSeries.Clear();
 
             if (_systemRamLogs.Any())
             {
                 _systemRamLogs.All(log => { _ramSeries.AddLog(log); return true; });
 
-                OnPropertyChanged("SystemRAMLogs");
+                OnPropertyChanged("RamSeriesFree");
+                OnPropertyChanged("RamSeriesUsed");
+                OnPropertyChanged("RamSeriesCached");
+                OnPropertyChanged("RamSeriesBuffers");
             }
 
             return status;

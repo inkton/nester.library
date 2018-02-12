@@ -123,8 +123,8 @@ namespace Inkton.Nester.ViewModels
                 {
                     domain.App = _editApp;
                     domain.Primary = (_editApp.PrimaryDomainId == domain.Id);
-                    domain.Ip = await NesterControl.Service.GetIPAsync(domain.Name);
-
+                    domain.IPAddress = _editApp.IPAddress;
+ 
                     AppDomainCertificate seedCert = new AppDomainCertificate();
                     seedCert.AppDomain = domain;
 
@@ -178,6 +178,11 @@ namespace Inkton.Nester.ViewModels
                         theDomain.Certificate.AppDomain = theDomain;
                     }
                 }
+
+                if (domain != null)
+                {
+                    Cloud.Object.CopyPropertiesTo(_editDomain, domain);
+                }
             }
 
             return status;
@@ -195,10 +200,20 @@ namespace Inkton.Nester.ViewModels
             if (status.Code >= 0)
             {
                 _editDomain = status.PayloadToObject<AppDomain>();
+                 
+                // Add the default free certificate
+                AppDomainCertificate cert = new AppDomainCertificate();
+                cert.AppDomain = _editDomain;
+                cert.Tag = _editDomain.Tag;
+                cert.Type = "free";
+
+                await CreateDomainCertificateAsync(cert);
 
                 if (domain != null)
                 {
+                    Cloud.Object.CopyPropertiesTo(_editDomain, domain);
                     _domains.Add(domain);
+                    OnPropertyChanged("Domains");
                 }
             }
 
@@ -217,6 +232,11 @@ namespace Inkton.Nester.ViewModels
             if (status.Code >= 0)
             {
                 _editDomain.Certificate = status.PayloadToObject<AppDomainCertificate>();
+
+                if (cert != null)
+                {
+                    Cloud.Object.CopyPropertiesTo(_editDomain.Certificate, cert);
+                }
             }
 
             return status;
@@ -233,11 +253,12 @@ namespace Inkton.Nester.ViewModels
 
             if (status.Code >= 0)
             {
-                if (domain == null)
+                if (domain != null)
                 {
                     // any cert that belong to the domain
                     // are automatically removed in the server
-                    _domains.Remove(theDomain);
+                    _domains.Remove(domain);
+                    OnPropertyChanged("Domains");
                 }
             }
 

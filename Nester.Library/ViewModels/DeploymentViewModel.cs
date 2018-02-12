@@ -207,6 +207,8 @@ namespace Inkton.Nester.ViewModels
                     _editDeployment = _deployments.First();
                     _editApp.Deployment = _editDeployment;
                 }
+
+                OnPropertyChanged("Deployments");
             }
 
             return status;
@@ -238,7 +240,9 @@ namespace Inkton.Nester.ViewModels
 
                 if (deployment != null)
                 {
-                    _deployments.Add(_editDeployment);
+                    Cloud.Object.CopyPropertiesTo(_editDeployment, deployment);
+                    _deployments.Add(deployment);
+                    OnPropertyChanged("Deployments");
                 }
             }
 
@@ -277,6 +281,7 @@ namespace Inkton.Nester.ViewModels
                 if (deployment == null)
                 {
                     _deployments.Remove(deployment);
+                    OnPropertyChanged("Deployments");
                 }
             }
 

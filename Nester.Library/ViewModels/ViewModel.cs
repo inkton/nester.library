@@ -56,6 +56,21 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public bool IsAppOwner
+        {
+            get
+            {
+                bool isOwner = false;
+
+                if (_editApp != null)
+                {
+                    isOwner = _editApp.UserId == NesterControl.User.Id;
+                }
+
+                return isOwner;
+            }
+        }
+
         public bool IsValidApp
         {
             get

@@ -88,6 +88,8 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_ERROR_NEST_HANDLER_EXIST = -274;
         // Domain not registered                                   
         public const int NEST_RESULT_ERROR_DOMAIN_UNREGISTERED = -276;
+        // Domain IP does not match App IP                                   
+        public const int NEST_RESULT_ERROR_DOMAIN_IP = -277;
         // Domain not found                                        
         public const int NEST_RESULT_ERROR_DOMAIN_NFOUND = -278;
         // Domain ssl not found                                    

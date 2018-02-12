@@ -103,21 +103,6 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public bool IsAppOwner
-        {
-            get
-            {
-                bool isOwner = false;
-
-                if (_editApp != null)
-                {
-                    isOwner = _editApp.UserId == NesterControl.User.Id;
-                }
-
-                return isOwner;
-            }
-        }
-
         public ContactViewModel ContactModel
         {
             get
@@ -541,6 +526,9 @@ namespace Inkton.Nester.ViewModels
                 {
                     _editApp.Owner = NesterControl.User;
                 }
+
+                if (app != null)
+                    Cloud.Object.CopyPropertiesTo(_editApp, app);
             }
 
             return status;
@@ -603,6 +591,9 @@ namespace Inkton.Nester.ViewModels
                 }
 
                 await InitAsync();
+
+                if (app != null)
+                    Cloud.Object.CopyPropertiesTo(_editApp, app);
             }
             return status;
         }

@@ -166,6 +166,7 @@ namespace Inkton.Nester.ViewModels
             {
                 _nests = status.PayloadToList<Nest>();
                 SetNestsHosts();
+                OnPropertyChanged("Nests");
             }
 
             return status;
@@ -184,6 +185,11 @@ namespace Inkton.Nester.ViewModels
             {
                 _editNest = status.PayloadToObject<Nest>();
                 SetNestHosts(_editNest);
+
+                if (nest != null)
+                {
+                    Cloud.Object.CopyPropertiesTo(_editNest, nest);
+                }
             }
 
             return status;
@@ -205,7 +211,8 @@ namespace Inkton.Nester.ViewModels
 
                 if (nest != null)
                 {
-                    _nests.Add(_editNest);               
+                    Cloud.Object.CopyPropertiesTo(_editNest, nest);
+                    _nests.Add(nest);               
                 }
 
                 OnPropertyChanged("Nests");
@@ -227,13 +234,6 @@ namespace Inkton.Nester.ViewModels
             {
                 _editNest = status.PayloadToObject<Nest>();
                 SetNestHosts(_editNest);
-
-                if (nest != null)
-                {
-                    _nests.Add(_editNest);
-                }
-
-                OnPropertyChanged("Nests");
             }
 
             return status;
@@ -250,8 +250,11 @@ namespace Inkton.Nester.ViewModels
 
             if (status.Code >= 0)
             {
-                _nests.Remove(theNest);
-                OnPropertyChanged("Nests");
+                if (nest != null)
+                {
+                    _nests.Remove(nest);
+                    OnPropertyChanged("Nests");
+                }
             }
 
             return status;

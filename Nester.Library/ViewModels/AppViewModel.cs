@@ -484,6 +484,17 @@ namespace Inkton.Nester.ViewModels
             await ServicesViewModel.QueryServicesAsync();
         }
 
+        async public Task<Cloud.ServerStatus> QueryStatusAsync()
+        {
+            Cloud.ServerStatus status = await QueryAppAsync();
+            if (status.Code == 0)
+            {
+                await DeploymentModel.InitAsync();
+            }
+
+            return status;
+        }
+
         async public void Reload()
         {
             await InitAsync();

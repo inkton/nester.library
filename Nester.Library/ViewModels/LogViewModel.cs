@@ -162,6 +162,24 @@ namespace Inkton.Nester.ViewModels
 
         public LogViewModel(App app) : base(app)
         {
+            _cpuSeries = new MultiSeriesData();
+            _cpuSeries.Init("User");
+            _cpuSeries.Init("System");
+            _cpuSeries.Init("IRQ");
+            _cpuSeries.Init("Nice");
+            _cpuSeries.Init("IOWait");
+
+            _diskSpaceData = new MultiCategoryData();
+
+            _ipv4Series = new MultiSeriesData();
+            _ipv4Series.Init("Sent");
+            _ipv4Series.Init("Received");
+
+            _ramSeries = new MultiSeriesData();
+            _ramSeries.Init("Free");
+            _ramSeries.Init("Used");
+            _ramSeries.Init("Cached");
+            _ramSeries.Init("Buffers");
         }
 
         override public App EditApp
@@ -384,69 +402,69 @@ namespace Inkton.Nester.ViewModels
 
         public async Task QueryMetricsAsync(
             string filter = null, string orderBy = null, int limit = -1,
-            bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
             if ((_queryIndexs & QueryIndex.QueryIndexCpu) == QueryIndex.QueryIndexCpu)
             {
                 await QuerySystemCPULogsAsync(
-                    filter, orderBy, limit, throwIfError);
+                    filter, orderBy, limit, doCache, throwIfError);
             }
 
             if ((_queryIndexs & QueryIndex.QueryIndexDiskSpace) == QueryIndex.QueryIndexDiskSpace)
             {
                 await QueryDiskSpaceLogsAsync(
-                    filter, orderBy, limit, throwIfError);
+                    filter, orderBy, limit, doCache, throwIfError);
             }
 
             if ((_queryIndexs & QueryIndex.QueryIndexIpV4) == QueryIndex.QueryIndexIpV4)
             {
                 await QuerSystemIPV4LogsAsync(
-                        filter, orderBy, limit, throwIfError);
+                        filter, orderBy, limit, doCache, throwIfError);
             }
 
             if ((_queryIndexs & QueryIndex.QueryIndexRam) == QueryIndex.QueryIndexRam)
             {
                 await QuerSystemRAMLogsAsync(
-                        filter, orderBy, limit, throwIfError);
+                        filter, orderBy, limit, doCache, throwIfError);
              }
         }
 
-        public async Task QueryAsync(
-            long UnixEpochSecsSince, bool throwIfError = true)
+        public async Task QueryAsync(long UnixEpochSecsSince, 
+            bool doCache = false, bool throwIfError = true)
         {
             await QueryNestLogsAsync(string.Format("id > {0}",
                         UnixEpochSecsSince * 1000000 // to microseconds
-                    ), "id asc", 200, throwIfError);
+                    ), "id asc", 200, doCache, throwIfError);
 
             await QueryMetricsAsync(string.Format("id > {0}",
                         UnixEpochSecsSince
-                    ), "id asc", 200, throwIfError);
+                    ), "id asc", 200, doCache, throwIfError);
         }
 
-        public async Task QueryAsync(
+        public async void QueryAsync(
             long beginUnixEpochSecs, long endUnixEpochSecs, int rows = -1,
-            bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
             await QueryNestLogsAsync(string.Format("id >= {0} and id < {1}",
                         beginUnixEpochSecs * 1000000, endUnixEpochSecs * 1000000  // to microseconds
-                    ), null, rows, throwIfError);
+                    ), null, rows, doCache, throwIfError);
 
             await QueryMetricsAsync(string.Format("id >= {0} and id < {1}",
                         beginUnixEpochSecs, endUnixEpochSecs
-                    ), null, rows, throwIfError);
+                    ), null, rows, doCache, throwIfError);
         }
 
-        public async Task QueryAsync(bool last, int rows, 
-            bool throwIfError = true)
+        public async Task QueryAsync(bool last, int rows,
+            bool doCache = false, bool throwIfError = true)
         {
             // fetch rows
             string orderBy = string.Format("id {0}",
                         last ? "desc" : "asc"
                     );
 
-            await QueryNestLogsAsync(null, orderBy, rows, throwIfError);
+            await QueryNestLogsAsync(null, orderBy, rows, doCache, throwIfError);
             
-            await QueryMetricsAsync(null, orderBy, rows, throwIfError);
+            await QueryMetricsAsync(null, orderBy, rows, doCache, throwIfError);
         }
 
         private string FormSql(string table, string fields = "*",
@@ -471,11 +489,11 @@ namespace Inkton.Nester.ViewModels
 
         public async Task<Cloud.ServerStatus> QueryNestLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
-            bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
             string sql = FormSql("nest_log", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<NestLog>(
-                sql, throwIfError);
+                sql, doCache, throwIfError);
 
             _nestLogs = status.PayloadToList<NestLog>();
 
@@ -485,18 +503,13 @@ namespace Inkton.Nester.ViewModels
 
         public async Task<Cloud.ServerStatus> QuerySystemCPULogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
-            bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
-            _cpuSeries = new MultiSeriesData();
-            _cpuSeries.Init("User");
-            _cpuSeries.Init("System");
-            _cpuSeries.Init("IRQ");
-            _cpuSeries.Init("Nice");
-            _cpuSeries.Init("IOWait");
+            _cpuSeries.Clear();
 
             string sql = FormSql("system_cpu", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<SystemCPULog>(
-                sql, throwIfError);
+                sql, doCache, throwIfError);
 
             _systemCpuLogs = status.PayloadToList<SystemCPULog>();
 
@@ -516,13 +529,11 @@ namespace Inkton.Nester.ViewModels
 
         public async Task<Cloud.ServerStatus> QueryDiskSpaceLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
-            bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
-            _diskSpaceData = new MultiCategoryData();
-
             string sql = FormSql("disk_space", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<DiskSpaceLog>(
-                sql, throwIfError);
+                sql, doCache, throwIfError);
 
             _diskSpaceLogs = status.PayloadToList<DiskSpaceLog>();
 
@@ -538,15 +549,13 @@ namespace Inkton.Nester.ViewModels
 
         public async Task<Cloud.ServerStatus> QuerSystemIPV4LogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
-            bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
-            _ipv4Series = new MultiSeriesData();
-            _ipv4Series.Init("Sent");
-            _ipv4Series.Init("Received");
+            _ipv4Series.Clear();
 
             string sql = FormSql("system_ipv4", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<SystemIPV4Log>(
-                sql, throwIfError);
+                sql, doCache, throwIfError);
 
             _ipv4Logs = status.PayloadToList<SystemIPV4Log>();
 
@@ -563,17 +572,13 @@ namespace Inkton.Nester.ViewModels
 
         public async Task<Cloud.ServerStatus> QuerSystemRAMLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
-            bool throwIfError = true)
+            bool doCache = false, bool throwIfError = true)
         {
-            _ramSeries = new MultiSeriesData();
-            _ramSeries.Init("Free");
-            _ramSeries.Init("Used");
-            _ramSeries.Init("Cached");
-            _ramSeries.Init("Buffers");
+            _ramSeries.Clear();
 
             string sql = FormSql("system_ram", "*", filter, orderBy, limit);
             Cloud.ServerStatus status = await QueryLogsAsync<SystemRAMLog>(
-                sql, throwIfError);
+                sql, doCache, throwIfError);
 
             _systemRamLogs = status.PayloadToList<SystemRAMLog>();
 
@@ -591,14 +596,14 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<Cloud.ServerStatus> QueryLogsAsync<T>(string sql,
-            bool throwIfError = false) where T : Log, new()
+            bool doCache = false, bool throwIfError = false) where T : Log, new()
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("sql", sql);
 
             T logsSeed = new T();
             Cloud.ServerStatus status = await Cloud.ResultMultiple<T>.WaitForObjectAsync(
-                NesterControl.DeployedApp, throwIfError, logsSeed, throwIfError, data);
+                NesterControl.DeployedApp, doCache, logsSeed, throwIfError, data);
 
             return status;
         }

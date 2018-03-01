@@ -98,7 +98,7 @@ namespace Inkton.Nester
         /// <summary>
         /// Reset the view optionally with app
         /// <summary>
-        Task ResetViewAsync(AppViewModel appModel = null);
+        void ResetView(AppViewModel appModel = null);
     }
 }
         

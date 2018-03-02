@@ -449,6 +449,7 @@ namespace Inkton.Nester.ViewModels
         override public async Task<Cloud.ServerStatus> InitAsync()
         {
             Cloud.ServerStatus status;
+            System.Diagnostics.Debug.WriteLine("Init App - {1}", EditApp.Tag);
 
             status = await QueryAppAsync();
             if (status.Code < 0)

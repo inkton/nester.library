@@ -1,18 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Inkton.Nester</RootNamespace>
-    <PackageId>Nester.Library</PackageId>
-    <Authors>Inkton</Authors>
+    <Title>Inkton NesterLibrary</Title>
+    <PackageId>Inkton.NesterLibrary</PackageId>
+    <PackageVersion>1.2.1</PackageVersion>
+    <PackageTags>paas,docker,nest.yt</PackageTags>
+    <Authors>nest.yt</Authors>
+    <Description>A Client UI Library for Nest.yt</Description>
+    <Copyright>Copyright (c) 2018 Inkton</Copyright>
     <Company>Inkton</Company>
     <Product>Nester Library</Product>
-    <Description>The library to create deploy UI.</Description>
-    <Copyright>Copyright 2018 Inkton</Copyright>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-    <NeutralLanguage>en</NeutralLanguage>
-    <Version>1.2.0</Version>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Inkton.Nester</RootNamespace>
+    <PackageLicenseUrl>https://github.com/inkton/nester.library/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/inkton</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/inkton/nester.library</RepositoryUrl>
+    <RepositoryType>github</RepositoryType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>

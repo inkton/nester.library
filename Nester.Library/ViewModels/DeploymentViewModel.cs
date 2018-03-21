@@ -33,25 +33,36 @@ namespace Inkton.Nester.ViewModels
     public class DeploymentViewModel : ViewModel
     {
         private Deployment _editDeployment;
+        private AppBackup _editBackup;
 
         private ObservableCollection<Deployment> _deployments;
+        private ObservableCollection<AppServiceTier> _upgradableAppTiers;
         private ObservableCollection<Forest> _forests;
         private Dictionary<string, Forest> _forestByTag;
         private ObservableCollection<SoftwareFramework.Version> _dotnetVersions;
+        private ObservableCollection<AppBackup> _backups;
+        private AppServiceTier _upgradeAppServiceTier;
+
+        public bool _mariaDBEnabled = false;
 
         public ICommand SelectForestCommand { get; private set; }
 
         public DeploymentViewModel(App app) : base(app)
         {
             _deployments = new ObservableCollection<Deployment>();
+            _upgradableAppTiers = new ObservableCollection<AppServiceTier>();
             _forests = new ObservableCollection<Forest>();
             _forestByTag = new Dictionary<string, Forest>();
-            SelectForestCommand = new Command<Forest>( 
-                (forest) => HandleCommand<Forest>(forest, "select") );
 
             _editDeployment = new Deployment();
             _editDeployment.App = app;
             app.Deployment = _editDeployment;
+
+            _editBackup = new AppBackup();
+            _backups = new ObservableCollection<AppBackup>();
+
+            SelectForestCommand = new Command<Forest>(
+                (forest) => HandleCommand<Forest>(forest, "select"));
         }
 
         override public App EditApp
@@ -117,6 +128,162 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public ObservableCollection<AppServiceTier> UpgradableAppTiers
+        {
+            get
+            {
+                return _upgradableAppTiers;
+            }
+            set
+            {
+                SetProperty(ref _upgradableAppTiers, value);
+            }
+        }
+
+        public ServicesViewModel.ServiceTableItem SelectedAppService
+        {
+            get
+            {
+                if (_upgradeAppServiceTier != null)
+                {
+                    return ServicesViewModel.CreateServiceItem(
+                        _upgradeAppServiceTier);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            set
+            {
+                _upgradeAppServiceTier = value.Tier;
+            }
+        }
+
+        public ObservableCollection<AppBackup> AppBackups
+        {
+            get
+            {
+                return _backups;
+            }
+            set
+            {
+                SetProperty(ref _backups, value);
+            }
+        }
+
+        public bool MariaDBEnabled
+        {
+            get
+            {
+                return _mariaDBEnabled;
+            }
+            set
+            {
+                SetProperty(ref _mariaDBEnabled, value);
+            }
+        }
+
+        public ServicesViewModel.ServiceTableItem SelectedMariaDBService
+        {
+            get
+            {
+                if (_editApp.Subscriptions != null)
+                {
+                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
+                        x => x.ServiceTier.Service.Tag == "mariadb");
+
+                    if (subscription != null)
+                    {
+                        return ServicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public ServicesViewModel.ServiceTableItem SelectedGitService
+        {
+            get
+            {
+                if (_editApp.Subscriptions != null)
+                {
+                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
+                        x => x.ServiceTier.Service.Tag == "git");
+
+                    if (subscription != null)
+                    {
+                        return ServicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public ServicesViewModel.ServiceTableItem SelectedLetsencryptService
+        {
+            get
+            {
+                if (_editApp.Subscriptions != null)
+                {
+                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
+                        x => x.ServiceTier.Service.Tag == "letsencrypt");
+
+                    if (subscription != null)
+                    {
+                        return ServicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public ServicesViewModel.ServiceTableItem SelectedLoggingService
+        {
+            get
+            {
+                if (_editApp.Subscriptions != null)
+                {
+                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
+                        x => x.ServiceTier.Service.Tag == "logging");
+
+                    if (subscription != null)
+                    {
+                        return ServicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public ServicesViewModel.ServiceTableItem SelectedRabbitMQService
+        {
+            get
+            {
+                if (_editApp.Subscriptions != null)
+                {
+                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
+                        x => x.ServiceTier.Service.Tag == "rabbitmq");
+
+                    if (subscription != null)
+                    {
+                        return ServicesViewModel.CreateServiceItem(
+                            subscription.ServiceTier);
+                    }
+                }
+
+                return null;
+            }
+        }
+
         override public async Task<Cloud.ServerStatus> InitAsync()
         {
             Cloud.ServerStatus status;
@@ -147,6 +314,15 @@ namespace Inkton.Nester.ViewModels
             }
 
             return status;
+        }
+
+        public ObservableCollection<ServicesViewModel.ServiceTableItem> AppFeaturesTable
+        {
+            get
+            {
+                return ServicesViewModel.CreateServicesTable(
+                    _upgradableAppTiers);
+            }
         }
 
         public async Task<Cloud.ServerStatus> QueryForestsAsync(
@@ -286,6 +462,109 @@ namespace Inkton.Nester.ViewModels
             }
 
             return status;
-        }        
+        }
+
+        public async Task<Cloud.ServerStatus> QueryAppUpgradeServiceTiersAsync(
+            AppService service, Deployment deployment = null, bool doCache = true, bool throwIfError = true)
+        {
+            Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
+            service.Deployment = theDeployment;
+
+            AppServiceTier tierSeed = new AppServiceTier();
+            tierSeed.Service = service;
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, tierSeed, doCache);
+
+            if (status.Code >= 0)
+            {
+                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> UpdateAppUpgradeServiceTiersAsync(
+            AppService service = null, AppServiceTier tierSeed = null, Deployment deployment = null, 
+            bool doCache = true, bool throwIfError = true)
+        {
+            Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
+            service.Deployment = theDeployment;
+            _upgradeAppServiceTier.Service = service;
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceTier>.WaitForObjectAsync(
+                throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier>(
+                    NesterControl.Service.UpdateAsync), doCache);
+
+            if (status.Code >= 0)
+            {
+                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> QueryAppBackupsAsync(AppBackup appBackup = null,
+            bool doCache = false, bool throwIfError = true)
+        {
+            AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
+            theBackup.Deployment = _editApp.Deployment;
+            
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppBackup>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, theBackup, doCache);
+
+            if (status.Code >= 0)
+            {
+                _backups = status.PayloadToList<AppBackup>();
+                OnPropertyChanged("AppBackups");
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> RestoreAppAsync(AppBackup appBackup,
+            bool doCache = false, bool throwIfError = true)
+        {
+            AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
+            theBackup.Deployment = _editApp.Deployment;
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
+                throwIfError, appBackup, new Cloud.CachedHttpRequest<AppBackup>(
+                    NesterControl.Service.UpdateAsync), doCache);
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> BackupAppAsync(AppBackup appBackup = null,
+            bool doCache = false, bool throwIfError = true)
+        {
+            AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
+            theBackup.Deployment = _editApp.Deployment;
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
+                throwIfError, theBackup, new Cloud.CachedHttpRequest<AppBackup>(
+                    NesterControl.Service.CreateAsync), doCache);
+
+            if (status.Code >= 0)
+            {
+                _editBackup = status.PayloadToObject<AppBackup>();
+
+                if (appBackup != null)
+                {
+                    Cloud.Object.CopyPropertiesTo(_editBackup, appBackup);
+                }
+
+                foreach (AppBackup backup in _backups)
+                {
+                    if (backup.Id == _editBackup.Id)
+                    {
+                        Cloud.Object.CopyPropertiesTo(_editBackup, backup);
+                        break;
+                    }
+                }
+            }
+
+            return status;
+        }
     }
 }

@@ -39,7 +39,6 @@ namespace Inkton.Nester.ViewModels
         private ServicesViewModel _servicesViewModel;
         private LogViewModel _logViewModel;
 
-        private AppServiceTier _selectedAppServiceTier;
         private ObservableCollection<Notification> _notifications;
 
         public class AppType
@@ -230,7 +229,7 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                return _servicesViewModel.CreateServicesTable(AppServiceTiers);
+                return ServicesViewModel.CreateServicesTable(AppServiceTiers);
             }
         }
 
@@ -245,21 +244,12 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return _servicesViewModel.CreateServiceItem(
+                        return ServicesViewModel.CreateServiceItem(
                             subscription.ServiceTier);
                     }
                 }
-                else
-                {
-                    _selectedAppServiceTier = AppServiceTiers.First();
-                }
 
-                return _servicesViewModel.CreateServiceItem(
-                    _selectedAppServiceTier);
-            }
-            set
-            {
-                SetProperty(ref _selectedAppServiceTier, value.Tier);
+                return null;
             }
         }
 
@@ -267,7 +257,7 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                return _servicesViewModel.TranslateFeaturesAll(
+                return ServicesViewModel.TranslateFeaturesAll(
                     SelectedAppService.Tier.Service);
             }
         }
@@ -276,7 +266,7 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                return _servicesViewModel.TranslateFeaturesIncluded(
+                return ServicesViewModel.TranslateFeaturesIncluded(
                     SelectedAppService.Tier);
             }
         }
@@ -339,7 +329,7 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return _servicesViewModel.CreateServiceItem(
+                        return ServicesViewModel.CreateServiceItem(
                             subscription.ServiceTier);
                     }
                 }
@@ -363,7 +353,7 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return _servicesViewModel.CreateServiceItem(
+                        return ServicesViewModel.CreateServiceItem(
                             subscription.ServiceTier);
                     }
                 }
@@ -387,7 +377,7 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return _servicesViewModel.CreateServiceItem(
+                        return ServicesViewModel.CreateServiceItem(
                             subscription.ServiceTier);
                     }
                 }
@@ -411,7 +401,7 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return _servicesViewModel.CreateServiceItem(
+                        return ServicesViewModel.CreateServiceItem(
                             subscription.ServiceTier);
                     }
                 }
@@ -435,7 +425,7 @@ namespace Inkton.Nester.ViewModels
 
                     if (subscription != null)
                     {
-                        return _servicesViewModel.CreateServiceItem(
+                        return ServicesViewModel.CreateServiceItem(
                             subscription.ServiceTier);
                     }
                 }
@@ -449,7 +439,8 @@ namespace Inkton.Nester.ViewModels
         override public async Task<Cloud.ServerStatus> InitAsync()
         {
             Cloud.ServerStatus status;
-            System.Diagnostics.Debug.WriteLine("Init App - {1}", EditApp.Tag);
+            System.Diagnostics.Debug.WriteLine(
+                string.Format("Begin - Init App - {0}", EditApp.Tag));
 
             status = await QueryAppAsync();
             if (status.Code < 0)
@@ -466,6 +457,9 @@ namespace Inkton.Nester.ViewModels
             await _domainViewModel.InitAsync();
 
             OnPropertyChanged("EditApp");
+
+            System.Diagnostics.Debug.WriteLine(
+                string.Format("End - Init App - {0}", EditApp.Tag));
 
             return status;
         }
@@ -492,6 +486,8 @@ namespace Inkton.Nester.ViewModels
             {
                 await DeploymentModel.InitAsync();
             }
+
+            OnPropertyChanged("EditApp");
 
             return status;
         }
@@ -580,11 +576,11 @@ namespace Inkton.Nester.ViewModels
             return status;
         }
 
-        public async Task<Cloud.ServerStatus> CreateAppAsync(App app = null,
-            bool doCache = false, bool throwIfError = true)
+        public async Task<Cloud.ServerStatus> CreateAppAsync(AppServiceTier tier,
+            App app = null, bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
-            theApp.ServiceTierId = _selectedAppServiceTier.Id;
+            theApp.ServiceTierId = tier.Id;
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App>(

@@ -64,7 +64,7 @@ namespace Inkton.Nester.ViewModels
                 {
                     foreach (App app in apps)
                     {
-                        await AddAppAsync(app);
+                        AddApp(app);
                     }
                 }
             }
@@ -72,14 +72,14 @@ namespace Inkton.Nester.ViewModels
             return status;
         }
 
-        public async Task<AppViewModel> AddAppAsync(App app)
+        public Cloud.ServerStatus AddApp(App app)
         {
             AppViewModel appModel = new AppViewModel();
             appModel.EditApp = app;
             AddModel(appModel);
 
-            await appModel.InitAsync();
-            return appModel;
+            return Task<Cloud.ServerStatus>
+                .Run(async () => await appModel.InitAsync()).Result;            
         }
 
         public void AddModel(AppViewModel appModel)

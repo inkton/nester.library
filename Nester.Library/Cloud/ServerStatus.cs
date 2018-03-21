@@ -56,6 +56,7 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_ERROR_APP_SERVICE_ESSENTIAL = -236;// Cann
         public const int NEST_RESULT_ERROR_APP_SERVICE_ALWAYS_ON = -238;
         public const int NEST_RESULT_ERROR_ADD_PAYMENT_METHOD = -240;
+        public const int NEST_RESULT_ERROR_PAYMENT_OUTSTANDING = -241;
         public const int NEST_RESULT_ERROR_SUBSCRIPTION_NFOUND = -242;
         public const int NEST_RESULT_ERROR_SUBSCRIPTION_INVALID = -244;
         public const int NEST_RESULT_ERROR_FOREST_NOT_PLANTABLE = -246;
@@ -115,6 +116,7 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_ERROR_NPLATFORM_NFOUND = -310;
         public const int NEST_RESULT_ERROR_AUTH_SECCODE = -312;
         public const int NEST_RESULT_ERROR_CONTACT_EXCEEDED = -320;
+        public const int NEST_RESULT_ERROR_BACKUP_IN_PROGRESS = -322;
 
         private int _code;
         private string _description;

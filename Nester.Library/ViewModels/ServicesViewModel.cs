@@ -25,6 +25,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Resources;
 using System.Collections.Generic;
+using Xamarin.Forms;
 using Newtonsoft.Json;
 using Inkton.Nester.Models;
 
@@ -193,7 +194,7 @@ namespace Inkton.Nester.ViewModels
             return status;
         }
 
-        public ServiceTableItem CreateServiceItem(AppServiceTier tier)
+        public static ServiceTableItem CreateServiceItem(AppServiceTier tier)
         {
             ServiceTableItem item = new ServiceTableItem();
 
@@ -209,7 +210,7 @@ namespace Inkton.Nester.ViewModels
             return item;
         }
 
-        public ObservableCollection<ServiceTableItem> CreateServicesTable(
+        public static ObservableCollection<ServiceTableItem> CreateServicesTable(
             ObservableCollection<AppServiceTier> tiers)
         {
             ObservableCollection<ServiceTableItem> table = 
@@ -223,12 +224,13 @@ namespace Inkton.Nester.ViewModels
             return table;
         }
 
-        public string[] TranslateFeaturesAll(AppService service)
+        public static string[] TranslateFeaturesAll(AppService service)
         {
             List<string> values = JsonConvert.DeserializeObject<List<string>>(
                 service.FeaturesAll);
                 
-            ResourceManager resmgr = NesterControl.GetResourceManager();
+            ResourceManager resmgr = (Application.Current as INesterControl)
+                .GetResourceManager();
 
             List<string> TranslatedValues = new List<string>();
             foreach (string value in values)
@@ -241,7 +243,7 @@ namespace Inkton.Nester.ViewModels
             return TranslatedValues.ToArray<string>();
         }
 
-        public string[] TranslateFeaturesIncluded(AppServiceTier tier)
+        public static string[] TranslateFeaturesIncluded(AppServiceTier tier)
         {
             List<string> values = JsonConvert.DeserializeObject<List<string>>(
                 tier.FeaturesIncluded);

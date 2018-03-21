@@ -420,4 +420,10 @@
   <data name="NEST_RESULT_ERROR_DOMAIN_IP" xml:space="preserve">
     <value>Domain IP does not match the App IP address</value>
   </data>
+  <data name="NEST_RESULT_ERROR_PAYMENT_OUTSTANDING" xml:space="preserve">
+    <value>Payment outstanding.</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_BACKUP_IN_PROGRESS" xml:space="preserve">
+    <value>A backup is in progress</value>
+  </data>
 </root>

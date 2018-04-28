@@ -21,6 +21,7 @@
 */
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Inkton.Nester.Models;
 
@@ -32,6 +33,8 @@ namespace Inkton.Nester.ViewModels
         private bool _displayPaymentMethodProof = false;
         private bool _displayPaymentMethodEntry = true;
         private string _paymentMethodProofDetail;
+        private ObservableCollection<BillingCycle> _billingCycles;
+        private ObservableCollection<UserBillingTask> _userBillingTasks;  
 
         public PaymentViewModel()
         {
@@ -44,6 +47,22 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return _editPaymentMethod;
+            }
+        }
+
+        public ObservableCollection<BillingCycle> BillingCycles
+        {
+            get
+            {
+                return _billingCycles;
+            }
+        }
+
+        public ObservableCollection<UserBillingTask> UserBillingTasks
+        {
+            get
+            {
+                return _userBillingTasks;
             }
         }
 
@@ -141,6 +160,41 @@ namespace Inkton.Nester.ViewModels
 
             return status;
         }
-    }
 
+        public async Task<Cloud.ServerStatus> QueryBillingCyclesAsync(
+            bool doCache = true, bool throwIfError = true)
+        {
+            BillingCycle seed = new BillingCycle();
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<BillingCycle>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, seed, doCache);
+
+            if (status.Code == 0)
+            {
+                _billingCycles = status.PayloadToList<BillingCycle>();
+                OnPropertyChanged("BillingCycles");
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> QueryUserBillingTasksAsync(IDictionary<string, string> filter,
+            bool doCache = true, bool throwIfError = true)
+        {
+            UserBillingTask seed = new UserBillingTask();
+            seed.Owner = NesterControl.User;
+            
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<UserBillingTask>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, seed, doCache, filter);
+
+            if (status.Code == 0)
+            {
+                _userBillingTasks = status.PayloadToList<UserBillingTask>();
+                OnPropertyChanged("UserBillingTasks");
+            }
+
+            return status;
+        }
+
+    }
 }

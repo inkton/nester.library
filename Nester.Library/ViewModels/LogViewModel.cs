@@ -441,7 +441,7 @@ namespace Inkton.Nester.ViewModels
                     ), "id asc", 200, doCache, throwIfError);
         }
 
-        public async void QueryAsync(
+        public async Task QueryAsync(
             long beginUnixEpochSecs, long endUnixEpochSecs, int rows = -1,
             bool doCache = false, bool throwIfError = true)
         {

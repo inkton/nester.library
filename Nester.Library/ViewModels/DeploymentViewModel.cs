@@ -34,6 +34,7 @@ namespace Inkton.Nester.ViewModels
     {
         private Deployment _editDeployment;
         private AppBackup _editBackup;
+        private AppAudit _editAudit;
 
         private ObservableCollection<Deployment> _deployments;
         private ObservableCollection<AppServiceTier> _upgradableAppTiers;
@@ -41,6 +42,7 @@ namespace Inkton.Nester.ViewModels
         private Dictionary<string, Forest> _forestByTag;
         private ObservableCollection<SoftwareFramework.Version> _dotnetVersions;
         private ObservableCollection<AppBackup> _backups;
+        private ObservableCollection<AppAudit> _audits;
         private AppServiceTier _upgradeAppServiceTier;
 
         public bool _mariaDBEnabled = false;
@@ -59,7 +61,12 @@ namespace Inkton.Nester.ViewModels
             app.Deployment = _editDeployment;
 
             _editBackup = new AppBackup();
+            _editBackup.Deployment = _editDeployment;
             _backups = new ObservableCollection<AppBackup>();
+
+            _editAudit = new AppAudit();
+            _editAudit.Deployment = _editDeployment;
+            _audits = new ObservableCollection<AppAudit>();
 
             SelectForestCommand = new Command<Forest>(
                 (forest) => HandleCommand<Forest>(forest, "select"));
@@ -169,6 +176,18 @@ namespace Inkton.Nester.ViewModels
             set
             {
                 SetProperty(ref _backups, value);
+            }
+        }
+
+        public ObservableCollection<AppAudit> AppAudits
+        {
+            get
+            {
+                return _audits;
+            }
+            set
+            {
+                SetProperty(ref _audits, value);
             }
         }
 
@@ -562,6 +581,23 @@ namespace Inkton.Nester.ViewModels
                         break;
                     }
                 }
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> QueryAppAuditsAsync(IDictionary<string, string> filter,
+            AppAudit appAudit = null, bool doCache = false, bool throwIfError = true)
+        {
+            AppAudit theAudit = appAudit == null ? _editAudit : appAudit;
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppAudit>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, theAudit, doCache, filter);
+
+            if (status.Code >= 0)
+            {
+                _audits = status.PayloadToList<AppAudit>();
+                OnPropertyChanged("AppAudits");
             }
 
             return status;

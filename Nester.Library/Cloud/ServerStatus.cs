@@ -32,17 +32,21 @@ namespace Inkton.Nester.Cloud
     public struct ServerStatus
     {
         public const int NEST_RESULT_SUCCESS = 0;
+        public const int NEST_RESULT_SUCCESS_USER_PDELETE = 3;
         public const int NEST_RESULT_WARNING = 100;
         public const int NEST_RESULT_WARNING_UPDATING = 102;
         public const int NEST_RESULT_ERROR = -200;
         public const int NEST_RESULT_ERROR_FATAL = -202;
         public const int NEST_RESULT_ERROR_NAUTH = -204;
+        public const int NEST_RESULT_ERROR_PWD = -205;
         public const int NEST_RESULT_ERROR_FIELDS = -206;
+        public const int NEST_RESULT_ERROR_USER_EXIST = -207;
         public const int NEST_RESULT_ERROR_USER_NFOUND = -208;
         public const int NEST_RESULT_ERROR_APP_NFOUND = -210;
         public const int NEST_RESULT_ERROR_APP_TAG_EXIST = -212;
         public const int NEST_RESULT_ERROR_APP_EXISTS = -214;
         public const int NEST_RESULT_ERROR_USER_NAUTH = -216;
+        public const int NEST_RESULT_ERROR_USER_PDELETE = -217;
         public const int NEST_RESULT_ERROR_LOGIN_FAILED = -218;
         public const int NEST_RESULT_ERROR_PMETHOD_NFOUND = -220;
         public const int NEST_RESULT_ERROR_CONTACT_NFOUND = -222;
@@ -71,6 +75,8 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_ERROR_APP_NDEPLOYED = -256;
         // app cannot be deployed                                  
         public const int NEST_RESULT_ERROR_APP_DEPLOYED = -258;
+        // finlize app before user removed 
+        public const int NEST_RESULT_ERROR_APP_FINALIZE = -259;
         // The app cannot be changed after deployment              
         public const int NEST_RESULT_ERROR_APP_NUPDATES = -260;
         // Not a shared service tier                               
@@ -117,6 +123,7 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_ERROR_AUTH_SECCODE = -312;
         public const int NEST_RESULT_ERROR_CONTACT_EXCEEDED = -320;
         public const int NEST_RESULT_ERROR_BACKUP_IN_PROGRESS = -322;
+        public const int NEST_RESULT_ERROR_LIMIT_TO_24HOURS = -324;
 
         private int _code;
         private string _description;

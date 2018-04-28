@@ -110,10 +110,6 @@ namespace Inkton.Nester.ViewModels
                 if (throwIfError)
                     status.Throw();
             }
-            else
-            {
-                ChangePermit(status.PayloadToObject<Permit>());
-            }
 
             return status;
         }
@@ -175,12 +171,26 @@ namespace Inkton.Nester.ViewModels
             return status;
         }
 
-        public async Task<Cloud.ServerStatus> UpdateUserAsync(User user,
+        public async Task<Cloud.ServerStatus> UpdateUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
+            User theUser = user == null ? _permit.Owner : user;
+
             Cloud.ServerStatus status = await Cloud.ResultSingle<User>.WaitForObjectAsync(
                 throwIfError, user, new Cloud.CachedHttpRequest<User>(
                     NesterControl.Service.UpdateAsync), doCache);
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> DeleteUserAsync(User user = null,
+            bool doCache = false, bool throwIfError = true)
+        {
+            User theUser = user == null ? _permit.Owner : user;
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<User>.WaitForObjectAsync(
+                throwIfError, theUser, new Cloud.CachedHttpRequest<User>(
+                    NesterControl.Service.RemoveAsync), doCache);
 
             return status;
         }

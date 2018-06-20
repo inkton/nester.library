@@ -34,23 +34,21 @@ namespace Inkton.Nester.ViewModels
     {
         private Deployment _editDeployment;
         private AppBackup _editBackup;
+        private AppAudit _editAudit;
+        private Credit _applyCredit;
 
         private ObservableCollection<Deployment> _deployments;
-        private ObservableCollection<AppServiceTier> _upgradableAppTiers;
         private ObservableCollection<Forest> _forests;
         private Dictionary<string, Forest> _forestByTag;
         private ObservableCollection<SoftwareFramework.Version> _dotnetVersions;
         private ObservableCollection<AppBackup> _backups;
-        private AppServiceTier _upgradeAppServiceTier;
-
-        public bool _mariaDBEnabled = false;
+        private ObservableCollection<AppAudit> _audits;
 
         public ICommand SelectForestCommand { get; private set; }
 
         public DeploymentViewModel(App app) : base(app)
         {
             _deployments = new ObservableCollection<Deployment>();
-            _upgradableAppTiers = new ObservableCollection<AppServiceTier>();
             _forests = new ObservableCollection<Forest>();
             _forestByTag = new Dictionary<string, Forest>();
 
@@ -59,7 +57,12 @@ namespace Inkton.Nester.ViewModels
             app.Deployment = _editDeployment;
 
             _editBackup = new AppBackup();
+            _editBackup.Deployment = _editDeployment;
             _backups = new ObservableCollection<AppBackup>();
+
+            _editAudit = new AppAudit();
+            _editAudit.Deployment = _editDeployment;
+            _audits = new ObservableCollection<AppAudit>();
 
             SelectForestCommand = new Command<Forest>(
                 (forest) => HandleCommand<Forest>(forest, "select"));
@@ -89,6 +92,18 @@ namespace Inkton.Nester.ViewModels
             {
                 SetProperty(ref _editDeployment, value);
                 _editApp.Deployment = value;
+            }
+        }
+
+        public Credit ApplyCredit
+        {
+            get
+            {
+                return _applyCredit;
+            }
+            set
+            {
+                _applyCredit = value;
             }
         }
 
@@ -128,38 +143,6 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ObservableCollection<AppServiceTier> UpgradableAppTiers
-        {
-            get
-            {
-                return _upgradableAppTiers;
-            }
-            set
-            {
-                SetProperty(ref _upgradableAppTiers, value);
-            }
-        }
-
-        public ServicesViewModel.ServiceTableItem SelectedAppService
-        {
-            get
-            {
-                if (_upgradeAppServiceTier != null)
-                {
-                    return ServicesViewModel.CreateServiceItem(
-                        _upgradeAppServiceTier);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            set
-            {
-                _upgradeAppServiceTier = value.Tier;
-            }
-        }
-
         public ObservableCollection<AppBackup> AppBackups
         {
             get
@@ -172,118 +155,18 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public bool MariaDBEnabled
+        public ObservableCollection<AppAudit> AppAudits
         {
             get
             {
-                return _mariaDBEnabled;
+                return _audits;
             }
             set
             {
-                SetProperty(ref _mariaDBEnabled, value);
+                SetProperty(ref _audits, value);
             }
         }
-
-        public ServicesViewModel.ServiceTableItem SelectedMariaDBService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "mariadb");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        public ServicesViewModel.ServiceTableItem SelectedGitService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "git");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        public ServicesViewModel.ServiceTableItem SelectedLetsencryptService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "letsencrypt");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        public ServicesViewModel.ServiceTableItem SelectedLoggingService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "logging");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        public ServicesViewModel.ServiceTableItem SelectedRabbitMQService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "rabbitmq");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
+        
         override public async Task<Cloud.ServerStatus> InitAsync()
         {
             Cloud.ServerStatus status;
@@ -314,15 +197,6 @@ namespace Inkton.Nester.ViewModels
             }
 
             return status;
-        }
-
-        public ObservableCollection<ServicesViewModel.ServiceTableItem> AppFeaturesTable
-        {
-            get
-            {
-                return ServicesViewModel.CreateServicesTable(
-                    _upgradableAppTiers);
-            }
         }
 
         public async Task<Cloud.ServerStatus> QueryForestsAsync(
@@ -405,9 +279,16 @@ namespace Inkton.Nester.ViewModels
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
+            Dictionary<string, string> data = new Dictionary<string, string>();
+
+            if (_applyCredit != null)
+            {
+                data.Add("credit_id", _applyCredit.Id.ToString());
+            }
+
             Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
                 throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
-                    NesterControl.Service.CreateAsync), doCache);
+                    NesterControl.Service.CreateAsync), doCache, data);
 
             if (status.Code >= 0)
             {
@@ -459,46 +340,6 @@ namespace Inkton.Nester.ViewModels
                     _deployments.Remove(deployment);
                     OnPropertyChanged("Deployments");
                 }
-            }
-
-            return status;
-        }
-
-        public async Task<Cloud.ServerStatus> QueryAppUpgradeServiceTiersAsync(
-            AppService service, Deployment deployment = null, bool doCache = true, bool throwIfError = true)
-        {
-            Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            service.Deployment = theDeployment;
-
-            AppServiceTier tierSeed = new AppServiceTier();
-            tierSeed.Service = service;
-
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, tierSeed, doCache);
-
-            if (status.Code >= 0)
-            {
-                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
-            }
-
-            return status;
-        }
-
-        public async Task<Cloud.ServerStatus> UpdateAppUpgradeServiceTiersAsync(
-            AppService service = null, AppServiceTier tierSeed = null, Deployment deployment = null, 
-            bool doCache = true, bool throwIfError = true)
-        {
-            Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            service.Deployment = theDeployment;
-            _upgradeAppServiceTier.Service = service;
-
-            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceTier>.WaitForObjectAsync(
-                throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier>(
-                    NesterControl.Service.UpdateAsync), doCache);
-
-            if (status.Code >= 0)
-            {
-                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
             }
 
             return status;
@@ -562,6 +403,23 @@ namespace Inkton.Nester.ViewModels
                         break;
                     }
                 }
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> QueryAppAuditsAsync(IDictionary<string, string> filter,
+            AppAudit appAudit = null, bool doCache = false, bool throwIfError = true)
+        {
+            AppAudit theAudit = appAudit == null ? _editAudit : appAudit;
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppAudit>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, theAudit, doCache, filter);
+
+            if (status.Code >= 0)
+            {
+                _audits = status.PayloadToList<AppAudit>();
+                OnPropertyChanged("AppAudits");
             }
 
             return status;

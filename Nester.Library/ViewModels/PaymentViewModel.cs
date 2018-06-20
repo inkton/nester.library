@@ -21,6 +21,7 @@
 */
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Inkton.Nester.Models;
 
@@ -28,15 +29,28 @@ namespace Inkton.Nester.ViewModels
 {
     public class PaymentViewModel : ViewModel
     {
+        private Credit _editCredit;
         private PaymentMethod _editPaymentMethod;
         private bool _displayPaymentMethodProof = false;
         private bool _displayPaymentMethodEntry = true;
         private string _paymentMethodProofDetail;
+        private ObservableCollection<BillingCycle> _billingCycles;
+        private ObservableCollection<UserBillingTask> _userBillingTasks;  
 
         public PaymentViewModel()
         {
+            _editCredit = new Credit();
+
             _editPaymentMethod = new PaymentMethod();
             _editPaymentMethod.Owner = NesterControl.User;
+        }
+
+        public Credit EditCredit
+        {
+            get
+            {
+                return _editCredit;
+            }
         }
 
         public PaymentMethod EditPaymentMethod
@@ -44,6 +58,22 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return _editPaymentMethod;
+            }
+        }
+
+        public ObservableCollection<BillingCycle> BillingCycles
+        {
+            get
+            {
+                return _billingCycles;
+            }
+        }
+
+        public ObservableCollection<UserBillingTask> UserBillingTasks
+        {
+            get
+            {
+                return _userBillingTasks;
             }
         }
 
@@ -68,6 +98,23 @@ namespace Inkton.Nester.ViewModels
         override public async Task<Cloud.ServerStatus> InitAsync()
         {
             return await QueryPaymentMethodAsync(false, false);
+        }
+
+        public async Task<Cloud.ServerStatus> QueryCreditAsync(Credit credit = null,
+            bool dCache = false, bool throwIfError = true)
+        {
+            Credit theCredit = credit == null ? _editCredit : credit;
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Credit>.WaitForObjectAsync(
+                throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit>(
+                    NesterControl.Service.QueryAsync), dCache, null, null);
+
+            if (status.Code >= 0)
+            {
+                _editCredit = status.PayloadToObject<Credit>();
+            }
+
+            return status;
         }
 
         public async Task<Cloud.ServerStatus> QueryPaymentMethodAsync(
@@ -141,6 +188,55 @@ namespace Inkton.Nester.ViewModels
 
             return status;
         }
-    }
 
+        public async Task<Cloud.ServerStatus> QueryBillingCyclesAsync(
+            bool doCache = true, bool throwIfError = true)
+        {
+            BillingCycle seed = new BillingCycle();
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<BillingCycle>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, seed, doCache);
+
+            if (status.Code == 0)
+            {
+                _billingCycles = status.PayloadToList<BillingCycle>();
+                OnPropertyChanged("BillingCycles");
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> QueryUserBillingTasksAsync(IDictionary<string, string> filter,
+            bool doCache = true, bool throwIfError = true)
+        {
+            UserBillingTask seed = new UserBillingTask();
+            seed.Owner = NesterControl.User;
+            
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<UserBillingTask>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, seed, doCache, filter);
+
+            if (status.Code == 0)
+            {
+                _userBillingTasks = status.PayloadToList<UserBillingTask>();
+                OnPropertyChanged("UserBillingTasks");
+            }
+
+            return status;
+        }
+
+        public string PaymentNotice
+        {
+            get
+            {
+                if (NesterControl.User.TerritoryISOCode == "AU")
+                {
+                    return "The prices are in US Dollars and do not include GST.";
+                }
+                else
+                {
+                    return "The prices are in US Dollars. ";
+                }
+            }
+        }
+    }
 }

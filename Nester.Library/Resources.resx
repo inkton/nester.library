@@ -426,4 +426,55 @@
   <data name="NEST_RESULT_ERROR_BACKUP_IN_PROGRESS" xml:space="preserve">
     <value>A backup is in progress</value>
   </data>
+  <data name="NEST_RESULT_ERROR_PWD" xml:space="preserve">
+    <value>The password must have at least one character and number</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_APP_FINALIZE" xml:space="preserve">
+    <value>Finalize the apps by removing deployments first</value>
+  </data>
+  <data name="NEST_RESULT_SUCCESS_USER_PDELETE" xml:space="preserve">
+    <value>An email notification will be sent when the removal is complete </value>
+  </data>
+  <data name="NEST_RESULT_ERROR_USER_EXIST" xml:space="preserve">
+    <value>The user with this email address already exists</value>
+  </data>
+  <data name="credit_deduction" xml:space="preserve">
+    <value>Credit Deduction</value>
+  </data>
+  <data name="invoice" xml:space="preserve">
+    <value>Invoice</value>
+  </data>
+  <data name="fail" xml:space="preserve">
+    <value>Fail</value>
+  </data>
+  <data name="login" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="success" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_LIMIT_TO_24HOURS" xml:space="preserve">
+    <value>Restrict the time limit to 24 hours</value>
+  </data>
+  <data name="tier_0" xml:space="preserve">
+    <value>Tier-0</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_TAG_RESERVED" xml:space="preserve">
+    <value>Please use an unreserved tag</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_IN_MAINTAINENCE" xml:space="preserve">
+    <value>The system is temporarily down for maintenance</value>
+  </data>
+  <data name="credit_award" xml:space="preserve">
+    <value>Credit Award</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_CREDIT_EXPIRED" xml:space="preserve">
+    <value>Discount credit code expired</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_CREDIT_NFOUND" xml:space="preserve">
+    <value>Discount credit code not found</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_CREDIT_USED" xml:space="preserve">
+    <value>Discount credit has already been used</value>
+  </data>
 </root>

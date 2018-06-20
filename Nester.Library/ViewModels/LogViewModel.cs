@@ -441,7 +441,7 @@ namespace Inkton.Nester.ViewModels
                     ), "id asc", 200, doCache, throwIfError);
         }
 
-        public async void QueryAsync(
+        public async Task QueryAsync(
             long beginUnixEpochSecs, long endUnixEpochSecs, int rows = -1,
             bool doCache = false, bool throwIfError = true)
         {
@@ -495,9 +495,12 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await QueryLogsAsync<NestLog>(
                 sql, doCache, throwIfError);
 
-            _nestLogs = status.PayloadToList<NestLog>();
+            if (status.Code == 0)
+            {
+                _nestLogs = status.PayloadToList<NestLog>();
+                OnPropertyChanged("NestLogs");
+            }
 
-            OnPropertyChanged("NestLogs");
             return status;
         }
 
@@ -511,17 +514,20 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await QueryLogsAsync<SystemCPULog>(
                 sql, doCache, throwIfError);
 
-            _systemCpuLogs = status.PayloadToList<SystemCPULog>();
-
-            if (_systemCpuLogs.Any())
+            if (status.Code == 0)
             {
-                _systemCpuLogs.All(log => { _cpuSeries.AddLog(log); return true; });
+                _systemCpuLogs = status.PayloadToList<SystemCPULog>();
 
-                OnPropertyChanged("CpuSeriesUser");
-                OnPropertyChanged("CpuSeriesSystem");
-                OnPropertyChanged("CpuSeriesIRQ");
-                OnPropertyChanged("CpuSeriesNice");
-                OnPropertyChanged("CpuSeriesIOWait");
+                if (_systemCpuLogs.Any())
+                {
+                    _systemCpuLogs.All(log => { _cpuSeries.AddLog(log); return true; });
+
+                    OnPropertyChanged("CpuSeriesUser");
+                    OnPropertyChanged("CpuSeriesSystem");
+                    OnPropertyChanged("CpuSeriesIRQ");
+                    OnPropertyChanged("CpuSeriesNice");
+                    OnPropertyChanged("CpuSeriesIOWait");
+                }
             }
 
             return status;
@@ -535,13 +541,16 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await QueryLogsAsync<DiskSpaceLog>(
                 sql, doCache, throwIfError);
 
-            _diskSpaceLogs = status.PayloadToList<DiskSpaceLog>();
-
-            if (_diskSpaceLogs.Any())
+            if (status.Code == 0)
             {
-                _diskSpaceData.DataLog = _diskSpaceLogs.Last();
+                _diskSpaceLogs = status.PayloadToList<DiskSpaceLog>();
 
-                OnPropertyChanged("DiskSpaceSeries");
+                if (_diskSpaceLogs.Any())
+                {
+                    _diskSpaceData.DataLog = _diskSpaceLogs.Last();
+
+                    OnPropertyChanged("DiskSpaceSeries");
+                }
             }
 
             return status;
@@ -557,14 +566,17 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await QueryLogsAsync<SystemIPV4Log>(
                 sql, doCache, throwIfError);
 
-            _ipv4Logs = status.PayloadToList<SystemIPV4Log>();
-
-            if (_ipv4Logs.Any())
+            if (status.Code == 0)
             {
-                _ipv4Logs.All(log => { _ipv4Series.AddLog(log); return true; });
+                _ipv4Logs = status.PayloadToList<SystemIPV4Log>();
 
-                OnPropertyChanged("Ipv4SeriesSent");
-                OnPropertyChanged("Ipv4SeriesReceived");
+                if (_ipv4Logs.Any())
+                {
+                    _ipv4Logs.All(log => { _ipv4Series.AddLog(log); return true; });
+
+                    OnPropertyChanged("Ipv4SeriesSent");
+                    OnPropertyChanged("Ipv4SeriesReceived");
+                }
             }
 
             return status;
@@ -580,16 +592,19 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await QueryLogsAsync<SystemRAMLog>(
                 sql, doCache, throwIfError);
 
-            _systemRamLogs = status.PayloadToList<SystemRAMLog>();
-
-            if (_systemRamLogs.Any())
+            if (status.Code == 0)
             {
-                _systemRamLogs.All(log => { _ramSeries.AddLog(log); return true; });
+                _systemRamLogs = status.PayloadToList<SystemRAMLog>();
 
-                OnPropertyChanged("RamSeriesFree");
-                OnPropertyChanged("RamSeriesUsed");
-                OnPropertyChanged("RamSeriesCached");
-                OnPropertyChanged("RamSeriesBuffers");
+                if (_systemRamLogs.Any())
+                {
+                    _systemRamLogs.All(log => { _ramSeries.AddLog(log); return true; });
+
+                    OnPropertyChanged("RamSeriesFree");
+                    OnPropertyChanged("RamSeriesUsed");
+                    OnPropertyChanged("RamSeriesCached");
+                    OnPropertyChanged("RamSeriesBuffers");
+                }
             }
 
             return status;
@@ -604,7 +619,7 @@ namespace Inkton.Nester.ViewModels
             T logsSeed = new T();
             Cloud.ServerStatus status = await Cloud.ResultMultiple<T>.WaitForObjectAsync(
                 NesterControl.DeployedApp, doCache, logsSeed, throwIfError, data);
-
+             
             return status;
         }
     }

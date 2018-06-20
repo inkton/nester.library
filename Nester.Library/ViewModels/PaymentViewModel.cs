@@ -29,6 +29,7 @@ namespace Inkton.Nester.ViewModels
 {
     public class PaymentViewModel : ViewModel
     {
+        private Credit _editCredit;
         private PaymentMethod _editPaymentMethod;
         private bool _displayPaymentMethodProof = false;
         private bool _displayPaymentMethodEntry = true;
@@ -38,8 +39,18 @@ namespace Inkton.Nester.ViewModels
 
         public PaymentViewModel()
         {
+            _editCredit = new Credit();
+
             _editPaymentMethod = new PaymentMethod();
             _editPaymentMethod.Owner = NesterControl.User;
+        }
+
+        public Credit EditCredit
+        {
+            get
+            {
+                return _editCredit;
+            }
         }
 
         public PaymentMethod EditPaymentMethod
@@ -87,6 +98,23 @@ namespace Inkton.Nester.ViewModels
         override public async Task<Cloud.ServerStatus> InitAsync()
         {
             return await QueryPaymentMethodAsync(false, false);
+        }
+
+        public async Task<Cloud.ServerStatus> QueryCreditAsync(Credit credit = null,
+            bool dCache = false, bool throwIfError = true)
+        {
+            Credit theCredit = credit == null ? _editCredit : credit;
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<Credit>.WaitForObjectAsync(
+                throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit>(
+                    NesterControl.Service.QueryAsync), dCache, null, null);
+
+            if (status.Code >= 0)
+            {
+                _editCredit = status.PayloadToObject<Credit>();
+            }
+
+            return status;
         }
 
         public async Task<Cloud.ServerStatus> QueryPaymentMethodAsync(
@@ -196,5 +224,19 @@ namespace Inkton.Nester.ViewModels
             return status;
         }
 
+        public string PaymentNotice
+        {
+            get
+            {
+                if (NesterControl.User.TerritoryISOCode == "AU")
+                {
+                    return "The prices are in US Dollars and do not include GST.";
+                }
+                else
+                {
+                    return "The prices are in US Dollars. ";
+                }
+            }
+        }
     }
 }

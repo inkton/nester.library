@@ -36,12 +36,14 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_WARNING = 100;
         public const int NEST_RESULT_WARNING_UPDATING = 102;
         public const int NEST_RESULT_ERROR = -200;
+        public const int NEST_RESULT_ERROR_IN_MAINTAINENCE = -201;
         public const int NEST_RESULT_ERROR_FATAL = -202;
         public const int NEST_RESULT_ERROR_NAUTH = -204;
         public const int NEST_RESULT_ERROR_PWD = -205;
         public const int NEST_RESULT_ERROR_FIELDS = -206;
         public const int NEST_RESULT_ERROR_USER_EXIST = -207;
         public const int NEST_RESULT_ERROR_USER_NFOUND = -208;
+        public const int NEST_RESULT_ERROR_TAG_RESERVED = -209;
         public const int NEST_RESULT_ERROR_APP_NFOUND = -210;
         public const int NEST_RESULT_ERROR_APP_TAG_EXIST = -212;
         public const int NEST_RESULT_ERROR_APP_EXISTS = -214;
@@ -124,6 +126,9 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_ERROR_CONTACT_EXCEEDED = -320;
         public const int NEST_RESULT_ERROR_BACKUP_IN_PROGRESS = -322;
         public const int NEST_RESULT_ERROR_LIMIT_TO_24HOURS = -324;
+        public const int NEST_RESULT_ERROR_CREDIT_NFOUND = -326;
+        public const int NEST_RESULT_ERROR_CREDIT_EXPIRED = -328;
+        public const int NEST_RESULT_ERROR_CREDIT_USED = -330;
 
         private int _code;
         private string _description;
@@ -148,7 +153,7 @@ namespace Inkton.Nester.Cloud
             {
                 if (Description != null && Description.Length > 0)
                 {
-                    message = LocalDescription;
+                    message = GetLocalDescription();
                 }
                 if (Notes != null && Notes.Length > 0)
                 {
@@ -156,7 +161,7 @@ namespace Inkton.Nester.Cloud
                 }
             }
 
-            throw new Exception(message);
+            throw new Exception(message); 
         }
 
         public static ServerStatus FromServerResult<ResultBase, T>(ResultBase<T> result)
@@ -184,6 +189,13 @@ namespace Inkton.Nester.Cloud
             return _payload as ObservableCollection<T>;
         }
 
+        public string GetLocalDescription()
+        {
+            ResourceManager resmgr = (Application.Current as INesterControl).GetResourceManager();
+            return resmgr.GetString(_description,
+                System.Globalization.CultureInfo.CurrentUICulture);
+        }
+
         public int Code
         {
             get { return _code; }
@@ -200,16 +212,6 @@ namespace Inkton.Nester.Cloud
         {
             get { return _description; }
             set { _description = value; }
-        }
-
-        public string LocalDescription
-        {
-            get
-            {
-                ResourceManager resmgr = (Application.Current as INesterControl).GetResourceManager();
-                return resmgr.GetString(_description,
-                    System.Globalization.CultureInfo.CurrentUICulture);
-            }
         }
 
         public string Notes

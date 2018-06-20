@@ -28,6 +28,8 @@ using System.Collections.Generic;
 using Xamarin.Forms;
 using Newtonsoft.Json;
 using Inkton.Nester.Models;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -35,15 +37,37 @@ namespace Inkton.Nester.ViewModels
     {
         private ObservableCollection<AppService> _appServices;
 
-        public class ServiceTableItem
+        private string _selectedAppServiceTag = "nest-redbud";
+        private ObservableCollection<AppServiceTier> _upgradableAppTiers;
+        private AppServiceTier _upgradeAppServiceTier = null;
+
+        private bool _storageServiceEnabled = false;
+
+        private ServiceTableItem _appServiceTableItem;
+        private ServiceTableItem _storageServiceTableItem;
+        private ServiceTableItem _domainServiceTableItem;
+        private ServiceTableItem _monitorServiceTableItem;
+        private ServiceTableItem _batchServiceTableItem;
+        private ServiceTableItem _trackServiceTableItem;
+
+        public class ServiceTableItem : INotifyPropertyChanged
         {
+            decimal _cost = 0M;
+
             public string Name { get; set; }
 
             public string ProvidedBy { get; set; }
 
             public string Period { get; set; }
 
-            public decimal Cost { get; set; }
+            public decimal Cost
+            {
+                get { return _cost; }
+                set {
+                    _cost = value;
+                    NotifyPropertyChanged();
+                }
+            }
 
             public string Type { get; set; }            
 
@@ -52,11 +76,22 @@ namespace Inkton.Nester.ViewModels
             public string[] FeaturesIncluded { get; set; }
 
             public AppServiceTier Tier { get; set; }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+
+            private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+            {
+                if (PropertyChanged != null)
+                {
+                    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                }
+            }
         }
 
         public ServicesViewModel(App app) : base(app)
         {
             _appServices = new ObservableCollection<AppService>();
+            _upgradableAppTiers = new ObservableCollection<AppServiceTier>();
         }
 
         public ObservableCollection<AppService> Services
@@ -81,7 +116,81 @@ namespace Inkton.Nester.ViewModels
                 return status;
             }
 
+            CreateServicesTable();
+
+            _storageServiceEnabled = SelectedStorageService != null;
+
             return status;
+        }
+
+        public void CreateServicesTable()
+        {
+            AppServiceSubscription subscription;
+
+            subscription = _editApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Service.Type == "app");
+
+            if (subscription != null)
+            {
+                if (_upgradeAppServiceTier != null)
+                {
+                    // If upgrading show the upgrade tier
+                    _appServiceTableItem = ServicesViewModel.CreateServiceItem(
+                        _upgradeAppServiceTier);
+                }
+                else
+                {
+                    _appServiceTableItem = ServicesViewModel.CreateServiceItem(
+                        subscription.ServiceTier);
+                }
+
+                _selectedAppServiceTag = subscription.ServiceTier.Service.Tag;
+            }
+
+            subscription = _editApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Service.Type == "storage");
+
+            if (subscription != null)
+            {
+                _storageServiceTableItem = ServicesViewModel.CreateServiceItem(
+                    subscription.ServiceTier);
+            }
+
+            subscription = _editApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Service.Type == "domain");
+
+            if (subscription != null)
+            {
+                _domainServiceTableItem = ServicesViewModel.CreateServiceItem(
+                    subscription.ServiceTier);
+            }
+
+            subscription = _editApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Service.Type == "monitor");
+
+            if (subscription != null)
+            {
+                _monitorServiceTableItem = ServicesViewModel.CreateServiceItem(
+                    subscription.ServiceTier);
+            }
+
+            subscription = _editApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Service.Type == "batch");
+
+            if (subscription != null)
+            {
+                _batchServiceTableItem = ServicesViewModel.CreateServiceItem(
+                    subscription.ServiceTier);
+            }
+
+            subscription = _editApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Service.Type == "track");
+
+            if (subscription != null)
+            {
+                _trackServiceTableItem = ServicesViewModel.CreateServiceItem(
+                    subscription.ServiceTier);
+            }
         }
 
         public async Task<Cloud.ServerStatus> QueryServicesAsync(
@@ -143,7 +252,7 @@ namespace Inkton.Nester.ViewModels
             return status;
         }
 
-        public async Task<Cloud.ServerStatus> RemoveSubscription(AppServiceSubscription subscription,
+        public async Task<Cloud.ServerStatus> RemoveSubscriptionAsync(AppServiceSubscription subscription,
              bool doCache = false, bool throwIfError = true)
         {
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
@@ -189,6 +298,46 @@ namespace Inkton.Nester.ViewModels
                 }
 
                 subSeeder.App.Subscriptions = serviceSubscriptions;
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> QueryAppUpgradeServiceTiersAsync(
+            AppService service, Deployment deployment = null, bool doCache = true, bool throwIfError = true)
+        {
+            Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
+            service.Deployment = theDeployment;
+
+            AppServiceTier tierSeed = new AppServiceTier();
+            tierSeed.Service = service;
+
+            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
+                NesterControl.Service, throwIfError, tierSeed, doCache);
+
+            if (status.Code >= 0)
+            {
+                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
+            }
+
+            return status;
+        }
+
+        public async Task<Cloud.ServerStatus> UpdateAppUpgradeServiceTiersAsync(
+            AppService service = null, AppServiceTier tierSeed = null, Deployment deployment = null,
+            bool doCache = true, bool throwIfError = true)
+        {
+            Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
+            service.Deployment = theDeployment;
+            _upgradeAppServiceTier.Service = service;
+
+            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceTier>.WaitForObjectAsync(
+                throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier>(
+                    NesterControl.Service.UpdateAsync), doCache);
+
+            if (status.Code >= 0)
+            {
+                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
             }
 
             return status;
@@ -249,5 +398,223 @@ namespace Inkton.Nester.ViewModels
                 tier.FeaturesIncluded);
             return values.ToArray<string>();
         }
+
+        #region App Tier
+
+        public ObservableCollection<AppServiceTier> UpgradableAppTiers
+        {
+            get
+            {
+                return _upgradableAppTiers;
+            }
+            set
+            {
+                SetProperty(ref _upgradableAppTiers, value);
+            }
+        }
+
+        public AppServiceTier UpgradeAppServiceTier
+        {
+            get
+            {
+                return _upgradeAppServiceTier;
+            }
+            set
+            {
+                SetProperty(ref _upgradeAppServiceTier, value);
+            }
+        }
+
+        public string SelectedAppserviceTag
+        {
+            get
+            {
+                return _selectedAppServiceTag;
+            }
+            set
+            {
+                SetProperty(ref _selectedAppServiceTag, value);
+                OnPropertyChanged("AppFeaturesTable");
+            }
+        }
+
+        public ObservableCollection<AppServiceTier> AppServiceTiers
+        {
+            get
+            {
+                AppService service = Services.FirstOrDefault(
+                    x => x.Tag == _selectedAppServiceTag);
+
+                if (service != null)
+                {
+                    return service.Tiers;
+                }
+
+                return null;
+            }
+        }
+
+        public ObservableCollection<ServicesViewModel.ServiceTableItem> AppFeaturesTable
+        {
+            get
+            {
+                if (_upgradeAppServiceTier != null)
+                {
+                    return CreateServicesTable(_upgradableAppTiers);
+                }
+                else
+                {
+                    return CreateServicesTable(AppServiceTiers);
+                }
+            }
+        }
+
+        public ServiceTableItem SelectedAppService
+        {
+            get
+            {
+                return _appServiceTableItem;
+            }
+        }
+
+        public string[] SelectedAppServiceFeatures
+        {
+            get
+            {
+                return TranslateFeaturesAll(
+                    SelectedAppService.Tier.Service);
+            }
+        }
+
+        public string[] SelectedAppServiceTierIncludes
+        {
+            get
+            {
+                return TranslateFeaturesIncluded(
+                    SelectedAppService.Tier);
+            }
+        }
+
+        public async void SwitchAppServiceTierAsync(AppServiceTier newTier)
+        {
+            AppServiceSubscription subscription = EditApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Type == "app");
+
+            if (subscription != null)
+            {
+                await RemoveSubscriptionAsync(subscription);
+            }
+
+            await CreateSubscription(newTier);
+            await QueryAppSubscriptions();
+        }
+
+        #endregion  
+
+        #region Storage Service Tier
+
+        public bool StorageServiceEnabled
+        {
+            get
+            {
+                return _storageServiceEnabled;
+            }
+            set
+            {
+                SetProperty(ref _storageServiceEnabled, value);
+            }
+        }
+
+        public ObservableCollection<AppServiceTier> StorageServiceTiers
+        {
+            get
+            {
+                AppService service = Services.FirstOrDefault(
+                    x => x.Type == "storage");
+
+                if (service != null)
+                {
+                    return service.Tiers;
+                }
+
+                return null;
+            }
+        }
+
+        public ServiceTableItem SelectedStorageService
+        {
+            get
+            {
+                return _storageServiceTableItem;
+            }
+        }
+
+        public async void CreateDefaultStorageServiceAsync()
+        {
+            // Only one tier available at present
+            AppServiceTier defaultTier = StorageServiceTiers.First();
+            await CreateSubscription(defaultTier);
+        }
+
+        public async void RemoveDefaultStorageServiceAsync()
+        {
+            AppServiceSubscription subscription = EditApp.Subscriptions.FirstOrDefault(
+                x => x.ServiceTier.Service.Type == "storage");
+
+            if (subscription != null)
+            {
+                await RemoveSubscriptionAsync(subscription);
+            }
+        }
+
+        #endregion
+
+        #region Domain Service Tier
+
+        public ServiceTableItem SelectedDomainService
+        {
+            get
+            {
+                return _domainServiceTableItem;
+            }
+        }
+
+        #endregion
+
+        #region Monitor Service Tier
+
+        public ServiceTableItem SelectedMonitorService
+        {
+            get
+            {
+                return _monitorServiceTableItem;
+            }
+        }
+
+        #endregion
+
+        #region Batch Service Tier
+
+        public ServiceTableItem SelectedBatchService
+        {
+            get
+            {
+                return _batchServiceTableItem;
+            }
+        }
+
+        #endregion
+
+        #region Track Service Tier
+
+        public ServiceTableItem SelectedTrackService
+        {
+            get
+            {
+                return _trackServiceTableItem;
+            }
+        }
+
+        #endregion
     }
 }

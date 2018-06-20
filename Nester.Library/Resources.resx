@@ -456,4 +456,25 @@
   <data name="NEST_RESULT_ERROR_LIMIT_TO_24HOURS" xml:space="preserve">
     <value>Restrict the time limit to 24 hours</value>
   </data>
+  <data name="tier_0" xml:space="preserve">
+    <value>Tier-0</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_TAG_RESERVED" xml:space="preserve">
+    <value>Please use an unreserved tag</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_IN_MAINTAINENCE" xml:space="preserve">
+    <value>The system is temporarily down for maintenance</value>
+  </data>
+  <data name="credit_award" xml:space="preserve">
+    <value>Credit Award</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_CREDIT_EXPIRED" xml:space="preserve">
+    <value>Discount credit code expired</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_CREDIT_NFOUND" xml:space="preserve">
+    <value>Discount credit code not found</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_CREDIT_USED" xml:space="preserve">
+    <value>Discount credit has already been used</value>
+  </data>
 </root>

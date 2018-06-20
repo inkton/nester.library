@@ -50,8 +50,8 @@ namespace Inkton.Nester.Cloud
         public string Password;
     }
 
-    public delegate Task<Cloud.ServerStatus> HttpRequest<T>(T seed,
-        IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new();
+    public delegate Task<Cloud.ServerStatus> HttpRequest<T>(
+        T seed, IFlurlRequest flurlRequestl) where T : Cloud.ManagedEntity, new();
     public delegate Task<Cloud.ServerStatus> CachedHttpRequest<T>(T seed,
         IDictionary<string, string> data, string subPath = null, bool doCache = true);
 
@@ -63,6 +63,7 @@ namespace Inkton.Nester.Cloud
         private Permit _permit;
         private Cache.StorageService _storage;
         private int _version = 1;
+        private string _deviceSignature;
 
         public NesterService()
         {
@@ -77,6 +78,12 @@ namespace Inkton.Nester.Cloud
             set { _version = value; }
         }
 
+        public string DeviceSignature
+        {
+            get { return _deviceSignature; }
+            set { _deviceSignature = value; }
+        }
+
         public string Endpoint
         {
             get { return _endpoint; }
@@ -87,7 +94,7 @@ namespace Inkton.Nester.Cloud
         {
             get { return _basicAuth; }
             set { _basicAuth = value; }
-        }
+        }   
 
         public Permit Permit
         {
@@ -126,7 +133,8 @@ namespace Inkton.Nester.Cloud
             }
 
             ServerStatus status = Object.WaitAsync(
-                Task<ServerStatus>.Run(async () => await PostAsync(permit, data))
+                Task<ServerStatus>.Run(async () => await PostAsync(
+                    permit, CreateRequest(permit, false, data)))
                 ).Result;
 
             return status;
@@ -147,7 +155,8 @@ namespace Inkton.Nester.Cloud
                 data.Add("territory_iso_code", permit.Owner.TerritoryISOCode);
             }
 
-            return await PostAsync(permit, data);
+            return await PostAsync(permit, 
+                CreateRequest(permit, false, data));
         }
 
         public async Task<ServerStatus> RecoverPasswordAsync(Permit permit)
@@ -155,16 +164,43 @@ namespace Inkton.Nester.Cloud
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("email", permit.Owner.Email);
 
-            ServerStatus status = await PutAsync(permit, data);
+            ServerStatus status = await PutAsync(permit, 
+                CreateRequest(permit, true, data));
 
             return status;
         }
 
         #region Utility
 
-        private string GetVersionHeader()
+        private IFlurlRequest CreateRequest<T>(T seed, bool keyRequest,
+            IDictionary<string, string> data = null, string subPath = null) where T : Cloud.ManagedEntity, new()
         {
-            return string.Format("application/vnd.nest.v{0}+json", _version);
+            string fullUrl = Endpoint;
+
+            if (keyRequest)
+            {
+                fullUrl += seed.CollectionKey;
+            }
+            else
+            {
+                fullUrl += seed.Collection;
+            }
+
+            if (subPath != null)
+            {
+                fullUrl = fullUrl + subPath;
+            }
+
+            IFlurlRequest request = fullUrl.SetQueryParams(data)
+                .WithHeader("Accept", string.Format("application/vnd.nest.v{0}+json", _version))
+                .WithHeader("Device", _deviceSignature);
+
+            if (_basicAuth.Enabled)
+            {
+                request.WithBasicAuth(_basicAuth.Username, _basicAuth.Password);
+            }
+
+            return request;
         }
 
         private void LogConnectFailure(
@@ -195,7 +231,9 @@ namespace Inkton.Nester.Cloud
             data.Add("password", _permit.Password);
 
             ServerStatus status = Object.WaitAsync(
-                Task<ServerStatus>.Run(async () => await GetAsync(_permit, data))
+                Task<ServerStatus>.Run(async () => await GetAsync(
+                    _permit, CreateRequest(
+                        _permit, true, data)))
                 ).Result;
 
             return status;
@@ -211,7 +249,9 @@ namespace Inkton.Nester.Cloud
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("password", _permit.Password);
 
-            ServerStatus status = await GetAsync(_permit, data);
+            ServerStatus status = await GetAsync(
+                _permit, CreateRequest(
+                    _permit, true, data));
 
             return status;
         }
@@ -222,185 +262,82 @@ namespace Inkton.Nester.Cloud
             data.Add("token", _permit.Token);
             data.Add("password", newPermit.Password);
 
-            Cloud.ServerStatus status = await DeleteAsync(_permit, data);
+            Cloud.ServerStatus status = await DeleteAsync(
+                _permit, CreateRequest(
+                    _permit, true, data));
 
             return status;
         }
 
-        private async Task<Cloud.ServerStatus> PostAsync<T>(T seed,
-            IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
+        private async Task<Cloud.ServerStatus> PostAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
                 ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
-            try
-            {
-                string fullUrl = Endpoint + seed.Collection;
-                if (subPath != null)
-                {
-                    fullUrl = fullUrl + subPath;
-                }
+            string json = await flurlRequest.PostJsonAsync(seed)
+                    .ReceiveString();
 
-                string json = string.Empty;
-
-                if (_basicAuth.Enabled)
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                        .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
-                        .WithHeader("Accept", GetVersionHeader())
-                        .PostJsonAsync(seed)
-                        .ReceiveString();
-                }
-                else
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                        .WithHeader("Accept", GetVersionHeader())
-                        .PostJsonAsync(seed)
-                        .ReceiveString();
-                }
-
-                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
-            }
-            catch (Exception ex)
-            {
-                LogConnectFailure(ref result, ex);
-            }
-
-            return result;
+            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
 
-        private async Task<Cloud.ServerStatus> GetAsync<T>(T seed,
-            IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
+        private async Task<Cloud.ServerStatus> GetAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
                 ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
-            try
-            {
-                string fullUrl = Endpoint + seed.CollectionKey;
-                if (subPath != null)
-                {
-                    fullUrl = fullUrl + subPath;
-                }
+            string json = await flurlRequest.GetAsync()
+                    .ReceiveString();
 
-                string json = string.Empty;
-
-                if (_basicAuth.Enabled)
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                            .WithHeader("Accept", GetVersionHeader())
-                            .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
-                            .GetAsync().ReceiveString();
-                }
-                else
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                            .WithHeader("Accept", GetVersionHeader())
-                            .GetAsync()
-                            .ReceiveString();
-                }
-
-                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
-            }
-            catch (Exception ex)
-            {
-                LogConnectFailure(ref result, ex);
-            }
-
-            return result;
+            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
 
-        private async Task<Cloud.ServerStatus> PutAsync<T>(T seed,
-            IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
+        private async Task<Cloud.ServerStatus> GetListAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
                 ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
-            try
-            {
-                string fullUrl = Endpoint + seed.CollectionKey;
-                if (subPath != null)
-                {
-                    fullUrl = fullUrl + subPath;
-                }
+            string json = await flurlRequest.GetAsync()
+                    .ReceiveString();
 
-                string objJson = JsonConvert.SerializeObject(seed);
-                var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
+            return Cloud.ResultMultiple<T>.ConvertObject(json, seed);
+        }
 
-                string json = string.Empty;
+        private async Task<Cloud.ServerStatus> PutAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
+        {
+            Cloud.ServerStatus result = new Cloud.ServerStatus(
+                ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
-                if (_basicAuth.Enabled)
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                        .WithHeader("Accept", GetVersionHeader())
-                        .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
+            string objJson = JsonConvert.SerializeObject(seed);
+            var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
+
+            string json = await flurlRequest
                         .PutAsync(httpContent)
                         .ReceiveString();
-                }
-                else
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                        .WithHeader("Accept", GetVersionHeader())
-                        .PutAsync(httpContent)
-                        .ReceiveString();
-                }
 
-                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
-            }
-            catch (Exception ex)
-            {
-                LogConnectFailure(ref result, ex);
-            }
-
-            return result;
+            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
-
-        private async Task<Cloud.ServerStatus> DeleteAsync<T>(T seed,
-            IDictionary<string, string> data, string subPath = null) where T : Cloud.ManagedEntity, new()
+            
+        private async Task<Cloud.ServerStatus> DeleteAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
         {
             Cloud.ServerStatus result = new Cloud.ServerStatus(
                 ServerStatus.NEST_RESULT_ERROR_LOCAL);
 
-            try
-            {
-                string fullUrl = Endpoint + seed.CollectionKey;
-                if (subPath != null)
-                {
-                    fullUrl = fullUrl + subPath;
-                }
+            string objJson = JsonConvert.SerializeObject(seed);
+            var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
 
-                string objJson = JsonConvert.SerializeObject(seed);
-                var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
-                string json = string.Empty;
+            string json = await flurlRequest.DeleteAsync()
+                    .ReceiveString();
 
-                if (_basicAuth.Enabled)
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                        .WithHeader("Accept", GetVersionHeader())
-                        .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
-                        .DeleteAsync()
-                        .ReceiveString();
-                }
-                else
-                {
-                    json = await fullUrl.SetQueryParams(data)
-                        .WithHeader("Accept", GetVersionHeader())
-                        .DeleteAsync()
-                        .ReceiveString();
-                }
-
-                result = Cloud.ResultSingle<T>.ConvertObject(json, seed);
-            }
-            catch (Exception ex)
-            {
-                LogConnectFailure(ref result, ex);
-            }
-
-            return result;
+            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
 
         private async Task<Cloud.ServerStatus> RetryWithFreshToken<T>(HttpRequest<T> request,
-            T seed, IDictionary<string, string> data,
+            T seed, bool keyRequest, IDictionary<string, string> data,
             string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
         {
             int retryCount = 3;
@@ -427,26 +364,70 @@ namespace Inkton.Nester.Cloud
                     data.Add("token", _permit.Token);
                 }
 
-                result = await request(seed, data, subPath);
-
-                if (result.HttpStatus != System.Net.HttpStatusCode.Unauthorized)
+                try
                 {
-                    if (result.Code == 0)
+                    result = await request(seed, CreateRequest(
+                                seed, keyRequest, data, subPath));
+
+                    if (result.HttpStatus != System.Net.HttpStatusCode.Unauthorized)
                     {
-                        if (doCache)
+                        if (result.Code == 0)
                         {
-                            _storage.Save(seed);
+                            if (doCache)
+                            {
+                                if (keyRequest)
+                                {
+                                    _storage.Save(seed);
+                                }
+                                else
+                                {
+                                    ObservableCollection<T> list = result.Payload as ObservableCollection<T>;
+
+                                    if (list != null)
+                                    {
+                                        list.All(obj =>
+                                        {
+                                            _storage.Save(obj);
+                                            return true;
+                                        });
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (keyRequest)
+                                {
+                                    _storage.Remove(seed);
+                                }
+                                else
+                                {
+                                    ObservableCollection<T> list = result.Payload as ObservableCollection<T>;
+                                    
+                                    if (list != null)
+                                    {
+                                        list.All(obj =>
+                                        {
+                                            _storage.Remove(obj);
+                                            return true;
+                                        });
+                                    }
+                                }
+                            }
                         }
-                        else
-                        {
-                            _storage.Remove(seed);
-                        }
+
+                        return result;
                     }
-                    break;
+                }
+                catch (Exception ex)
+                {
+                    LogConnectFailure(ref result, ex);
                 }
 
-                // Token expired, get another
-                _permit = QueryToken().PayloadToObject<Permit>();
+                if (_permit != null)
+                {
+                    // Re-try with a fresh token
+                    _permit = QueryToken().PayloadToObject<Permit>();
+                }
             }
 
             return result;
@@ -458,7 +439,7 @@ namespace Inkton.Nester.Cloud
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
         {
             return await RetryWithFreshToken(new HttpRequest<T>(PostAsync),
-                seed, data, subPath, doCache);
+                seed, false, data, subPath, doCache);
         }
 
         public async Task<Cloud.ServerStatus> QueryAsync<T>(T seed,
@@ -472,111 +453,39 @@ namespace Inkton.Nester.Cloud
             }
 
             return await RetryWithFreshToken(new HttpRequest<T>(GetAsync),
-                seed, data, subPath, doCache);
+                seed, true, data, subPath, doCache);
         }
 
         public async Task<Cloud.ServerStatus> QueryAsyncListAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
         {
-            int retryCount = 3;
-            Cloud.ServerStatus result = new Cloud.ServerStatus(
-                   ServerStatus.NEST_RESULT_ERROR_LOCAL);
-
-            if (data == null)
+            /*
+             * todo: Load list from cache
+             *
+            if (doCache && _storage.Load<T>(seed))
             {
-                data = new Dictionary<string, string>();
+                Cloud.ServerStatus status = new Cloud.ServerStatus(0);
+                status.Payload = seed;
+                return status;
             }
+            */
 
-            string fullUrl = Endpoint + seed.Collection;
-            if (subPath != null)
-            {
-                fullUrl = fullUrl + subPath;
-            }
-
-            for (int i = 0; i < retryCount; i++)
-            {
-                try
-                {
-                    if (_permit != null)
-                    {
-                        if (data.Keys.Contains("token"))
-                        {
-                            data.Remove("token");
-                        }
-
-                        data.Add("token", _permit.Token);
-                    }
-
-                    string json = string.Empty;
-
-                    if (_basicAuth.Enabled)
-                    {
-                        json = await fullUrl
-                                .WithHeader("Accept", GetVersionHeader())
-                                .SetQueryParams(data)
-                                .WithBasicAuth(_basicAuth.Username, _basicAuth.Password)
-                                .GetAsync().ReceiveString();
-                    }
-                    else
-                    {
-                        json = await fullUrl
-                                .WithHeader("Accept", GetVersionHeader())
-                                .SetQueryParams(data)
-                                .GetAsync().ReceiveString();
-                    }
-
-                    result = ResultMultiple<T>.ConvertObject(json, seed);
-                }
-                catch (Exception ex)
-                {
-                    LogConnectFailure(ref result, ex);
-                }
-
-                if (result.HttpStatus != System.Net.HttpStatusCode.Unauthorized)
-                {
-                    if (result.Code == 0)
-                    {
-                        ObservableCollection<T> list = result.Payload as ObservableCollection<T>;
-
-                        if (doCache)
-                        {                            
-                            list.All(obj =>
-                            {
-                                _storage.Save(obj);
-                                return true;
-                            });
-                        }
-                        else
-                        {
-                            list.All(obj =>
-                            {
-                                _storage.Remove(obj);
-                                return true;
-                            });
-                        }
-                    }
-                    break;
-                }
-
-                // Token expired, get another
-                _permit = QueryToken().PayloadToObject<Permit>();
-            }
-
-            return result;
+            return await RetryWithFreshToken(new HttpRequest<T>(GetListAsync),
+                seed, false, data, subPath, doCache);
         }
 
         public async Task<Cloud.ServerStatus> UpdateAsync<T>(T seed,
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
         {
             return await RetryWithFreshToken(new HttpRequest<T>(PutAsync),
-                seed, data, subPath, doCache);
+                seed, true, data, subPath, doCache);
         }
 
         public async Task<Cloud.ServerStatus> RemoveAsync<T>(T seed,
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Cloud.ManagedEntity, new()
         {
             return await RetryWithFreshToken(new HttpRequest<T>(DeleteAsync),
-                seed, data, subPath, doCache);
+                seed, true, data, subPath, doCache);
         }
     }
 }

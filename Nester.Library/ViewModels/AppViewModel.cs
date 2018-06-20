@@ -30,8 +30,6 @@ namespace Inkton.Nester.ViewModels
 {
     public class AppViewModel : ViewModel
     {
-        private bool _mariaDBEnabled = false;
-
         private ContactViewModel _contactViewModel;
         private NestViewModel _nestViewModel;
         private DomainViewModel _domainViewModel;
@@ -102,7 +100,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ContactViewModel ContactModel
+        public ContactViewModel ContactViewModel
         {
             get
             {
@@ -114,7 +112,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public NestViewModel NestModel
+        public NestViewModel NestViewModel
         {
             get
             {
@@ -126,7 +124,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public DomainViewModel DomainModel
+        public DomainViewModel DomainViewModel
         {
             get
             {
@@ -138,7 +136,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public DeploymentViewModel DeploymentModel
+        public DeploymentViewModel DeploymentViewModel
         {
             get
             {
@@ -206,236 +204,6 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        #region App Tier
-
-
-        public ObservableCollection<AppServiceTier> AppServiceTiers
-        {
-            get
-            {
-                AppService service = _servicesViewModel.Services.FirstOrDefault(
-                    x => x.Tag == "nest-oak");
-
-                if (service != null)
-                {
-                    return service.Tiers;
-                }
-
-                return null;
-            }
-        }
-
-        public ObservableCollection<ServicesViewModel.ServiceTableItem> AppFeaturesTable
-        {
-            get
-            {
-                return ServicesViewModel.CreateServicesTable(AppServiceTiers);
-            }
-        }
-
-        public ServicesViewModel.ServiceTableItem SelectedAppService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "nest-oak");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        public string[] SelectedAppServiceFeatures
-        {
-            get
-            {
-                return ServicesViewModel.TranslateFeaturesAll(
-                    SelectedAppService.Tier.Service);
-            }
-        }
-
-        public string[] SelectedAppServiceTierIncludes
-        {
-            get
-            {
-                return ServicesViewModel.TranslateFeaturesIncluded(
-                    SelectedAppService.Tier);
-            }
-        }
-
-        public string PaymentNotice
-        {
-            get
-            {
-                if (NesterControl.User.TerritoryISOCode == "AU")
-                {
-                    return "The prices are in US Dollars and do not include GST.";
-                }
-                else
-                {
-                    return "The prices are in US Dollars. ";
-                }
-            }
-        }
-
-        #endregion  
-
-        #region MariaDB Tier
-
-        public bool MariaDBEnabled
-        {
-            get
-            {
-                return _mariaDBEnabled;
-            }
-            set
-            {
-                SetProperty(ref _mariaDBEnabled, value);
-            }
-        }
-
-        public ObservableCollection<AppServiceTier> MariaDBTiers
-        {
-            get
-            {
-                AppService service = _servicesViewModel.Services.FirstOrDefault(
-                    x => x.Tag == "mariadb");
-
-                if (service != null)
-                {
-                    return service.Tiers;
-                }
-
-                return null;
-            }
-        }
-
-        public ServicesViewModel.ServiceTableItem SelectedMariaDBService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "mariadb");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        #endregion
-
-        #region Letsencrypt Tier
-
-        public ServicesViewModel.ServiceTableItem SelectedLetsencryptService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "letsencrypt");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        #endregion
-
-        #region Logging Tier
-
-        public ServicesViewModel.ServiceTableItem SelectedLoggingService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "logging");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        #endregion
-
-        #region RabbitMQ Tier
-
-        public ServicesViewModel.ServiceTableItem SelectedRabbitMQService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "rabbitmq");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        #endregion
-
-        #region Git Tier
-
-        public ServicesViewModel.ServiceTableItem SelectedGitService
-        {
-            get
-            {
-                if (_editApp.Subscriptions != null)
-                {
-                    AppServiceSubscription subscription = _editApp.Subscriptions.FirstOrDefault(
-                        x => x.ServiceTier.Service.Tag == "git");
-
-                    if (subscription != null)
-                    {
-                        return ServicesViewModel.CreateServiceItem(
-                            subscription.ServiceTier);
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        #endregion
-
         override public async Task<Cloud.ServerStatus> InitAsync()
         {
             Cloud.ServerStatus status;
@@ -447,8 +215,6 @@ namespace Inkton.Nester.ViewModels
             {
                 return status;
             }
-
-            _mariaDBEnabled = SelectedMariaDBService != null;
 
             await _deploymentViewModel.InitAsync();
             await _servicesViewModel.InitAsync();
@@ -484,7 +250,7 @@ namespace Inkton.Nester.ViewModels
             Cloud.ServerStatus status = await QueryAppAsync();
             if (status.Code == 0)
             {
-                await DeploymentModel.InitAsync();
+                await DeploymentViewModel.InitAsync();
             }
 
             OnPropertyChanged("EditApp");

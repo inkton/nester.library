@@ -306,14 +306,17 @@ namespace Inkton.Nester.ViewModels
             return status;
         }
 
-        public async Task<Cloud.ServerStatus> UpdateDeploymentAsync(Deployment deployment = null,
-             bool doCache = true, bool throwIfError = true)
+        public async Task<Cloud.ServerStatus> UpdateDeploymentAsync(string activity,
+            Deployment deployment = null, bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data.Add("activity", activity);
+
             Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
                 throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
-                    NesterControl.Service.UpdateAsync), doCache);
+                    NesterControl.Service.UpdateAsync), doCache, data);
 
             if (status.Code >= 0)
             {

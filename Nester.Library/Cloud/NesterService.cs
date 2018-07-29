@@ -201,7 +201,7 @@ namespace Inkton.Nester.Cloud
             }
 
             return request;
-        }
+        }   
 
         private void LogConnectFailure(
             ref Cloud.ServerStatus result, Exception ex)

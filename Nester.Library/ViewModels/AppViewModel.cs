@@ -47,7 +47,6 @@ namespace Inkton.Nester.ViewModels
             public string Tag { get; set; }
         }
 
-        private AppType _editApplicationType;
         private ObservableCollection<AppType> _applicationTypes;
 
         public AppViewModel()
@@ -61,13 +60,13 @@ namespace Inkton.Nester.ViewModels
             _applicationTypes = new ObservableCollection<AppType> {
                 new AppType {
                     Name ="Uniflow",
-                    Description ="MVC Web server",
+                    Description ="A Web Server",
                     Image ="webnet32.png",
                     Tag = "uniflow"
                 },
                 new AppType {
                     Name ="Biflow",
-                    Description ="API Web server",
+                    Description ="A Websocket Server",
                     Image ="websocketnet32.png",
                     Tag = "biflow"
                 },
@@ -177,18 +176,6 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return _applicationTypes;
-            }
-        }
-
-        public AppType EditApplicationType
-        {
-            get
-            {
-                return _editApplicationType;
-            }
-            set
-            {
-                SetProperty(ref _editApplicationType, value);
             }
         }
 

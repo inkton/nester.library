@@ -498,7 +498,7 @@ namespace Inkton.Nester.ViewModels
         public async void SwitchAppServiceTierAsync(AppServiceTier newTier)
         {
             AppServiceSubscription subscription = EditApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Type == "app");
+                x => x.ServiceTier.Service.Type == "app");
 
             if (subscription != null)
             {
@@ -507,6 +507,7 @@ namespace Inkton.Nester.ViewModels
 
             await CreateSubscription(newTier);
             await QueryAppSubscriptions();
+            CreateServicesTable();
         }
 
         #endregion  

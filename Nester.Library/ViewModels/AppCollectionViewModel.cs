@@ -34,7 +34,7 @@ namespace Inkton.Nester.ViewModels
         public AppCollectionViewModel()
         {
             _editApp = new App();
-            _editApp.Owner = NesterControl.User;
+            _editApp.Owner = Keeper.User;
             _appModels = new ObservableCollection<AppViewModel>();
         }
 
@@ -54,7 +54,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             Cloud.ServerStatus status = await Cloud.ResultMultiple<App>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, _editApp, doCache);
+                Keeper.Service, throwIfError, _editApp, doCache);
 
             if (status.Code == 0)
             {

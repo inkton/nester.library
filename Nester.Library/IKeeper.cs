@@ -29,37 +29,45 @@ using Inkton.Nester.Cache;
 
 namespace Inkton.Nester
 {
-    public interface INesterControl
+    public interface IKeeper
     {
         /// <summary>
-        /// A connection to app backend
-        /// <summary>
-        NesterService Backend
-        {
-            get;
-        }
-
-        /// <summary>
-        /// The storage service used for cacheing
-        /// <summary>
-        StorageService StorageService
-        {
-            get;
-        }
-
-        /// <summary>
-        /// The local path where data is cached
+        /// The nest.yt platform user
         /// </summary>
-        string StoragePath
+        User User
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Holds, the authentication, 
+        /// app and payment contexts
+        /// <summary>
+        BaseModels BaseModels
         {
             get;
         }
 
         /// <summary>
-        /// The Resource Manager for the app
-        /// </summary>
-        /// <returns>Resource Manager</returns>
-        ResourceManager GetResourceManager();
+        /// The current application
+        /// <summary>
+        AppViewModel Target
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// A connection to the nest.yt platform 
+        /// to draw app meta data
+        /// <summary>
+        NesterService Service
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Reset the view optionally with app
+        /// <summary>
+        void ResetView(AppViewModel appModel = null);
     }
 }
-        

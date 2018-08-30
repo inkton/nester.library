@@ -618,7 +618,7 @@ namespace Inkton.Nester.ViewModels
 
             T logsSeed = new T();
             Cloud.ServerStatus status = await Cloud.ResultMultiple<T>.WaitForObjectAsync(
-                NesterControl.DeployedApp, doCache, logsSeed, throwIfError, data);
+                NesterControl.Backend, doCache, logsSeed, throwIfError, data);
              
             return status;
         }

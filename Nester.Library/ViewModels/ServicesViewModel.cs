@@ -41,8 +41,6 @@ namespace Inkton.Nester.ViewModels
         private ObservableCollection<AppServiceTier> _upgradableAppTiers;
         private AppServiceTier _upgradeAppServiceTier = null;
 
-        private bool _storageServiceEnabled = false;
-
         private ServiceTableItem _appServiceTableItem;
         private ServiceTableItem _storageServiceTableItem;
         private ServiceTableItem _domainServiceTableItem;
@@ -118,8 +116,6 @@ namespace Inkton.Nester.ViewModels
 
             CreateServicesTable();
 
-            _storageServiceEnabled = SelectedStorageService != null;
-
             return status;
         }
 
@@ -147,6 +143,7 @@ namespace Inkton.Nester.ViewModels
                 _selectedAppServiceTag = subscription.ServiceTier.Service.Tag;
             }
 
+            _storageServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
                 x => x.ServiceTier.Service.Type == "storage");
 
@@ -156,6 +153,7 @@ namespace Inkton.Nester.ViewModels
                     subscription.ServiceTier);
             }
 
+            _domainServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
                 x => x.ServiceTier.Service.Type == "domain");
 
@@ -165,6 +163,7 @@ namespace Inkton.Nester.ViewModels
                     subscription.ServiceTier);
             }
 
+            _monitorServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
                 x => x.ServiceTier.Service.Type == "monitor");
 
@@ -174,6 +173,7 @@ namespace Inkton.Nester.ViewModels
                     subscription.ServiceTier);
             }
 
+            _batchServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
                 x => x.ServiceTier.Service.Type == "batch");
 
@@ -183,6 +183,7 @@ namespace Inkton.Nester.ViewModels
                     subscription.ServiceTier);
             }
 
+            _trackServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
                 x => x.ServiceTier.Service.Type == "track");
 
@@ -199,7 +200,7 @@ namespace Inkton.Nester.ViewModels
             AppService serviceSeed = new AppService();
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<AppService>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, serviceSeed, doCache);
+                Keeper.Service, throwIfError, serviceSeed, doCache);
 
             if (status.Code < 0)
             {
@@ -214,7 +215,7 @@ namespace Inkton.Nester.ViewModels
                 tierSeed.Service = service;
 
                 status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
-                    NesterControl.Service, throwIfError, tierSeed, doCache);
+                    Keeper.Service, throwIfError, tierSeed, doCache);
 
                 if (status.Code == 0)
                 {
@@ -232,7 +233,7 @@ namespace Inkton.Nester.ViewModels
             forestSeeder.AppServiceTier = teir;
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, forestSeeder, doCache);
+                Keeper.Service, throwIfError, forestSeeder, doCache);
 
             return status;
         }
@@ -247,7 +248,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
                 throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
-                    NesterControl.Service.CreateAsync), doCache);
+                    Keeper.Service.CreateAsync), doCache);
 
             return status;
         }
@@ -257,7 +258,7 @@ namespace Inkton.Nester.ViewModels
         {
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
                 throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
-                    NesterControl.Service.RemoveAsync), doCache);
+                    Keeper.Service.RemoveAsync), doCache);
 
             return status;
         }
@@ -274,7 +275,7 @@ namespace Inkton.Nester.ViewModels
             subSeeder.App = (app == null ? _editApp : app);
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceSubscription>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, subSeeder, doCache);
+                Keeper.Service, throwIfError, subSeeder, doCache);
 
             if (status.Code >= 0)
             {
@@ -313,7 +314,7 @@ namespace Inkton.Nester.ViewModels
             tierSeed.Service = service;
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, tierSeed, doCache);
+                Keeper.Service, throwIfError, tierSeed, doCache);
 
             if (status.Code >= 0)
             {
@@ -333,7 +334,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceTier>.WaitForObjectAsync(
                 throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier>(
-                    NesterControl.Service.UpdateAsync), doCache);
+                    Keeper.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
             {
@@ -495,7 +496,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public async void SwitchAppServiceTierAsync(AppServiceTier newTier)
+        public async Task SwitchAppServiceTierAsync(AppServiceTier newTier)
         {
             AppServiceSubscription subscription = EditApp.Subscriptions.FirstOrDefault(
                 x => x.ServiceTier.Service.Type == "app");
@@ -518,11 +519,7 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                return _storageServiceEnabled;
-            }
-            set
-            {
-                SetProperty(ref _storageServiceEnabled, value);
+                return SelectedStorageService != null;
             }
         }
 
@@ -550,14 +547,16 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public async void CreateDefaultStorageServiceAsync()
+        public async Task CreateDefaultStorageServiceAsync()
         {
             // Only one tier available at present
             AppServiceTier defaultTier = StorageServiceTiers.First();
             await CreateSubscription(defaultTier);
+            await QueryAppSubscriptions();
+            CreateServicesTable();
         }
 
-        public async void RemoveDefaultStorageServiceAsync()
+        public async Task RemoveDefaultStorageServiceAsync()
         {
             AppServiceSubscription subscription = EditApp.Subscriptions.FirstOrDefault(
                 x => x.ServiceTier.Service.Type == "storage");
@@ -566,6 +565,9 @@ namespace Inkton.Nester.ViewModels
             {
                 await RemoveSubscriptionAsync(subscription);
             }
+
+            await QueryAppSubscriptions();
+            CreateServicesTable();
         }
 
         #endregion

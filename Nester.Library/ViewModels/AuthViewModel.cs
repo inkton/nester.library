@@ -36,7 +36,7 @@ namespace Inkton.Nester.ViewModels
         public AuthViewModel()
         {
             _permit = new Permit();
-            _permit.Owner = NesterControl.User;
+            _permit.Owner = Keeper.User;
 
             _userEvents = new ObservableCollection<UserEvent>();
         }
@@ -55,26 +55,26 @@ namespace Inkton.Nester.ViewModels
 
         public void Reset()
         {
-            NesterControl.Service.Permit = null;
+            Keeper.Service.Permit = null;
             _permit.SecurityCode = null;
             _permit.Token = null;
         }
 
         public void ChangePermit(Permit newPermit)
         {
-            NesterControl.User = newPermit.Owner;
+            Keeper.User = newPermit.Owner;
 
-            if (NesterControl.BaseModels.TargetViewModel != null)
-                NesterControl.BaseModels.TargetViewModel
-                    .EditApp.Owner = newPermit.Owner;
-            if (NesterControl.BaseModels.PaymentViewModel != null)
-                NesterControl.BaseModels.PaymentViewModel
-                    .EditPaymentMethod.Owner = newPermit.Owner;
-            if (NesterControl.BaseModels.AllApps != null)
-                NesterControl.BaseModels.AllApps
-                    .EditApp.Owner = newPermit.Owner;
-            if (NesterControl.Service != null)
-                NesterControl.Service.Permit = newPermit;
+            if (Keeper.BaseModels.TargetViewModel != null)
+                Keeper.BaseModels.TargetViewModel
+                .EditApp.Owner = newPermit.Owner;
+            if (Keeper.BaseModels.PaymentViewModel != null)
+                Keeper.BaseModels.PaymentViewModel
+                .EditPaymentMethod.Owner = newPermit.Owner;
+            if (Keeper.BaseModels.AllApps != null)
+                Keeper.BaseModels.AllApps
+                .EditApp.Owner = newPermit.Owner;
+            if (Keeper.Service != null)
+                Keeper.Service.Permit = newPermit;
 
             Cloud.Object.CopyPropertiesTo(newPermit, _permit);
         }
@@ -82,8 +82,8 @@ namespace Inkton.Nester.ViewModels
         public Cloud.ServerStatus Signup(
             bool throwIfError = true)
         {
-            Cloud.ServerStatus status = 
-                NesterControl.Service.Signup(_permit);
+            Cloud.ServerStatus status =
+                Keeper.Service.Signup(_permit);
 
             if (status.Code < 0)
             {
@@ -93,7 +93,7 @@ namespace Inkton.Nester.ViewModels
             else
             {
                 Cloud.Object.CopyPropertiesTo(
-                    _permit.Owner, NesterControl.User);
+                    _permit.Owner, Keeper.User);
             }
 
             return status;
@@ -102,8 +102,8 @@ namespace Inkton.Nester.ViewModels
         public async Task<Cloud.ServerStatus> RecoverPasswordAsync(
             bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await 
-                NesterControl.Service.RecoverPasswordAsync(_permit);
+            Cloud.ServerStatus status = await
+                Keeper.Service.RecoverPasswordAsync(_permit);
 
             if (status.Code < 0)
             {
@@ -118,7 +118,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             Cloud.ServerStatus status =
-                NesterControl.Service.QueryToken(_permit);
+                Keeper.Service.QueryToken(_permit);
 
             if (status.Code < 0)
             {
@@ -137,7 +137,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             Cloud.ServerStatus status =
-                await NesterControl.Service.QueryTokenAsync(_permit);
+                await Keeper.Service.QueryTokenAsync(_permit);
 
             if (status.Code < 0)
             {
@@ -156,7 +156,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             Cloud.ServerStatus status = await
-                NesterControl.Service.ResetTokenAsync(_permit);
+                Keeper.Service.ResetTokenAsync(_permit);
 
             if (status.Code < 0)
             {
@@ -178,7 +178,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<User>.WaitForObjectAsync(
                 throwIfError, user, new Cloud.CachedHttpRequest<User>(
-                    NesterControl.Service.UpdateAsync), doCache);
+                    Keeper.Service.UpdateAsync), doCache);
 
             return status;
         }
@@ -190,7 +190,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<User>.WaitForObjectAsync(
                 throwIfError, theUser, new Cloud.CachedHttpRequest<User>(
-                    NesterControl.Service.RemoveAsync), doCache);
+                    Keeper.Service.RemoveAsync), doCache);
 
             return status;
         }
@@ -199,10 +199,10 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.Owner = NesterControl.User;
+            userEventSeed.Owner = Keeper.User;
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<UserEvent>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, userEventSeed, doCache);
+                Keeper.Service, throwIfError, userEventSeed, doCache);
 
             if (status.Code >= 0)
             {

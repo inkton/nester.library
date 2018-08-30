@@ -42,7 +42,7 @@ namespace Inkton.Nester.ViewModels
             _editCredit = new Credit();
 
             _editPaymentMethod = new PaymentMethod();
-            _editPaymentMethod.Owner = NesterControl.User;
+            _editPaymentMethod.Owner = Keeper.User;
         }
 
         public Credit EditCredit
@@ -107,7 +107,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<Credit>.WaitForObjectAsync(
                 throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit>(
-                    NesterControl.Service.QueryAsync), dCache, null, null);
+                    Keeper.Service.QueryAsync), dCache, null, null);
 
             if (status.Code >= 0)
             {
@@ -122,7 +122,7 @@ namespace Inkton.Nester.ViewModels
         {
             Cloud.ServerStatus status = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
-                    NesterControl.Service.QueryAsync), dCache, null, null);
+                    Keeper.Service.QueryAsync), dCache, null, null);
 
             if (status.Code >= 0)
             {                
@@ -162,7 +162,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
-                    NesterControl.Service.CreateAsync), doCache, data);
+                    Keeper.Service.CreateAsync), doCache, data);
 
             if (status.Code >= 0)
             {
@@ -195,7 +195,7 @@ namespace Inkton.Nester.ViewModels
             BillingCycle seed = new BillingCycle();
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<BillingCycle>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, seed, doCache);
+                Keeper.Service, throwIfError, seed, doCache);
 
             if (status.Code == 0)
             {
@@ -210,10 +210,10 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();
-            seed.Owner = NesterControl.User;
+            seed.Owner = Keeper.User;
             
             Cloud.ServerStatus status = await Cloud.ResultMultiple<UserBillingTask>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, seed, doCache, filter);
+                Keeper.Service, throwIfError, seed, doCache, filter);
 
             if (status.Code == 0)
             {
@@ -228,7 +228,7 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (NesterControl.User.TerritoryISOCode == "AU")
+                if (Keeper.User.TerritoryISOCode == "AU")
                 {
                     return "The prices are in US Dollars and do not include GST.";
                 }

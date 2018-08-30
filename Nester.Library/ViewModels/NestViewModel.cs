@@ -125,7 +125,7 @@ namespace Inkton.Nester.ViewModels
             platformSeed.App = _editApp;
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<NestPlatform>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, platformSeed, doCache);
+                Keeper.Service, throwIfError, platformSeed, doCache);
 
             if (status.Code >= 0)
             {
@@ -160,7 +160,7 @@ namespace Inkton.Nester.ViewModels
         {
             _editNest.App = _editApp;
             Cloud.ServerStatus status = await Cloud.ResultMultiple<Nest>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, _editNest, doCache);
+                Keeper.Service, throwIfError, _editNest, doCache);
 
             if (status.Code >= 0)
             {
@@ -179,7 +179,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
-                    NesterControl.Service.QueryAsync), doCache, null, null);
+                    Keeper.Service.QueryAsync), doCache, null, null);
 
             if (status.Code >= 0)
             {
@@ -202,7 +202,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
-                    NesterControl.Service.CreateAsync), doCache);
+                    Keeper.Service.CreateAsync), doCache);
 
             if (status.Code >= 0)
             {
@@ -228,7 +228,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
-                    NesterControl.Service.UpdateAsync), doCache);
+                    Keeper.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
             {
@@ -246,7 +246,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Nest>(
-                    NesterControl.Service.RemoveAsync), doCache);
+                    Keeper.Service.RemoveAsync), doCache);
 
             if (status.Code >= 0)
             {

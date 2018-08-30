@@ -55,7 +55,7 @@ namespace Inkton.Nester.ViewModels
             // select uniflow default
             _editApp = new App();
             _editApp.Type = "uniflow";
-            _editApp.Owner = NesterControl.User;
+            _editApp.Owner = Keeper.User;
 
             _applicationTypes = new ObservableCollection<AppType> {
                 new AppType {
@@ -221,7 +221,7 @@ namespace Inkton.Nester.ViewModels
         {
             _editApp = new App();
             _editApp.Type = "uniflow";
-            _editApp.Owner = NesterControl.User;
+            _editApp.Owner = Keeper.User;
 
             _contactViewModel.EditApp = _editApp;
             _nestViewModel.EditApp = _editApp;
@@ -260,7 +260,7 @@ namespace Inkton.Nester.ViewModels
             notificationSeed.App = theApp;
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<Notification>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, notificationSeed, doCache);
+                Keeper.Service, throwIfError, notificationSeed, doCache);
 
             if (status.Code == 0)
             {
@@ -277,15 +277,15 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
-                    NesterControl.Service.QueryAsync), doCache);
+                    Keeper.Service.QueryAsync), doCache);
 
             if (status.Code == 0)
             {
                 EditApp = status.PayloadToObject<App>();
 
-                if (_editApp.UserId == NesterControl.User.Id)
+                if (_editApp.UserId == Keeper.User.Id)
                 {
-                    _editApp.Owner = NesterControl.User;
+                    _editApp.Owner = Keeper.User;
                 }
 
                 if (app != null)
@@ -302,7 +302,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
-                    NesterControl.Service.RemoveAsync), doCache);
+                    Keeper.Service.RemoveAsync), doCache);
 
             if (status.Code == 0)
             {
@@ -319,7 +319,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
-                    NesterControl.Service.UpdateAsync), doCache);
+                    Keeper.Service.UpdateAsync), doCache);
 
             if (status.Code == 0)
             {
@@ -337,12 +337,12 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
-                    NesterControl.Service.CreateAsync), doCache);
+                    Keeper.Service.CreateAsync), doCache);
 
             if (status.Code == 0)
             {
                 EditApp = status.PayloadToObject<App>();
-                _editApp.Owner = NesterControl.User;
+                _editApp.Owner = Keeper.User;
 
                 if (throwIfError && _editApp.Status != "assigned")
                 {
@@ -366,7 +366,7 @@ namespace Inkton.Nester.ViewModels
             forestSeeder.AppServiceTier = teir;
 
             Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, forestSeeder, doCache);
+                Keeper.Service, throwIfError, forestSeeder, doCache);
 
             return status;
         }

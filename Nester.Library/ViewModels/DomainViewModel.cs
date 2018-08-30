@@ -113,7 +113,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             Cloud.ServerStatus status = await Cloud.ResultMultiple<AppDomain>.WaitForObjectAsync(
-                NesterControl.Service, throwIfError, _editDomain, doCache);
+                Keeper.Service, throwIfError, _editDomain, doCache);
 
             if (status.Code >= 0)
             {
@@ -129,7 +129,7 @@ namespace Inkton.Nester.ViewModels
                     seedCert.AppDomain = domain;
 
                     status = await Cloud.ResultMultiple<AppDomainCertificate>.WaitForObjectAsync(
-                        NesterControl.Service, throwIfError, seedCert);
+                        Keeper.Service, throwIfError, seedCert);
 
                     if (status.Code >= 0)
                     {
@@ -155,7 +155,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
-                    NesterControl.Service.QueryAsync), doCache, null, null);
+                    Keeper.Service.QueryAsync), doCache, null, null);
 
             if (status.Code >= 0)
             {
@@ -165,7 +165,7 @@ namespace Inkton.Nester.ViewModels
                 seedCert.AppDomain = _editDomain;
 
                 status = await Cloud.ResultMultiple<AppDomainCertificate>.WaitForObjectAsync(
-                    NesterControl.Service, throwIfError, seedCert, doCache);
+                    Keeper.Service, throwIfError, seedCert, doCache);
 
                 if (status.Code >= 0)
                 {
@@ -195,7 +195,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
-                    NesterControl.Service.CreateAsync), doCache);
+                    Keeper.Service.CreateAsync), doCache);
 
             if (status.Code >= 0)
             {
@@ -227,7 +227,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomainCertificate>.WaitForObjectAsync(
                 throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
-                    NesterControl.Service.CreateAsync));
+                    Keeper.Service.CreateAsync));
 
             if (status.Code >= 0)
             {
@@ -249,7 +249,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
-                    NesterControl.Service.RemoveAsync), doCache);
+                    Keeper.Service.RemoveAsync), doCache);
 
             if (status.Code >= 0)
             {
@@ -272,7 +272,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomainCertificate>.WaitForObjectAsync(
                 throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
-                    NesterControl.Service.RemoveAsync), doCache);
+                    Keeper.Service.RemoveAsync), doCache);
 
             if (status.Code >= 0)
             {
@@ -292,7 +292,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain>(
-                    NesterControl.Service.UpdateAsync), doCache);
+                    Keeper.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
             {
@@ -314,7 +314,7 @@ namespace Inkton.Nester.ViewModels
 
             Cloud.ServerStatus status = await Cloud.ResultSingle<AppDomainCertificate>.WaitForObjectAsync(
                 throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate>(
-                    NesterControl.Service.UpdateAsync), doCache);
+                    Keeper.Service.UpdateAsync), doCache);
 
             if (status.Code >= 0)
             {

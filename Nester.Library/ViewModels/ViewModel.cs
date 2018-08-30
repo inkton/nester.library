@@ -64,7 +64,7 @@ namespace Inkton.Nester.ViewModels
 
                 if (_editApp != null)
                 {
-                    isOwner = _editApp.UserId == NesterControl.User.Id;
+                    isOwner = _editApp.UserId == Keeper.User.Id;
                 }
 
                 return isOwner;
@@ -76,6 +76,14 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return _editApp != null && _editApp.Id > 0;
+            }
+        }
+
+        public IKeeper Keeper
+        {
+            get
+            {
+                return Application.Current as IKeeper;
             }
         }
 

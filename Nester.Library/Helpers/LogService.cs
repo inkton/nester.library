@@ -38,18 +38,26 @@ namespace Inkton.Nester.Helpers
         private long _maxSize = 1024 * 256;
         private long _maxFiles = 3;
         private LogSeverity _severity = LogSeverity.LogSeverityInfo;
+        private string _path;
 
-        public LogService()
+        public LogService(string path)
         {
-            Directory.CreateDirectory(this.Path);
+            Path = path;
         }
 
         public string Path
         {
+            set
+            {
+                _path = value;
+                if (!Directory.Exists(_path))
+                {
+                    Directory.CreateDirectory(_path);
+                }
+            }
             get
             {
-                return System.IO.Path.Combine(
-                    (Application.Current as INesterControl).StoragePath, "Log");
+                return _path;
             }
         }
 

@@ -25,11 +25,11 @@ using System.Threading.Tasks;
 using Inkton.Nester.ViewModels;
 using Inkton.Nester.Models;
 using Inkton.Nester.Cloud;
-using Inkton.Nester.Cache;
+using Inkton.Nester.Storage;
 
 namespace Inkton.Nester
 {
-    public interface IKeeper
+    public interface IKeeper : IClientResources
     {
         /// <summary>
         /// The nest.yt platform user

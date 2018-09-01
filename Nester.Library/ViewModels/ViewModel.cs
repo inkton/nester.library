@@ -87,6 +87,14 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public IClientResources ClientResources
+        {
+            get
+            {
+                return Application.Current as IClientResources;
+            }
+        }
+
         public INesterControl NesterControl
         {
             get

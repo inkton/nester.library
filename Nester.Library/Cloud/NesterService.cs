@@ -31,6 +31,7 @@ using Newtonsoft.Json;
 using Flurl;
 using Flurl.Http;
 using Inkton.Nester.Models;
+using Inkton.Nester.Storage;
 
 namespace Inkton.Nester.Cloud
 {
@@ -61,15 +62,17 @@ namespace Inkton.Nester.Cloud
         private BasicAuth _basicAuth;
 
         private Permit _permit;
-        private Cache.StorageService _storage;
         private int _version = 1;
+        private StorageService _cache;
         private string _deviceSignature;
 
-        public NesterService()
+        public NesterService(
+            int version, string deviceSignature, StorageService cache)
         {
+            _version = version;
+            _cache = cache;
+            _deviceSignature = deviceSignature;
             _endpoint = "https://api.nest.yt/";
-
-            _storage = new Cache.StorageService();
         }
 
         public int Version
@@ -377,7 +380,7 @@ namespace Inkton.Nester.Cloud
                             {
                                 if (keyRequest)
                                 {
-                                    _storage.Save(seed);
+                                    _cache.Save(seed);
                                 }
                                 else
                                 {
@@ -387,7 +390,7 @@ namespace Inkton.Nester.Cloud
                                     {
                                         list.All(obj =>
                                         {
-                                            _storage.Save(obj);
+                                            _cache.Save(obj);
                                             return true;
                                         });
                                     }
@@ -397,7 +400,7 @@ namespace Inkton.Nester.Cloud
                             {
                                 if (keyRequest)
                                 {
-                                    _storage.Remove(seed);
+                                    _cache.Remove(seed);
                                 }
                                 else
                                 {
@@ -407,7 +410,7 @@ namespace Inkton.Nester.Cloud
                                     {
                                         list.All(obj =>
                                         {
-                                            _storage.Remove(obj);
+                                            _cache.Remove(obj);
                                             return true;
                                         });
                                     }
@@ -445,7 +448,7 @@ namespace Inkton.Nester.Cloud
         public async Task<Cloud.ServerStatus> QueryAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
         {
-            if (doCache && _storage.Load<T>(seed))
+            if (doCache && _cache.Load<T>(seed))
             {
                 Cloud.ServerStatus status = new Cloud.ServerStatus(0);
                 status.Payload = seed;

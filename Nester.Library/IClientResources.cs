@@ -20,16 +20,31 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-using Xamarin.Forms;
+using System.Resources;
+using System.Threading.Tasks;
+using Inkton.Nester.ViewModels;
+using Inkton.Nester.Models;
+using Inkton.Nester.Cloud;
+using Inkton.Nester.Storage;
+using Inkton.Nester.Helpers;
 
-namespace Inkton.Nester.Helpers
+namespace Inkton.Nester
 {
-    public static class ErrorHandler
+    public interface IClientResources
     {
-        public static void Exception(string detail, string location)
+        /// <summary>
+        /// The log service
+        /// <summary>
+        LogService Log
         {
-            (Application.Current as IClientResources).Log
-                .Trace(detail, location, LogSeverity.LogSeverityCritical);
+            get;
         }
+
+        /// <summary>
+        /// The Resource Manager for the app
+        /// </summary>
+        /// <returns>Resource Manager</returns>
+        ResourceManager GetResourceManager();
     }
 }
+        

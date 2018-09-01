@@ -25,11 +25,11 @@ using System.Threading.Tasks;
 using Inkton.Nester.ViewModels;
 using Inkton.Nester.Models;
 using Inkton.Nester.Cloud;
-using Inkton.Nester.Cache;
+using Inkton.Nester.Storage;
 
 namespace Inkton.Nester
 {
-    public interface INesterControl
+    public interface INesterControl : IClientResources
     {
         /// <summary>
         /// A connection to app backend
@@ -37,29 +37,7 @@ namespace Inkton.Nester
         NesterService Backend
         {
             get;
-        }
-
-        /// <summary>
-        /// The storage service used for cacheing
-        /// <summary>
-        StorageService StorageService
-        {
-            get;
-        }
-
-        /// <summary>
-        /// The local path where data is cached
-        /// </summary>
-        string StoragePath
-        {
-            get;
-        }
-
-        /// <summary>
-        /// The Resource Manager for the app
-        /// </summary>
-        /// <returns>Resource Manager</returns>
-        ResourceManager GetResourceManager();
+        }       
     }
 }
         

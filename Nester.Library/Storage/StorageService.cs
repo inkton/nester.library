@@ -25,23 +25,30 @@ using System.IO;
 using Newtonsoft.Json;
 using Xamarin.Forms;
 
-namespace Inkton.Nester.Cache
+namespace Inkton.Nester.Storage
 {
     public class StorageService
     {
-        public StorageService()
+        private string _path;
+
+        public StorageService(string path)
         {
-            Directory.CreateDirectory(Path);
+            Path = path;
         }
 
         public string Path
         {
+            set
+            {
+                _path = value;
+                if (!Directory.Exists(_path))
+                {
+                    Directory.CreateDirectory(_path);
+                }                
+            }
             get
             {
-                string path = (Application.Current as INesterControl).StoragePath;
-
-                return System.IO.Path.Combine(
-                    path, "Storage");
+                return _path;
             }
         }
 

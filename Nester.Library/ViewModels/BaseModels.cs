@@ -1,4 +1,4 @@
-﻿using Inkton.Nester.Models;
+﻿using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -30,7 +30,7 @@ namespace Inkton.Nester.ViewModels
                 if (_targetViewModel != null && 
                     _targetViewModel.EditApp != null)
                 {
-                    _targetViewModel.EditApp.Owner = value;
+                    _targetViewModel.EditApp.OwnedBy = value;
                 }
             }
         }

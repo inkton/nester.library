@@ -25,7 +25,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Inkton.Nester.Models;
+using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -487,36 +487,36 @@ namespace Inkton.Nester.ViewModels
             return sql;
         }
 
-        public async Task<Cloud.ServerStatus> QueryNestLogsAsync(
+        public async Task<Cloud.ResultMultiple<NestLog>> QueryNestLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             string sql = FormSql("nest_log", "*", filter, orderBy, limit);
-            Cloud.ServerStatus status = await QueryLogsAsync<NestLog>(
+            Cloud.ResultMultiple<NestLog> result = await QueryLogsAsync<NestLog>(
                 sql, doCache, throwIfError);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _nestLogs = status.PayloadToList<NestLog>();
+                _nestLogs = result.Data.Payload;
                 OnPropertyChanged("NestLogs");
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QuerySystemCPULogsAsync(
+        public async Task<Cloud.ResultMultiple<SystemCPULog>> QuerySystemCPULogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             _cpuSeries.Clear();
 
             string sql = FormSql("system_cpu", "*", filter, orderBy, limit);
-            Cloud.ServerStatus status = await QueryLogsAsync<SystemCPULog>(
+            Cloud.ResultMultiple<SystemCPULog> result = await QueryLogsAsync<SystemCPULog>(
                 sql, doCache, throwIfError);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _systemCpuLogs = status.PayloadToList<SystemCPULog>();
+                _systemCpuLogs = result.Data.Payload;
 
                 if (_systemCpuLogs.Any())
                 {
@@ -530,20 +530,20 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryDiskSpaceLogsAsync(
+        public async Task<Cloud.ResultMultiple<DiskSpaceLog>> QueryDiskSpaceLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             string sql = FormSql("disk_space", "*", filter, orderBy, limit);
-            Cloud.ServerStatus status = await QueryLogsAsync<DiskSpaceLog>(
+            Cloud.ResultMultiple<DiskSpaceLog> result = await QueryLogsAsync<DiskSpaceLog>(
                 sql, doCache, throwIfError);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _diskSpaceLogs = status.PayloadToList<DiskSpaceLog>();
+                _diskSpaceLogs = result.Data.Payload;
 
                 if (_diskSpaceLogs.Any())
                 {
@@ -553,22 +553,22 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QuerSystemIPV4LogsAsync(
+        public async Task<Cloud.ResultMultiple<SystemIPV4Log>> QuerSystemIPV4LogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             _ipv4Series.Clear();
 
             string sql = FormSql("system_ipv4", "*", filter, orderBy, limit);
-            Cloud.ServerStatus status = await QueryLogsAsync<SystemIPV4Log>(
+            Cloud.ResultMultiple<SystemIPV4Log> result = await QueryLogsAsync<SystemIPV4Log>(
                 sql, doCache, throwIfError);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _ipv4Logs = status.PayloadToList<SystemIPV4Log>();
+                _ipv4Logs = result.Data.Payload;
 
                 if (_ipv4Logs.Any())
                 {
@@ -579,22 +579,22 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QuerSystemRAMLogsAsync(
+        public async Task<Cloud.ResultMultiple<SystemRAMLog>> QuerSystemRAMLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             _ramSeries.Clear();
 
             string sql = FormSql("system_ram", "*", filter, orderBy, limit);
-            Cloud.ServerStatus status = await QueryLogsAsync<SystemRAMLog>(
+            Cloud.ResultMultiple<SystemRAMLog> result = await QueryLogsAsync<SystemRAMLog>(
                 sql, doCache, throwIfError);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _systemRamLogs = status.PayloadToList<SystemRAMLog>();
+                _systemRamLogs = result.Data.Payload;
 
                 if (_systemRamLogs.Any())
                 {
@@ -607,20 +607,18 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryLogsAsync<T>(string sql,
+        public async Task<Cloud.ResultMultiple<T>> QueryLogsAsync<T>(string sql,
             bool doCache = false, bool throwIfError = false) where T : Log, new()
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("sql", sql);
 
             T logsSeed = new T();
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<T>.WaitForObjectAsync(
+            return await Cloud.ResultMultiple<T>.WaitForObjectAsync(
                 NesterControl.Backend, doCache, logsSeed, throwIfError, data);
-             
-            return status;
         }
     }
 }

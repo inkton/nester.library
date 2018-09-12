@@ -26,7 +26,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Xamarin.Forms;
-using Inkton.Nester.Models;
+using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -53,19 +53,16 @@ namespace Inkton.Nester.ViewModels
             _forestByTag = new Dictionary<string, Forest>();
 
             _editDeployment = new Deployment();
-            _editDeployment.App = app;
+            _editDeployment.OwnedBy = app;
             app.Deployment = _editDeployment;
 
             _editBackup = new AppBackup();
-            _editBackup.Deployment = _editDeployment;
+            _editBackup.OwnedBy = _editDeployment;
             _backups = new ObservableCollection<AppBackup>();
 
             _editAudit = new AppAudit();
-            _editAudit.Deployment = _editDeployment;
+            _editAudit.OwnedBy = _editDeployment;
             _audits = new ObservableCollection<AppAudit>();
-
-            SelectForestCommand = new Command<Forest>(
-                (forest) => HandleCommand<Forest>(forest, "select"));
         }
 
         override public App EditApp
@@ -78,7 +75,7 @@ namespace Inkton.Nester.ViewModels
             {
                 SetProperty(ref _editApp, value);
                 _editApp.Deployment = _editDeployment;
-                _editDeployment.App = value;
+                _editDeployment.OwnedBy = value;
             }
         }
 
@@ -167,49 +164,28 @@ namespace Inkton.Nester.ViewModels
             }
         }
         
-        override public async Task<Cloud.ServerStatus> InitAsync()
+        public async Task InitAsync()
         {
-            Cloud.ServerStatus status;
-
-            status = await QueryDeploymentsAsync();
-            if (status.Code < 0)
-            {
-                return status;
-            }
-
-            return status;
+            await QueryDeploymentsAsync();
         }
 
-        public async Task<Cloud.ServerStatus> CollectInfoAsync()
+        public async Task CollectInfoAsync()
         {
-            Cloud.ServerStatus status;
-
-            status = await QueryForestsAsync();
-            if (status.Code < 0)
-            {
-                return status;
-            }
-
-            status = await QuerySoftwareFrameworkVersionsAsync();
-            if (status.Code < 0)
-            {
-                return status;
-            }
-
-            return status;
+            await QueryForestsAsync();
+            await QuerySoftwareFrameworkVersionsAsync();
         }
 
-        public async Task<Cloud.ServerStatus> QueryForestsAsync(
+        public async Task<Cloud.ResultMultiple<Forest>> QueryForestsAsync(
             bool doCache = true, bool throwIfError = true)
         {
             Forest forestSeed = new Forest();
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+            Cloud.ResultMultiple<Forest> result = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, forestSeed, doCache);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _forests = status.PayloadToList<Forest>();
+                _forests = result.Data.Payload;
                 _forestByTag.Clear();
 
                 foreach (Forest forest in _forests)
@@ -218,40 +194,40 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QuerySoftwareFrameworkVersionsAsync(
+        public async Task<Cloud.ResultMultiple<SoftwareFramework.Version>> QuerySoftwareFrameworkVersionsAsync(
             bool doCache = true, bool throwIfError = true)
         {
             SoftwareFramework frameworkSeed = new SoftwareFramework();
             frameworkSeed.Tag = "aspdotnetcore";
             SoftwareFramework.Version versionSeed = new SoftwareFramework.Version();
-            versionSeed.Framework = frameworkSeed;
+            versionSeed.OwnedBy = frameworkSeed;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<SoftwareFramework.Version>.WaitForObjectAsync(
+            Cloud.ResultMultiple<SoftwareFramework.Version> result = await Cloud.ResultMultiple<SoftwareFramework.Version>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, versionSeed, doCache);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _dotnetVersions = status.PayloadToList<SoftwareFramework.Version>();
+                _dotnetVersions = result.Data.Payload;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryDeploymentsAsync(
+        public async Task<Cloud.ResultMultiple<Deployment>> QueryDeploymentsAsync(
             Deployment deployment = null, bool doCache = false, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<Deployment>.WaitForObjectAsync(
+            Cloud.ResultMultiple<Deployment> result = await Cloud.ResultMultiple<Deployment>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, theDeployment, doCache);
             _editApp.Deployment = null;
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _deployments = status.PayloadToList<Deployment>();
+                _deployments = result.Data.Payload;
                 if (_deployments.Any())
                 {
                     _editDeployment = _deployments.First();
@@ -261,20 +237,18 @@ namespace Inkton.Nester.ViewModels
                 OnPropertyChanged("Deployments");
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryDevkitAsync(Devkit devkit,
+        public async Task<Cloud.ResultSingle<Devkit>> QueryDevkitAsync(Devkit devkit,
             bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.ResultSingle<Devkit>.WaitForObjectAsync(
-                throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit>(
+            return await Cloud.ResultSingle<Devkit>.WaitForObjectAsync(
+                throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit, Cloud.ResultSingle<Devkit>>(
                     Keeper.Service.QueryAsync), doCache);
-
-            return status;
         }
 
-        public async Task<Cloud.ServerStatus> CreateDeployment(Deployment deployment = null,
+        public async Task<Cloud.ResultSingle<Deployment>> CreateDeployment(Deployment deployment = null,
             bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
@@ -286,27 +260,27 @@ namespace Inkton.Nester.ViewModels
                 data.Add("credit_id", _applyCredit.Id.ToString());
             }
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
+            Cloud.ResultSingle<Deployment> result = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, Cloud.ResultSingle<Deployment>>(
                     Keeper.Service.CreateAsync), doCache, data);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _editDeployment = status.PayloadToObject<Deployment>();
+                _editDeployment = result.Data.Payload;
                 _editApp.Deployment = _editDeployment;
 
                 if (deployment != null)
                 {
-                    Cloud.Object.CopyPropertiesTo(_editDeployment, deployment);
+                    _editDeployment.CopyTo(deployment);
                     _deployments.Add(deployment);
                     OnPropertyChanged("Deployments");
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> UpdateDeploymentAsync(string activity,
+        public async Task<Cloud.ResultSingle<Deployment>> UpdateDeploymentAsync(string activity,
             Deployment deployment = null, bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
@@ -314,29 +288,29 @@ namespace Inkton.Nester.ViewModels
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("activity", activity);
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
+            Cloud.ResultSingle<Deployment> result = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, Cloud.ResultSingle<Deployment>>(
                     Keeper.Service.UpdateAsync), doCache, data);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _editDeployment = status.PayloadToObject<Deployment>();
+                _editDeployment = result.Data.Payload;
                 _editApp.Deployment = _editDeployment;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> RemoveDeploymentAsync(Deployment deployment = null,
+        public async Task<Cloud.ResultSingle<Deployment>> RemoveDeploymentAsync(Deployment deployment = null,
             bool doCache = false, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment>(
+            Cloud.ResultSingle<Deployment> result = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, Cloud.ResultSingle<Deployment>>(
                     Keeper.Service.RemoveAsync), doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
                 if (deployment == null)
                 {
@@ -345,87 +319,85 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppBackupsAsync(AppBackup appBackup = null,
+        public async Task<Cloud.ResultMultiple<AppBackup>> QueryAppBackupsAsync(AppBackup appBackup = null,
             bool doCache = false, bool throwIfError = true)
         {
             AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
-            theBackup.Deployment = _editApp.Deployment;
-            
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppBackup>.WaitForObjectAsync(
+            theBackup.OwnedBy = _editApp.Deployment;
+
+            Cloud.ResultMultiple<AppBackup> result = await Cloud.ResultMultiple<AppBackup>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, theBackup, doCache);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _backups = status.PayloadToList<AppBackup>();
+                _backups = result.Data.Payload;
                 OnPropertyChanged("AppBackups");
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> RestoreAppAsync(AppBackup appBackup,
+        public async Task<Cloud.ResultSingle<AppBackup>> RestoreAppAsync(AppBackup appBackup,
             bool doCache = false, bool throwIfError = true)
         {
             AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
-            theBackup.Deployment = _editApp.Deployment;
+            theBackup.OwnedBy = _editApp.Deployment;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
-                throwIfError, appBackup, new Cloud.CachedHttpRequest<AppBackup>(
+            return await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
+                throwIfError, appBackup, new Cloud.CachedHttpRequest<AppBackup, Cloud.ResultSingle<AppBackup>>(
                     Keeper.Service.UpdateAsync), doCache);
-
-            return status;
         }
 
-        public async Task<Cloud.ServerStatus> BackupAppAsync(AppBackup appBackup = null,
+        public async Task<Cloud.ResultSingle<AppBackup>> BackupAppAsync(AppBackup appBackup = null,
             bool doCache = false, bool throwIfError = true)
         {
             AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
-            theBackup.Deployment = _editApp.Deployment;
+            theBackup.OwnedBy = _editApp.Deployment;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
-                throwIfError, theBackup, new Cloud.CachedHttpRequest<AppBackup>(
+            Cloud.ResultSingle<AppBackup> result = await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
+                throwIfError, theBackup, new Cloud.CachedHttpRequest<AppBackup, Cloud.ResultSingle<AppBackup>>(
                     Keeper.Service.CreateAsync), doCache);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _editBackup = status.PayloadToObject<AppBackup>();
+                _editBackup = result.Data.Payload;
 
                 if (appBackup != null)
                 {
-                    Cloud.Object.CopyPropertiesTo(_editBackup, appBackup);
+                    _editBackup.CopyTo(appBackup);
                 }
 
                 foreach (AppBackup backup in _backups)
                 {
                     if (backup.Id == _editBackup.Id)
                     {
-                        Cloud.Object.CopyPropertiesTo(_editBackup, backup);
+                        _editBackup.CopyTo(appBackup);
                         break;
                     }
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppAuditsAsync(IDictionary<string, string> filter,
+        public async Task<Cloud.ResultMultiple<AppAudit>> QueryAppAuditsAsync(IDictionary<string, string> filter,
             AppAudit appAudit = null, bool doCache = false, bool throwIfError = true)
         {
             AppAudit theAudit = appAudit == null ? _editAudit : appAudit;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppAudit>.WaitForObjectAsync(
+            Cloud.ResultMultiple<AppAudit> result = await Cloud.ResultMultiple<AppAudit>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, theAudit, doCache, filter);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _audits = status.PayloadToList<AppAudit>();
+                _audits = result.Data.Payload;
                 OnPropertyChanged("AppAudits");
             }
 
-            return status;
+            return result;
         }
     }
 }

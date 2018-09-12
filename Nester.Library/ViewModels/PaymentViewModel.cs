@@ -23,7 +23,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using Inkton.Nester.Models;
+using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -42,7 +42,7 @@ namespace Inkton.Nester.ViewModels
             _editCredit = new Credit();
 
             _editPaymentMethod = new PaymentMethod();
-            _editPaymentMethod.Owner = Keeper.User;
+            _editPaymentMethod.OwnedBy = Keeper.User;
         }
 
         public Credit EditCredit
@@ -95,38 +95,38 @@ namespace Inkton.Nester.ViewModels
             set { SetProperty(ref _paymentMethodProofDetail, value); }
         }
 
-        override public async Task<Cloud.ServerStatus> InitAsync()
+        public async Task InitAsync()
         {
-            return await QueryPaymentMethodAsync(false, false);
+            await QueryPaymentMethodAsync(false, false);
         }
 
-        public async Task<Cloud.ServerStatus> QueryCreditAsync(Credit credit = null,
+        public async Task<Cloud.ResultSingle<Credit>> QueryCreditAsync(Credit credit = null,
             bool dCache = false, bool throwIfError = true)
         {
             Credit theCredit = credit == null ? _editCredit : credit;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<Credit>.WaitForObjectAsync(
-                throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit>(
+            Cloud.ResultSingle<Credit> result = await Cloud.ResultSingle<Credit>.WaitForObjectAsync(
+                throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit, Cloud.ResultSingle<Credit>>(
                     Keeper.Service.QueryAsync), dCache, null, null);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _editCredit = status.PayloadToObject<Credit>();
+                _editCredit = result.Data.Payload;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryPaymentMethodAsync(
+        public async Task<Cloud.ResultSingle<PaymentMethod>> QueryPaymentMethodAsync(
             bool dCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
-                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
+            Cloud.ResultSingle<PaymentMethod> result = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
+                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, Cloud.ResultSingle<PaymentMethod>>(
                     Keeper.Service.QueryAsync), dCache, null, null);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {                
-                _editPaymentMethod = status.PayloadToObject<PaymentMethod>();
+                _editPaymentMethod = result.Data.Payload;
                 DisplayPaymentMethodProof = _editPaymentMethod.Proof != null;
 
                 if (DisplayPaymentMethodProof)
@@ -146,10 +146,10 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> CreatePaymentMethodAsync(
+        public async Task<Cloud.ResultSingle<PaymentMethod>> CreatePaymentMethodAsync(
             string cardNumber, int expiryMonth, int expiryYear, string cvc, 
             bool doCache = false, bool throwIfError = true)
         {
@@ -160,13 +160,13 @@ namespace Inkton.Nester.ViewModels
             data.Add("exp_year", expiryYear.ToString());
             data.Add("cvc", cvc);
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
-                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod>(
+            Cloud.ResultSingle<PaymentMethod> result = await Cloud.ResultSingle<PaymentMethod>.WaitForObjectAsync(
+                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, Cloud.ResultSingle<PaymentMethod>>(
                     Keeper.Service.CreateAsync), doCache, data);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _editPaymentMethod = status.PayloadToObject<PaymentMethod>();
+                _editPaymentMethod = result.Data.Payload;
                 DisplayPaymentMethodProof = _editPaymentMethod.Proof != null;
 
                 if (DisplayPaymentMethodProof)
@@ -186,42 +186,42 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryBillingCyclesAsync(
+        public async Task<Cloud.ResultMultiple<BillingCycle>> QueryBillingCyclesAsync(
             bool doCache = true, bool throwIfError = true)
         {
             BillingCycle seed = new BillingCycle();
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<BillingCycle>.WaitForObjectAsync(
+            Cloud.ResultMultiple<BillingCycle> result = await Cloud.ResultMultiple<BillingCycle>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, seed, doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _billingCycles = status.PayloadToList<BillingCycle>();
+                _billingCycles = result.Data.Payload;
                 OnPropertyChanged("BillingCycles");
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryUserBillingTasksAsync(IDictionary<string, string> filter,
+        public async Task<Cloud.ResultMultiple<UserBillingTask>> QueryUserBillingTasksAsync(IDictionary<string, string> filter,
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();
-            seed.Owner = Keeper.User;
-            
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<UserBillingTask>.WaitForObjectAsync(
+            seed.OwnedBy = Keeper.User;
+
+            Cloud.ResultMultiple<UserBillingTask> result = await Cloud.ResultMultiple<UserBillingTask>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, seed, doCache, filter);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _userBillingTasks = status.PayloadToList<UserBillingTask>();
+                _userBillingTasks = result.Data.Payload;
                 OnPropertyChanged("UserBillingTasks");
             }
 
-            return status;
+            return result;
         }
 
         public string PaymentNotice

@@ -23,7 +23,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using Inkton.Nester.Models;
+using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -66,151 +66,151 @@ namespace Inkton.Nester.ViewModels
 
             if (Keeper.BaseModels.TargetViewModel != null)
                 Keeper.BaseModels.TargetViewModel
-                .EditApp.Owner = newPermit.Owner;
+                .EditApp.OwnedBy = newPermit.Owner;
             if (Keeper.BaseModels.PaymentViewModel != null)
                 Keeper.BaseModels.PaymentViewModel
-                .EditPaymentMethod.Owner = newPermit.Owner;
+                .EditPaymentMethod.OwnedBy = newPermit.Owner;
             if (Keeper.BaseModels.AllApps != null)
                 Keeper.BaseModels.AllApps
-                .EditApp.Owner = newPermit.Owner;
+                .EditApp.OwnedBy = newPermit.Owner;
             if (Keeper.Service != null)
                 Keeper.Service.Permit = newPermit;
 
-            Cloud.Object.CopyPropertiesTo(newPermit, _permit);
+            newPermit.CopyTo(_permit);
         }
 
-        public Cloud.ServerStatus Signup(
+        public Cloud.ResultSingle<Permit> Signup(
             bool throwIfError = true)
         {
-            Cloud.ServerStatus status =
+            Cloud.ResultSingle<Permit> result =
                 Keeper.Service.Signup(_permit);
 
-            if (status.Code < 0)
+            if (result.Code < 0)
             {
                 if (throwIfError)
-                    status.Throw();
+                    result.Throw();
             }
             else
             {
-                Cloud.Object.CopyPropertiesTo(
-                    _permit.Owner, Keeper.User);
+                _permit.Owner.CopyTo(
+                    Keeper.User);
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> RecoverPasswordAsync(
+        public async Task<Cloud.ResultSingle<Permit>> RecoverPasswordAsync(
             bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await
+            Cloud.ResultSingle<Permit> result = await
                 Keeper.Service.RecoverPasswordAsync(_permit);
 
-            if (status.Code < 0)
+            if (result.Code < 0)
             {
                 if (throwIfError)
-                    status.Throw();
+                    result.Throw();
             }
 
-            return status;
+            return result;
         }
 
-        public Cloud.ServerStatus QueryToken(
+        public Cloud.ResultSingle<Permit> QueryToken(
             bool throwIfError = true)
         {
-            Cloud.ServerStatus status =
+            Cloud.ResultSingle<Permit> result =
                 Keeper.Service.QueryToken(_permit);
 
-            if (status.Code < 0)
+            if (result.Code < 0)
             {
                 if (throwIfError)
-                    status.Throw();
+                    result.Throw();
             }
             else
             {
-                ChangePermit(status.PayloadToObject<Permit>());
+                ChangePermit(result.Data.Payload);
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryTokenAsync(
+        public async Task<Cloud.ResultSingle<Permit>> QueryTokenAsync(
             bool throwIfError = true)
         {
-            Cloud.ServerStatus status =
+            Cloud.ResultSingle<Permit> result =
                 await Keeper.Service.QueryTokenAsync(_permit);
 
-            if (status.Code < 0)
+            if (result.Code < 0)
             {
                 if (throwIfError)
-                    status.Throw();
+                    result.Throw();
             }
             else
             {
-                ChangePermit(status.PayloadToObject<Permit>());
+                ChangePermit(result.Data.Payload);
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> ResetTokenAsync(
+        public async Task<Cloud.ResultSingle<Permit>> ResetTokenAsync(
             bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await
+            Cloud.ResultSingle<Permit> result = await
                 Keeper.Service.ResetTokenAsync(_permit);
 
-            if (status.Code < 0)
+            if (result.Code < 0)
             {
                 if (throwIfError)
-                    status.Throw();
+                    result.Throw();
             }
             else
             {
                 ChangePermit(_permit);
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> UpdateUserAsync(User user = null,
+        public async Task<Cloud.ResultSingle<User>> UpdateUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
             User theUser = user == null ? _permit.Owner : user;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<User>.WaitForObjectAsync(
-                throwIfError, user, new Cloud.CachedHttpRequest<User>(
+            Cloud.ResultSingle<User> result = await Cloud.ResultSingle<User>.WaitForObjectAsync(
+                throwIfError, user, new Cloud.CachedHttpRequest<User, Cloud.ResultSingle<User>>(
                     Keeper.Service.UpdateAsync), doCache);
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> DeleteUserAsync(User user = null,
+        public async Task<Cloud.ResultSingle<User>> DeleteUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
             User theUser = user == null ? _permit.Owner : user;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<User>.WaitForObjectAsync(
-                throwIfError, theUser, new Cloud.CachedHttpRequest<User>(
+            Cloud.ResultSingle<User> result = await Cloud.ResultSingle<User>.WaitForObjectAsync(
+                throwIfError, theUser, new Cloud.CachedHttpRequest<User, Cloud.ResultSingle<User>>(
                     Keeper.Service.RemoveAsync), doCache);
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryUserEventsAsync(User user,
+        public async Task< Cloud.ResultMultiple<UserEvent>> QueryUserEventsAsync(User user,
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.Owner = Keeper.User;
+            userEventSeed.OwnedBy = Keeper.User;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<UserEvent>.WaitForObjectAsync(
+             Cloud.ResultMultiple<UserEvent> result = await Cloud.ResultMultiple<UserEvent>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, userEventSeed, doCache);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _userEvents = status.PayloadToList<UserEvent>();
+                _userEvents = result.Data.Payload;
             }
 
             OnPropertyChanged("UserEvents");
-            return status;
+            return result;
         }
 
         public ObservableCollection<UserEvent> UserEvents

@@ -20,25 +20,103 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
+using System.Net;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.ObjectModel;
+using System.Resources;
 using System.Reflection;
+using System.Linq;
+using Xamarin.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Inkton.Nest.Cloud;
 
 namespace Inkton.Nester.Cloud
 {
-    [JsonObject]
-    public class DataContainer<T>
+    public class Result<T> : ResultBase<T>
     {
-        public T Payload
+        public HttpStatusCode HttpStatus;
+
+        public Result(int code = -999)
         {
-            get; set;
+            Code = code;
+            Text = "unknown";
+            Notes = "none";
+            HttpStatus = HttpStatusCode.NotFound;
+        }
+
+        public void Throw()
+        {
+            string message = "Failed to connect to Nest server - Please check Internet connectiviy";
+
+            if (Text != null && Text.Length > 0)
+            {
+                message = GetLocalDescription();
+            }
+            if (Notes != null && Notes.Length > 0)
+            {
+                message += " - " + Notes;
+            }
+
+            throw new Exception(message);
+        }
+
+        public string GetLocalDescription()
+        {
+            ResourceManager resmgr = (Application.Current as INesterControl).GetResourceManager();
+            return resmgr.GetString(Text,
+                System.Globalization.CultureInfo.CurrentUICulture);
+        }
+
+        public static Task<ResultT> WaitAsync<ResultT>(Task<ResultT> task)
+        {
+            // Ensure that awaits were called with .ConfigureAwait(false)
+
+            var wait = new ManualResetEventSlim(false);
+
+            var continuation = task.ContinueWith(_ =>
+            {
+                wait.Set();
+                return _.Result;
+            });
+
+            wait.Wait();
+
+            return continuation;
+        }
+
+        protected static void FillNullsFrom(CloudObject thisObject, CloudObject otherObject)
+        {
+            /* Fill otherObject null properties with 
+             * this object object properties.
+             */
+
+            var sourceProps = otherObject.GetType().GetRuntimeProperties()
+                             .Where(x => x.CanWrite).ToList();
+            var destProps = otherObject.GetType().GetRuntimeProperties()
+                   .Where(x => x.CanWrite).ToList();
+
+            foreach (var sourceProp in sourceProps)
+            {
+                var value = sourceProp.GetValue(thisObject, null);
+                var p = destProps.FirstOrDefault(x => x.Name == sourceProp.Name);
+
+                if (p != null)
+                {
+                    var valueDst = p.GetValue(otherObject, null);
+
+                    if (valueDst == null)
+                    {
+                        p.SetValue(otherObject, value, null);
+                    }
+                }
+            }
         }
     }
 
-    class SingleDataContainerConverter<T> : JsonConverter where T : Cloud.ManagedEntity, new()
+    class SingleDataContainerConverter<T> : JsonConverter where T : Inkton.Nest.Cloud.CloudObject, new()
     {
         public override bool CanConvert(Type objectType)
         {
@@ -66,9 +144,9 @@ namespace Inkton.Nester.Cloud
             DataContainer<T> target = Create(objectType, jObject);
             target.Payload = new T();
 
-            if (jObject[target.Payload.Entity] != null)
+            if (jObject[target.Payload.GetObjectName()] != null)
             {
-                target.Payload = jObject[target.Payload.Entity].ToObject<T>(serializer);
+                target.Payload = jObject[target.Payload.GetObjectName()].ToObject<T>(serializer);
             }
                 
             return target;
@@ -80,7 +158,7 @@ namespace Inkton.Nester.Cloud
         }
     }
 
-    class MultipleDataContainerConverter<T> : JsonConverter where T : Cloud.ManagedEntity, new()
+    class MultipleDataContainerConverter<T> : JsonConverter where T : Inkton.Nest.Cloud.CloudObject, new()
     {
         public override bool CanConvert(Type objectType)
         {
@@ -107,7 +185,7 @@ namespace Inkton.Nester.Cloud
 
             DataContainer<ObservableCollection<T>> target = Create(objectType, jObject);
             T type = new T();
-            string key = type.Collection.TrimEnd('/');
+            string key = type.GetCollectionName();
 
             if (jObject[key] != null)
             {
@@ -131,123 +209,120 @@ namespace Inkton.Nester.Cloud
         }
     }
 
-    public class ResultBase<T>
+    public class ResultSingle<PayloadT> : Result<PayloadT> where PayloadT : Inkton.Nest.Cloud.CloudObject, new()
     {
-        public ResultBase()
-        {
-            ResultCode = -1;
-            ResultText = "Uknown Error";
-        }
+        public ResultSingle() { }
 
-        [JsonProperty("notes")]
-        public string Notes { get; set; }
-        [JsonProperty("result_code")]
-        public int ResultCode { get; set; }
-        [JsonProperty("result_text")]
-        public string ResultText { get; set; }
-        [JsonProperty("data")]
-        public DataContainer<T> Data { get; set; }
-    }
+        public ResultSingle(int code) : base(code) { }
 
-    public class ResultSingle<PayloadT> : ResultBase<PayloadT> where PayloadT : Cloud.ManagedEntity, new()
-    {
-        public static ServerStatus ConvertObject(string json, PayloadT seed)
+        public static ResultSingle<PayloadT> ConvertObject(string json, PayloadT seed)
         {
             ResultSingle<PayloadT> result = JsonConvert.DeserializeObject<ResultSingle<PayloadT>>(json, 
                 new SingleDataContainerConverter<PayloadT>());
 
-            if (result.ResultCode == 0 && result.Data != null)
+            if (result.Code == 0 && result.Data != null)
             {
-                Cloud.Object.FillBlanks(seed, result.Data.Payload);
+                /* make a complete object by setting null
+                 * values in the received object by the seed
+                 * object
+                 */
+                FillNullsFrom(seed, result.Data.Payload);
             }
 
-            return ServerStatus.FromServerResult<ResultSingle<PayloadT>, PayloadT>(result);
+            return result;
         }
 
-        public static ServerStatus WaitForObject(bool throwIfError, PayloadT seed,
-            CachedHttpRequest<PayloadT> request, bool doCache = true, IDictionary<string, string> data = null,
+        public static ResultSingle<PayloadT> WaitForObject(bool throwIfError, PayloadT seed,
+            CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request, bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
-            ServerStatus status = Cloud.Object.WaitAsync(
-                Task<ServerStatus>.Run(async () => await request(seed, data, subPath, doCache))
+            ResultSingle<PayloadT> result = ResultSingle<PayloadT>.WaitAsync(
+                Task<ResultSingle<PayloadT>>.Run(async () => await request(seed, data, subPath, doCache))
                 ).Result;
 
-            if (status.Code < 0 && throwIfError)
+            if (result.Code < 0 && throwIfError)
             {
-                status.Throw();
+                result.Throw();
             }
 
-            return status;
+            return result;
         }
 
-        public static async Task<ServerStatus> WaitForObjectAsync(bool throwIfError, PayloadT seed,
-            CachedHttpRequest<PayloadT> request, bool doCache = true, IDictionary<string, string> data = null,
+        public static async Task<ResultSingle<PayloadT>> WaitForObjectAsync(bool throwIfError, PayloadT seed,
+            CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request, bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
-            Cloud.ServerStatus status = await
+            ResultSingle<PayloadT> result = await
                 request(seed, data, subPath, doCache);
 
-            if (status.Code < 0 && throwIfError)
+            if (result.Code < 0 && throwIfError)
             {
-                status.Throw();
+                result.Throw();
             }
 
-            return status;
+            return result;
         }
 
     }
 
-    public class ResultMultiple<PayloadT> : ResultBase<ObservableCollection<PayloadT>> where PayloadT : Cloud.ManagedEntity, new()
+    public class ResultMultiple<PayloadT> : Result<ObservableCollection<PayloadT>> where PayloadT : Inkton.Nest.Cloud.CloudObject, new()
     {
-        public static ServerStatus ConvertObject(string json, PayloadT seed)
+        public ResultMultiple() { }
+
+        public ResultMultiple(int code) : base(code) { }
+
+        public static ResultMultiple<PayloadT> ConvertObject(string json, PayloadT seed)
         {
             ResultMultiple<PayloadT> result =
                 JsonConvert.DeserializeObject<ResultMultiple<PayloadT>>(json, 
                     new MultipleDataContainerConverter<PayloadT>());
 
-            if (result.ResultCode == 0 && result.Data != null)
+            if (result.Code == 0 && result.Data != null)
             {
                 foreach (var item in result.Data.Payload)
                 {
-                    Cloud.Object.FillBlanks(seed, item);
+                    /* make a complete object by setting null
+                     * values in the received object by the seed
+                     * object
+                     */
+                    FillNullsFrom(seed, item);
                 }
             }
 
-            return ServerStatus.FromServerResult<ResultMultiple<PayloadT>, 
-                ObservableCollection<PayloadT>>(result);
+            return result;
         }
 
-        public static ServerStatus WaitForObject(
+        public static ResultMultiple<PayloadT> WaitForObject(
             NesterService nesterService, bool throwIfError, PayloadT seed,
             bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
-            Cloud.ServerStatus status = Cloud.Object.WaitAsync(
-                Task<ServerStatus>.Run(async () => await nesterService.QueryAsyncListAsync(seed, data, subPath, doCache))
+            ResultMultiple<PayloadT> result = ResultMultiple<PayloadT>.WaitAsync(
+                Task<ResultMultiple<PayloadT>>.Run(async () => await nesterService.QueryAsyncListAsync(seed, data, subPath, doCache))
                 ).Result;
 
-            if (status.Code < 0 && throwIfError)
+            if (result.Code < 0 && throwIfError)
             {
-                status.Throw();
+                result.Throw();
             }
 
-            return status;
+            return result;
         }
 
-        public static async Task<ServerStatus> WaitForObjectAsync(
+        public static async Task<ResultMultiple<PayloadT>> WaitForObjectAsync(
             NesterService nesterService, bool throwIfError, PayloadT seed, 
             bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
-            Cloud.ServerStatus status = await
+            ResultMultiple<PayloadT> result = await
                 nesterService.QueryAsyncListAsync(seed, data, subPath, doCache);
 
-            if (status.Code < 0 && throwIfError)
+            if (result.Code < 0 && throwIfError)
             {
-                status.Throw();
+                result.Throw();
             }
 
-            return status;
+            return result;
         }
     }
 }

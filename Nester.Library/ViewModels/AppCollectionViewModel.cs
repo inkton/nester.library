@@ -23,7 +23,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Inkton.Nester.Models;
+using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -34,7 +34,7 @@ namespace Inkton.Nester.ViewModels
         public AppCollectionViewModel()
         {
             _editApp = new App();
-            _editApp.Owner = Keeper.User;
+            _editApp.OwnedBy = Keeper.User;
             _appModels = new ObservableCollection<AppViewModel>();
         }
 
@@ -50,15 +50,15 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public async Task<Cloud.ServerStatus> LoadApps(
+        public async Task<Cloud.ResultMultiple<App>> LoadApps(
             bool doCache = true, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<App>.WaitForObjectAsync(
+            Cloud.ResultMultiple<App> result = await Cloud.ResultMultiple<App>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, _editApp, doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                ObservableCollection<App> apps = status.PayloadToList<App>();
+                ObservableCollection<App> apps = result.Data.Payload;
 
                 if (apps.Any())
                 {
@@ -69,17 +69,14 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public Cloud.ServerStatus AddApp(App app)
+        public void AddApp(App app)
         {
             AppViewModel appModel = new AppViewModel();
             appModel.EditApp = app;
             AddModel(appModel);
-
-            return Task<Cloud.ServerStatus>
-                .Run(async () => await appModel.InitAsync()).Result;            
         }
 
         public void AddModel(AppViewModel appModel)

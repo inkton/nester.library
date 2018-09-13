@@ -27,7 +27,7 @@ using System.Resources;
 using System.Collections.Generic;
 using Xamarin.Forms;
 using Newtonsoft.Json;
-using Inkton.Nester.Models;
+using Inkton.Nest.Model;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -104,19 +104,11 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        override public async Task<Cloud.ServerStatus> InitAsync()
+        public async Task InitAsync()
         {
-            Cloud.ServerStatus status;
-
-            status = await QueryAppSubscriptions();
-            if (status.Code < 0)
-            {
-                return status;
-            }
+            await QueryAppSubscriptions();
 
             CreateServicesTable();
-
-            return status;
         }
 
         public void CreateServicesTable()
@@ -124,7 +116,7 @@ namespace Inkton.Nester.ViewModels
             AppServiceSubscription subscription;
 
             subscription = _editApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "app");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "app");
 
             if (subscription != null)
             {
@@ -140,12 +132,12 @@ namespace Inkton.Nester.ViewModels
                         subscription.ServiceTier);
                 }
 
-                _selectedAppServiceTag = subscription.ServiceTier.Service.Tag;
+                _selectedAppServiceTag = (subscription.ServiceTier.OwnedBy as AppService).Tag;
             }
 
             _storageServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "storage");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "storage");
 
             if (subscription != null)
             {
@@ -155,7 +147,7 @@ namespace Inkton.Nester.ViewModels
 
             _domainServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "domain");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "domain");
 
             if (subscription != null)
             {
@@ -165,7 +157,7 @@ namespace Inkton.Nester.ViewModels
 
             _monitorServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "monitor");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "monitor");
 
             if (subscription != null)
             {
@@ -175,7 +167,7 @@ namespace Inkton.Nester.ViewModels
 
             _batchServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "batch");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "batch");
 
             if (subscription != null)
             {
@@ -185,7 +177,7 @@ namespace Inkton.Nester.ViewModels
 
             _trackServiceTableItem = null;
             subscription = _editApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "track");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "track");
 
             if (subscription != null)
             {
@@ -194,76 +186,71 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public async Task<Cloud.ServerStatus> QueryServicesAsync(
+        public async Task<Cloud.ResultMultiple<AppService>> QueryServicesAsync(
             bool doCache = true, bool throwIfError = true)
         {
             AppService serviceSeed = new AppService();
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppService>.WaitForObjectAsync(
+            Cloud.ResultMultiple<AppService> result = await Cloud.ResultMultiple<AppService>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, serviceSeed, doCache);
 
-            if (status.Code < 0)
+            if (result.Code < 0)
             {
-                return status;
+                return result;
             }
 
-            _appServices = status.PayloadToList<AppService>();
+            _appServices = result.Data.Payload;
             AppServiceTier tierSeed = new AppServiceTier();
+            Cloud.ResultMultiple<AppServiceTier> resultTier;
 
             foreach (AppService service in _appServices)
             {
-                tierSeed.Service = service;
+                tierSeed.OwnedBy = service;
 
-                status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
+                resultTier = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
                     Keeper.Service, throwIfError, tierSeed, doCache);
 
-                if (status.Code == 0)
+                if (result.Code == 0)
                 {
-                    service.Tiers = status.PayloadToList<AppServiceTier>();
+                    service.Tiers = resultTier.Data.Payload;
                 }
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppServiceTierLocationsAsync(AppServiceTier teir,
+        public async Task<Cloud.ResultMultiple<Forest>> QueryAppServiceTierLocationsAsync(AppServiceTier teir,
             bool doCache = true, bool throwIfError = true)
         {
             Forest forestSeeder = new Forest();
-            forestSeeder.AppServiceTier = teir;
+            forestSeeder.OwnedBy = teir;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+            return await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, forestSeeder, doCache);
-
-            return status;
         }
 
-        public async Task<Cloud.ServerStatus> CreateSubscription(AppServiceTier tier,
+        public async Task<Cloud.ResultSingle<AppServiceSubscription>> CreateSubscription(AppServiceTier tier,
             bool doCache = true, bool throwIfError = true)
         {
             AppServiceSubscription subscription = new AppServiceSubscription();
-            subscription.App = _editApp;
+            subscription.OwnedBy = _editApp;
             subscription.ServiceTier = tier;
             subscription.AppServiceTierId = tier.Id;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
-                throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
+            return await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
+                throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription, Cloud.ResultSingle<AppServiceSubscription>>(
                     Keeper.Service.CreateAsync), doCache);
-
-            return status;
         }
 
-        public async Task<Cloud.ServerStatus> RemoveSubscriptionAsync(AppServiceSubscription subscription,
+        public async Task<Cloud.ResultSingle<AppServiceSubscription>> RemoveSubscriptionAsync(AppServiceSubscription subscription,
              bool doCache = false, bool throwIfError = true)
         {
-            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
-                throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription>(
+            return await Cloud.ResultSingle<AppServiceSubscription>.WaitForObjectAsync(
+                throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription, Cloud.ResultSingle<AppServiceSubscription>>(
                     Keeper.Service.RemoveAsync), doCache);
-
-            return status;
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppSubscriptions(App app = null,
+        public async Task<Cloud.ResultMultiple<AppServiceSubscription>> QueryAppSubscriptions(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
             if (!_appServices.Any())
@@ -272,19 +259,18 @@ namespace Inkton.Nester.ViewModels
             }
 
             AppServiceSubscription subSeeder = new AppServiceSubscription();
-            subSeeder.App = (app == null ? _editApp : app);
+            subSeeder.OwnedBy = (app == null ? _editApp : app);
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceSubscription>.WaitForObjectAsync(
+            Cloud.ResultMultiple<AppServiceSubscription> result = await Cloud.ResultMultiple<AppServiceSubscription>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, subSeeder, doCache);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                ObservableCollection<AppServiceSubscription> serviceSubscriptions = 
-                    status.PayloadToList<AppServiceSubscription>();
+                ObservableCollection<AppServiceSubscription> serviceSubscriptions = result.Data.Payload;
 
                 foreach (AppServiceSubscription subscription in serviceSubscriptions)
                 {
-                    subscription.App = subSeeder.App;
+                    subscription.OwnedBy = subSeeder.OwnedBy;
 
                     foreach (AppService service in _appServices)
                     {
@@ -298,50 +284,43 @@ namespace Inkton.Nester.ViewModels
                     }
                 }
 
-                subSeeder.App.Subscriptions = serviceSubscriptions;
+                (subSeeder.OwnedBy as App).Subscriptions = serviceSubscriptions;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppUpgradeServiceTiersAsync(
+        public async Task<Cloud.ResultMultiple<AppServiceTier>> QueryAppUpgradeServiceTiersAsync(
             AppService service, Deployment deployment = null, bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            service.Deployment = theDeployment;
+            service.OwnedBy = theDeployment;
 
             AppServiceTier tierSeed = new AppServiceTier();
-            tierSeed.Service = service;
+            tierSeed.OwnedBy = service;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
+            Cloud.ResultMultiple<AppServiceTier> result = await Cloud.ResultMultiple<AppServiceTier>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, tierSeed, doCache);
 
-            if (status.Code >= 0)
+            if (result.Code >= 0)
             {
-                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
+                _upgradableAppTiers = result.Data.Payload;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> UpdateAppUpgradeServiceTiersAsync(
+        public async Task<Cloud.ResultSingle<AppServiceTier>> UpdateAppUpgradeServiceTiersAsync(
             AppService service = null, AppServiceTier tierSeed = null, Deployment deployment = null,
             bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
-            service.Deployment = theDeployment;
-            _upgradeAppServiceTier.Service = service;
+            service.OwnedBy = theDeployment;
+            _upgradeAppServiceTier.OwnedBy = service;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<AppServiceTier>.WaitForObjectAsync(
-                throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier>(
+            return await Cloud.ResultSingle<AppServiceTier>.WaitForObjectAsync(
+                throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier, Cloud.ResultSingle<AppServiceTier>>(
                     Keeper.Service.UpdateAsync), doCache);
-
-            if (status.Code >= 0)
-            {
-                _upgradableAppTiers = status.PayloadToList<AppServiceTier>();
-            }
-
-            return status;
         }
 
         public static ServiceTableItem CreateServiceItem(AppServiceTier tier)
@@ -349,11 +328,11 @@ namespace Inkton.Nester.ViewModels
             ServiceTableItem item = new ServiceTableItem();
 
             item.Name = tier.Name;
-            item.ProvidedBy = tier.Service.Name;
+            item.ProvidedBy = (tier.OwnedBy as AppService).Name;
             item.Period = tier.Period;
             item.Cost = tier.ItemCost;
             item.Type = tier.Type;
-            item.FeaturesAll = TranslateFeaturesAll(tier.Service);
+            item.FeaturesAll = TranslateFeaturesAll(tier.OwnedBy as AppService);
             item.FeaturesIncluded = TranslateFeaturesIncluded(tier);
             item.Tier = tier;
 
@@ -483,7 +462,7 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return TranslateFeaturesAll(
-                    SelectedAppService.Tier.Service);
+                    (SelectedAppService.Tier.OwnedBy as AppService));
             }
         }
 
@@ -499,7 +478,7 @@ namespace Inkton.Nester.ViewModels
         public async Task SwitchAppServiceTierAsync(AppServiceTier newTier)
         {
             AppServiceSubscription subscription = EditApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "app");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "app");
 
             if (subscription != null)
             {
@@ -559,7 +538,7 @@ namespace Inkton.Nester.ViewModels
         public async Task RemoveDefaultStorageServiceAsync()
         {
             AppServiceSubscription subscription = EditApp.Subscriptions.FirstOrDefault(
-                x => x.ServiceTier.Service.Type == "storage");
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "storage");
 
             if (subscription != null)
             {

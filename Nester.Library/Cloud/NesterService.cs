@@ -8,7 +8,7 @@
     and/or sell copies of the Software, and to permit persons to whom the Software
     is furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in
+    The above copyright notice and this permission ServerStatusnotice shall be included in
     all copies or substantial portions of the Software.
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -30,7 +30,8 @@ using System.Linq;
 using Newtonsoft.Json;
 using Flurl;
 using Flurl.Http;
-using Inkton.Nester.Models;
+using Inkton.Nest.Cloud;
+using Inkton.Nest.Model;
 using Inkton.Nester.Storage;
 
 namespace Inkton.Nester.Cloud
@@ -51,10 +52,10 @@ namespace Inkton.Nester.Cloud
         public string Password;
     }
 
-    public delegate Task<Cloud.ServerStatus> HttpRequest<T>(
-        T seed, IFlurlRequest flurlRequestl) where T : Cloud.ManagedEntity, new();
-    public delegate Task<Cloud.ServerStatus> CachedHttpRequest<T>(T seed,
-        IDictionary<string, string> data, string subPath = null, bool doCache = true);
+    public delegate Task<ResultT> HttpRequest<PayloadT, ResultT>(
+        PayloadT seed, IFlurlRequest flurlRequestl) where PayloadT : CloudObject, new();
+    public delegate Task<ResultT> CachedHttpRequest<PayloadT, ResultT>(PayloadT seed,
+        IDictionary<string, string> data, string subPath = null, bool doCache = true) where PayloadT : CloudObject, new();
 
     public class NesterService
     {
@@ -120,7 +121,7 @@ namespace Inkton.Nester.Cloud
             return ip;
         }
 
-        public ServerStatus Signup(Permit permit)
+        public ResultSingle<Permit> Signup(Permit permit)
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("password", permit.Password);
@@ -135,15 +136,15 @@ namespace Inkton.Nester.Cloud
                 data.Add("territory_iso_code", permit.Owner.TerritoryISOCode);
             }
 
-            ServerStatus status = Object.WaitAsync(
-                Task<ServerStatus>.Run(async () => await PostAsync(
+            ResultSingle<Permit> result = ResultSingle<Permit>.WaitAsync(
+                Task<ResultSingle<Permit>>.Run(async () => await PostAsync(
                     permit, CreateRequest(permit, false, data)))
                 ).Result;
 
-            return status;
+            return result;
         }
 
-        public async Task<ServerStatus> SignupAsync(Permit permit)
+        public async Task<ResultSingle<Permit>> SignupAsync(Permit permit)
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("password", permit.Password);
@@ -162,21 +163,21 @@ namespace Inkton.Nester.Cloud
                 CreateRequest(permit, false, data));
         }
 
-        public async Task<ServerStatus> RecoverPasswordAsync(Permit permit)
+        public async Task<ResultSingle<Permit>> RecoverPasswordAsync(Permit permit)
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("email", permit.Owner.Email);
 
-            ServerStatus status = await PutAsync(permit, 
+            ResultSingle<Permit> result = await PutAsync(permit, 
                 CreateRequest(permit, true, data));
 
-            return status;
+            return result;
         }
 
         #region Utility
 
         private IFlurlRequest CreateRequest<T>(T seed, bool keyRequest,
-            IDictionary<string, string> data = null, string subPath = null) where T : Cloud.ManagedEntity, new()
+            IDictionary<string, string> data = null, string subPath = null) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
             string fullUrl = Endpoint;
 
@@ -186,7 +187,7 @@ namespace Inkton.Nester.Cloud
             }
             else
             {
-                fullUrl += seed.Collection;
+                fullUrl += seed.CollectionPath;
             }
 
             if (subPath != null)
@@ -195,8 +196,9 @@ namespace Inkton.Nester.Cloud
             }
 
             IFlurlRequest request = fullUrl.SetQueryParams(data)
-                .WithHeader("Accept", string.Format("application/vnd.nest.v{0}+json", _version))
-                .WithHeader("Device", _deviceSignature);
+                .WithHeader("x-device-signature", _deviceSignature)
+                .WithHeader("x-api-version", string.Format("{0}.0", _version))
+                .WithHeader("Accept", string.Format("application/vnd.nest.v{0}+json", _version));
 
             if (_basicAuth.Enabled)
             {
@@ -206,8 +208,8 @@ namespace Inkton.Nester.Cloud
             return request;
         }   
 
-        private void LogConnectFailure(
-            ref Cloud.ServerStatus result, Exception ex)
+        private void LogConnectFailure<T>(
+            Result<T> result, Exception ex)
         {       
             if (ex is FlurlHttpException)
             {
@@ -223,7 +225,7 @@ namespace Inkton.Nester.Cloud
             result.Notes = "Failed to connect to remote server";
         }
 
-        public ServerStatus QueryToken(Permit permit = null)
+        public ResultSingle<Permit> QueryToken(Permit permit = null)
         {
             if (permit != null)
             {
@@ -233,16 +235,16 @@ namespace Inkton.Nester.Cloud
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("password", _permit.Password);
 
-            ServerStatus status = Object.WaitAsync(
-                Task<ServerStatus>.Run(async () => await GetAsync(
+            ResultSingle<Permit> result = ResultSingle<Permit>.WaitAsync(
+                Task<ResultSingle<Permit>>.Run(async () => await GetAsync(
                     _permit, CreateRequest(
                         _permit, true, data)))
                 ).Result;
 
-            return status;
+            return result;
         }
 
-        public async Task<ServerStatus> QueryTokenAsync(Permit permit = null)
+        public async Task<ResultSingle<Permit>> QueryTokenAsync(Permit permit = null)
         {
             if (permit != null)
             {
@@ -252,68 +254,56 @@ namespace Inkton.Nester.Cloud
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("password", _permit.Password);
 
-            ServerStatus status = await GetAsync(
+            ResultSingle<Permit> result = await GetAsync(
                 _permit, CreateRequest(
                     _permit, true, data));
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> ResetTokenAsync(Permit newPermit)
+        public async Task<ResultSingle<Permit>> ResetTokenAsync(Permit newPermit)
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("token", _permit.Token);
             data.Add("password", newPermit.Password);
 
-            Cloud.ServerStatus status = await DeleteAsync(
+            ResultSingle<Permit> result = await DeleteAsync(
                 _permit, CreateRequest(
                     _permit, true, data));
 
-            return status;
+            return result;
         }
 
-        private async Task<Cloud.ServerStatus> PostAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
+        private async Task<ResultSingle<T>> PostAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            Cloud.ServerStatus result = new Cloud.ServerStatus(
-                ServerStatus.NEST_RESULT_ERROR_LOCAL);
-
             string json = await flurlRequest.PostJsonAsync(seed)
                     .ReceiveString();
 
             return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
 
-        private async Task<Cloud.ServerStatus> GetAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
+        private async Task<ResultSingle<T>> GetAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            Cloud.ServerStatus result = new Cloud.ServerStatus(
-                ServerStatus.NEST_RESULT_ERROR_LOCAL);
-
             string json = await flurlRequest.GetAsync()
                     .ReceiveString();
 
             return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
 
-        private async Task<Cloud.ServerStatus> GetListAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
+        private async Task<ResultMultiple<T>> GetListAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            Cloud.ServerStatus result = new Cloud.ServerStatus(
-                ServerStatus.NEST_RESULT_ERROR_LOCAL);
-
             string json = await flurlRequest.GetAsync()
                     .ReceiveString();
 
             return Cloud.ResultMultiple<T>.ConvertObject(json, seed);
         }
 
-        private async Task<Cloud.ServerStatus> PutAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
+        private async Task<ResultSingle<T>> PutAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            Cloud.ServerStatus result = new Cloud.ServerStatus(
-                ServerStatus.NEST_RESULT_ERROR_LOCAL);
-
             string objJson = JsonConvert.SerializeObject(seed);
             var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
 
@@ -324,12 +314,9 @@ namespace Inkton.Nester.Cloud
             return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
             
-        private async Task<Cloud.ServerStatus> DeleteAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Cloud.ManagedEntity, new()
+        private async Task<Cloud.ResultSingle<T>> DeleteAsync<T>(
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            Cloud.ServerStatus result = new Cloud.ServerStatus(
-                ServerStatus.NEST_RESULT_ERROR_LOCAL);
-
             string objJson = JsonConvert.SerializeObject(seed);
             var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
 
@@ -339,13 +326,15 @@ namespace Inkton.Nester.Cloud
             return Cloud.ResultSingle<T>.ConvertObject(json, seed);
         }
 
-        private async Task<Cloud.ServerStatus> RetryWithFreshToken<T>(HttpRequest<T> request,
-            T seed, bool keyRequest, IDictionary<string, string> data,
-            string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
+        private async Task<ResultT> RetryWithFreshToken<PayloadT, ResultT, ResultReturnT>(
+            HttpRequest<PayloadT, ResultT> request,
+            PayloadT seed, bool keyRequest, IDictionary<string, string> data,
+            string subPath = null, bool doCache = true) 
+                where PayloadT : Inkton.Nest.Cloud.CloudObject, new()
+                where ResultT : Result<ResultReturnT> , new()
         {
             int retryCount = 3;
-            Cloud.ServerStatus result = new Cloud.ServerStatus(
-                ServerStatus.NEST_RESULT_ERROR_LOCAL);
+            ResultT result = new ResultT();
 
             if (data == null)
             {
@@ -384,7 +373,8 @@ namespace Inkton.Nester.Cloud
                                 }
                                 else
                                 {
-                                    ObservableCollection<T> list = result.Payload as ObservableCollection<T>;
+                                    ObservableCollection<PayloadT> list = result.Data.Payload 
+                                        as ObservableCollection<PayloadT>;
 
                                     if (list != null)
                                     {
@@ -404,7 +394,8 @@ namespace Inkton.Nester.Cloud
                                 }
                                 else
                                 {
-                                    ObservableCollection<T> list = result.Payload as ObservableCollection<T>;
+                                    ObservableCollection<PayloadT> list = result.Data.Payload 
+                                        as ObservableCollection<PayloadT>;
                                     
                                     if (list != null)
                                     {
@@ -423,13 +414,13 @@ namespace Inkton.Nester.Cloud
                 }
                 catch (Exception ex)
                 {
-                    LogConnectFailure(ref result, ex);
+                    LogConnectFailure<ResultReturnT>(result, ex);
                 }
 
                 if (_permit != null)
                 {
                     // Re-try with a fresh token
-                    _permit = QueryToken().PayloadToObject<Permit>();
+                    _permit = QueryToken().Data.Payload;
                 }
             }
 
@@ -438,56 +429,61 @@ namespace Inkton.Nester.Cloud
 
         #endregion
 
-        public async Task<Cloud.ServerStatus> CreateAsync<T>(T seed,
-            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
+        public async Task<Cloud.ResultSingle<T>> CreateAsync<T>(T seed,
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            return await RetryWithFreshToken(new HttpRequest<T>(PostAsync),
+            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
+                new HttpRequest<T, Cloud.ResultSingle<T>>(PostAsync),
                 seed, false, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ServerStatus> QueryAsync<T>(T seed,
-            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
+        public async Task<Cloud.ResultSingle<T>> QueryAsync<T>(T seed,
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
             if (doCache && _cache.Load<T>(seed))
             {
-                Cloud.ServerStatus status = new Cloud.ServerStatus(0);
-                status.Payload = seed;
-                return status;
+                Cloud.ResultSingle<T> result = new Cloud.ResultSingle<T>(0);
+                result.Data.Payload = seed;
+                return result;
             }
 
-            return await RetryWithFreshToken(new HttpRequest<T>(GetAsync),
+            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
+                new HttpRequest<T, Cloud.ResultSingle<T>>(GetAsync),
                 seed, true, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ServerStatus> QueryAsyncListAsync<T>(T seed,
-            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
+        public async Task<Cloud.ResultMultiple<T>> QueryAsyncListAsync<T>(T seed,
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
             /*
              * todo: Load list from cache
              *
             if (doCache && _storage.Load<T>(seed))
             {
-                Cloud.ServerStatus status = new Cloud.ServerStatus(0);
-                status.Payload = seed;
-                return status;
+                Cloud.ServerStatus result = new Cloud.ServerStatus(0);
+                result.Payload = seed;
+                return result;
             }
             */
 
-            return await RetryWithFreshToken(new HttpRequest<T>(GetListAsync),
+            return await RetryWithFreshToken<T, Cloud.ResultMultiple<T>, ObservableCollection<T>>(
+                new HttpRequest<T, Cloud.ResultMultiple<T>>(GetListAsync),
                 seed, false, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ServerStatus> UpdateAsync<T>(T seed,
-                IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Cloud.ManagedEntity, new()
+        public async Task<Cloud.ResultSingle<T>> UpdateAsync<T>(T seed,
+                IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            return await RetryWithFreshToken(new HttpRequest<T>(PutAsync),
+            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
+                new HttpRequest<T, Cloud.ResultSingle<T>>(PutAsync),
                 seed, true, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ServerStatus> RemoveAsync<T>(T seed,
-                IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Cloud.ManagedEntity, new()
+        public async Task<Cloud.ResultSingle<T>> RemoveAsync<T>(T seed,
+                IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            return await RetryWithFreshToken(new HttpRequest<T>(DeleteAsync),
+            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
+                new HttpRequest<T, Cloud.ResultSingle<T>>(DeleteAsync),
                 seed, true, data, subPath, doCache);
         }
     }

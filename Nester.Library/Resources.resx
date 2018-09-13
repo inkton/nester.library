@@ -477,4 +477,7 @@
   <data name="NEST_RESULT_ERROR_CREDIT_USED" xml:space="preserve">
     <value>Discount credit has already been used</value>
   </data>
+  <data name="NEST_RESULT_ERROR_AEVENT_NFOUND" xml:space="preserve">
+    <value>No audit records found</value>
+  </data>
 </root>

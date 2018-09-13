@@ -24,7 +24,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Inkton.Nester.Models;
+using Xamarin.Forms;
+using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -55,7 +56,7 @@ namespace Inkton.Nester.ViewModels
             // select uniflow default
             _editApp = new App();
             _editApp.Type = "uniflow";
-            _editApp.Owner = Keeper.User;
+            _editApp.OwnedBy = Keeper.User;
 
             _applicationTypes = new ObservableCollection<AppType> {
                 new AppType {
@@ -191,17 +192,12 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        override public async Task<Cloud.ServerStatus> InitAsync()
+        public async Task InitAsync()
         {
-            Cloud.ServerStatus status;
             System.Diagnostics.Debug.WriteLine(
                 string.Format("Begin - Init App - {0}", EditApp.Tag));
 
-            status = await QueryAppAsync();
-            if (status.Code < 0)
-            {
-                return status;
-            }
+            await QueryAppAsync();
 
             await _deploymentViewModel.InitAsync();
             await _servicesViewModel.InitAsync();
@@ -214,14 +210,14 @@ namespace Inkton.Nester.ViewModels
             System.Diagnostics.Debug.WriteLine(
                 string.Format("End - Init App - {0}", EditApp.Tag));
 
-            return status;
+            MessagingCenter.Send(this, "Updated", EditApp);
         }
 
         async public void NewAppAsync()
         {
             _editApp = new App();
             _editApp.Type = "uniflow";
-            _editApp.Owner = Keeper.User;
+            _editApp.OwnedBy = Keeper.User;
 
             _contactViewModel.EditApp = _editApp;
             _nestViewModel.EditApp = _editApp;
@@ -232,17 +228,17 @@ namespace Inkton.Nester.ViewModels
             await ServicesViewModel.QueryServicesAsync();
         }
 
-        async public Task<Cloud.ServerStatus> QueryStatusAsync()
+        async public Task<Cloud.ResultSingle<App>> QueryStatusAsync()
         {
-            Cloud.ServerStatus status = await QueryAppAsync();
-            if (status.Code == 0)
+            Cloud.ResultSingle<App> result = await QueryAppAsync();
+            if (result.Code == 0)
             {
                 await DeploymentViewModel.InitAsync();
             }
 
             OnPropertyChanged("EditApp");
 
-            return status;
+            return result;
         }
 
         async public void Reload()
@@ -252,97 +248,97 @@ namespace Inkton.Nester.ViewModels
             await ServicesViewModel.QueryServicesAsync();
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppNotificationsAsync(App app = null,
+        public async Task<Cloud.ResultMultiple<Notification>> QueryAppNotificationsAsync(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
             Notification notificationSeed = new Notification();
-            notificationSeed.App = theApp;
+            notificationSeed.OwnedBy = theApp;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<Notification>.WaitForObjectAsync(
+            Cloud.ResultMultiple<Notification> result = await Cloud.ResultMultiple<Notification>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, notificationSeed, doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                _notifications = status.PayloadToList<Notification>();
+                _notifications = result.Data.Payload;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppAsync(App app = null,
+        public async Task<Cloud.ResultSingle<App>> QueryAppAsync(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
+            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
                     Keeper.Service.QueryAsync), doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                EditApp = status.PayloadToObject<App>();
+                EditApp = result.Data.Payload;
 
                 if (_editApp.UserId == Keeper.User.Id)
                 {
-                    _editApp.Owner = Keeper.User;
+                    _editApp.OwnedBy = Keeper.User;
                 }
 
                 if (app != null)
-                    Cloud.Object.CopyPropertiesTo(_editApp, app);
+                    _editApp.CopyTo(app);
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> RemoveAppAsync(App app = null,
+        public async Task<Cloud.ResultSingle<App>> RemoveAppAsync(App app = null,
              bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
+            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
                     Keeper.Service.RemoveAsync), doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
                 EditApp = theApp;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> UpdateAppAsync(App app = null,
+        public async Task<Cloud.ResultSingle<App>> UpdateAppAsync(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
+            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
                     Keeper.Service.UpdateAsync), doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                EditApp = status.PayloadToObject<App>();
+                EditApp = result.Data.Payload;
             }
 
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> CreateAppAsync(AppServiceTier tier,
+        public async Task<Cloud.ResultSingle<App>> CreateAppAsync(AppServiceTier tier,
             App app = null, bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
             theApp.ServiceTierId = tier.Id;
 
-            Cloud.ServerStatus status = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App>(
+            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
                     Keeper.Service.CreateAsync), doCache);
 
-            if (status.Code == 0)
+            if (result.Code == 0)
             {
-                EditApp = status.PayloadToObject<App>();
-                _editApp.Owner = Keeper.User;
+                EditApp = result.Data.Payload;
+                _editApp.OwnedBy = Keeper.User;
 
                 if (throwIfError && _editApp.Status != "assigned")
                 {
@@ -354,21 +350,19 @@ namespace Inkton.Nester.ViewModels
                 await InitAsync();
 
                 if (app != null)
-                    Cloud.Object.CopyPropertiesTo(_editApp, app);
+                    _editApp.CopyTo(app);
             }
-            return status;
+            return result;
         }
 
-        public async Task<Cloud.ServerStatus> QueryAppServiceTierLocationsAsync(AppServiceTier teir,
+        public async Task<Cloud.ResultMultiple<Forest>> QueryAppServiceTierLocationsAsync(AppServiceTier teir,
             bool doCache = false, bool throwIfError = true)
         {
             Forest forestSeeder = new Forest();
-            forestSeeder.AppServiceTier = teir;
+            forestSeeder.OwnedBy = teir;
 
-            Cloud.ServerStatus status = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+            return await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, forestSeeder, doCache);
-
-            return status;
         }
     }
 }

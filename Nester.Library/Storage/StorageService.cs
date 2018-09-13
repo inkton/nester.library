@@ -24,6 +24,7 @@ using System;
 using System.IO;
 using Newtonsoft.Json;
 using Xamarin.Forms;
+using Inkton.Nest.Cloud;
 
 namespace Inkton.Nester.Storage
 {
@@ -70,23 +71,23 @@ namespace Inkton.Nester.Storage
             catch (Exception) { }
         }
 
-        private string GetObjectPath(Cloud.ManagedEntity obj)
+        private string GetObjectPath(CloudObject obj)
         {
             return Path + @"\" + obj.CollectionKey.TrimEnd('/') + ".json";
         }
 
-        public void Save<T>(T obj) where T : Cloud.ManagedEntity
+        public void Save<T>(T obj) where T : CloudObject
         {
-            if (!Directory.Exists(Path + @"\" + obj.Collection.TrimEnd('/')))
+            if (!Directory.Exists(Path + @"\" + obj.CollectionPath))
             {
-                Directory.CreateDirectory(Path + @"\" + obj.Collection.TrimEnd('/'));
+                Directory.CreateDirectory(Path + @"\" + obj.CollectionPath);
             }
 
             string json = JsonConvert.SerializeObject(obj, Formatting.Indented);
             File.WriteAllText(GetObjectPath(obj), json);
         }
 
-        public bool Load<T>(T obj) where T : Nester.Cloud.ManagedEntity
+        public bool Load<T>(T obj) where T : CloudObject
         {
             string path = GetObjectPath(obj);
             if (!File.Exists(path))
@@ -95,12 +96,12 @@ namespace Inkton.Nester.Storage
             }
 
             string json = File.ReadAllText(path);
-            T copy = JsonConvert.DeserializeObject<T>(json);
-            Nester.Cloud.Object.CopyPropertiesTo(copy, obj);
+            T received = JsonConvert.DeserializeObject<T>(json);
+            received.CopyTo(obj);
             return true;
         }
 
-        public void Remove<T>(T obj) where T : Cloud.ManagedEntity
+        public void Remove<T>(T obj) where T : CloudObject
         {
             if (File.Exists(GetObjectPath(obj)))
             {

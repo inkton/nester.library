@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Xamarin.Forms;
-using Inkton.Nester.Models;
+using Inkton.Nest.Model;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -64,7 +64,7 @@ namespace Inkton.Nester.ViewModels
 
                 if (_editApp != null)
                 {
-                    isOwner = _editApp.UserId == Keeper.User.Id;
+                    isOwner = (_editApp.OwnedBy as User).Id == Keeper.User.Id;
                 }
 
                 return isOwner;
@@ -121,11 +121,6 @@ namespace Inkton.Nester.ViewModels
             set { SetProperty(ref _isBusy, value); }
         }
         
-        public virtual Task<Cloud.ServerStatus> InitAsync()
-        {
-            return Task.FromResult(default(Cloud.ServerStatus));
-        }
-
         protected bool SetProperty<T>(ref T storage, T value,
                                         [CallerMemberName] string propertyName = null)
         {
@@ -144,13 +139,6 @@ namespace Inkton.Nester.ViewModels
             {
                 handler(this, new PropertyChangedEventArgs(propertyName));
             }
-        }
-
-        public void HandleCommand<T>(T obj, string command)
-        {
-            ManagedObjectMessage<T> doThis =
-                new ManagedObjectMessage<T>(command, obj);
-            MessagingCenter.Send(doThis, doThis.Type);
         }
     }
 }

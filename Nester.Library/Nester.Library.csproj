@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Title>Inkton NesterLibrary</Title>
     <PackageId>Inkton.NesterLibrary</PackageId>
-    <PackageVersion>1.3.6</PackageVersion>
+    <PackageVersion>1.3.7</PackageVersion>
     <PackageTags>paas,docker,nest.yt</PackageTags>
     <Authors>nest.yt</Authors>
     <Description>A Client UI Library for Nest.yt</Description>
@@ -17,10 +17,6 @@
     <RepositoryUrl>https://github.com/inkton/nester.library</RepositoryUrl>
     <RepositoryType>github</RepositoryType>
     <Platforms>AnyCPU</Platforms>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>full</DebugType>
-    <DebugSymbols>True</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Inkton.NestModel" Version="1.0.5" />
@@ -45,8 +41,5 @@
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
     <PackageReference Include="Xam.Plugins.Settings" Version="3.1.1" />
     <PackageReference Include="Xamarin.Forms" Version="3.1.0.697729" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="D:\Nest.yt Apps\Websock\Server\source\shared\nest.model\Nest.Model\Nest.Model.csproj" />
   </ItemGroup>
 </Project>

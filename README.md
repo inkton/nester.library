@@ -1,7 +1,3 @@
 # nester.library
 
-## Dependency Chart
-
-| Nester.Library Version  | Dependency    | Version       |
-| ----------------------- | ------------- | ------------- |
-| 1.3.5                   | nester.model  | 1.0.4         |
+Nester.Library is a library used by Xamarin clients that use the Nest.yt apps as a backend. Refer to the [Wiki](https://github.com/inkton/nester.library/wiki) for the documentation.

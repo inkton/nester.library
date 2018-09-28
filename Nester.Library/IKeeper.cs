@@ -43,7 +43,7 @@ namespace Inkton.Nester
         /// Holds, the authentication, 
         /// app and payment contexts
         /// <summary>
-        BaseModels BaseModels
+        BaseViewModels ViewModels
         {
             get;
         }
@@ -53,7 +53,7 @@ namespace Inkton.Nester
         /// <summary>
         AppViewModel Target
         {
-            get; set;
+            get;
         }
 
         /// <summary>

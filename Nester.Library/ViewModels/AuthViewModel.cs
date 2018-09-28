@@ -64,14 +64,14 @@ namespace Inkton.Nester.ViewModels
         {
             Keeper.User = newPermit.Owner;
 
-            if (Keeper.BaseModels.TargetViewModel != null)
-                Keeper.BaseModels.TargetViewModel
+            if (Keeper.ViewModels.AppViewModel != null)
+                Keeper.ViewModels.AppViewModel
                 .EditApp.OwnedBy = newPermit.Owner;
-            if (Keeper.BaseModels.PaymentViewModel != null)
-                Keeper.BaseModels.PaymentViewModel
+            if (Keeper.ViewModels.PaymentViewModel != null)
+                Keeper.ViewModels.PaymentViewModel
                 .EditPaymentMethod.OwnedBy = newPermit.Owner;
-            if (Keeper.BaseModels.AllApps != null)
-                Keeper.BaseModels.AllApps
+            if (Keeper.ViewModels.AppCollectionViewModel != null)
+                Keeper.ViewModels.AppCollectionViewModel
                 .EditApp.OwnedBy = newPermit.Owner;
             if (Keeper.Service != null)
                 Keeper.Service.Permit = newPermit;

@@ -127,7 +127,7 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {                
                 _editPaymentMethod = result.Data.Payload;
-                DisplayPaymentMethodProof = _editPaymentMethod.Proof != null;
+                DisplayPaymentMethodProof = _editPaymentMethod.IsActive;
 
                 if (DisplayPaymentMethodProof)
                 {
@@ -167,7 +167,7 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 _editPaymentMethod = result.Data.Payload;
-                DisplayPaymentMethodProof = _editPaymentMethod.Proof != null;
+                DisplayPaymentMethodProof = _editPaymentMethod.IsActive;
 
                 if (DisplayPaymentMethodProof)
                 {

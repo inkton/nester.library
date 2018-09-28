@@ -72,11 +72,12 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public void AddApp(App app)
+        public AppViewModel AddApp(App app)
         {
             AppViewModel appModel = new AppViewModel();
             appModel.EditApp = app;
             AddModel(appModel);
+            return appModel;
         }
 
         public void AddModel(AppViewModel appModel)

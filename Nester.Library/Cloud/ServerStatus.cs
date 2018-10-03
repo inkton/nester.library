@@ -127,8 +127,10 @@ namespace Inkton.Nester.Cloud
         public const int NEST_RESULT_ERROR_BACKUP_IN_PROGRESS = -322;
         public const int NEST_RESULT_ERROR_LIMIT_TO_24HOURS = -324;
         public const int NEST_RESULT_ERROR_CREDIT_NFOUND = -326;
+        public const int NEST_RESULT_ERROR_CREDIT_WTIER = -327;
         public const int NEST_RESULT_ERROR_CREDIT_EXPIRED = -328;
         public const int NEST_RESULT_ERROR_CREDIT_USED = -330;
         public const int NEST_RESULT_ERROR_AEVENT_NFOUND = -332;
+        public const int NEST_RESULT_ERROR_TRIAL_APP = -334;
     }
 }

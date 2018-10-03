@@ -480,4 +480,10 @@
   <data name="NEST_RESULT_ERROR_AEVENT_NFOUND" xml:space="preserve">
     <value>No audit records found</value>
   </data>
+  <data name="NEST_RESULT_ERROR_TRIAL_APP" xml:space="preserve">
+    <value>The trial app cannot be upgraded</value>
+  </data>
+  <data name="NEST_RESULT_ERROR_CREDIT_WTIER" xml:space="preserve">
+    <value>The wrong app teir has been selected for the app</value>
+  </data>
 </root>

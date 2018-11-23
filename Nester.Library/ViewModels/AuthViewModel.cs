@@ -24,6 +24,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Inkton.Nest.Model;
+using Inkton.Nest.Cloud;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -79,16 +81,16 @@ namespace Inkton.Nester.ViewModels
             newPermit.CopyTo(_permit);
         }
 
-        public Cloud.ResultSingle<Permit> Signup(
+        public ResultSingle<Permit> Signup(
             bool throwIfError = true)
         {
-            Cloud.ResultSingle<Permit> result =
+            ResultSingle<Permit> result =
                 Keeper.Service.Signup(_permit);
 
             if (result.Code < 0)
             {
                 if (throwIfError)
-                    result.Throw();
+                    new ResultHandler<Permit>(result).Throw();
             }
             else
             {
@@ -99,31 +101,31 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Permit>> RecoverPasswordAsync(
+        public async Task<ResultSingle<Permit>> RecoverPasswordAsync(
             bool throwIfError = true)
         {
-            Cloud.ResultSingle<Permit> result = await
+            ResultSingle<Permit> result = await
                 Keeper.Service.RecoverPasswordAsync(_permit);
 
             if (result.Code < 0)
             {
                 if (throwIfError)
-                    result.Throw();
+                    new ResultHandler<Permit>(result).Throw();
             }
 
             return result;
         }
 
-        public Cloud.ResultSingle<Permit> QueryToken(
+        public ResultSingle<Permit> QueryToken(
             bool throwIfError = true)
         {
-            Cloud.ResultSingle<Permit> result =
+            ResultSingle<Permit> result =
                 Keeper.Service.QueryToken(_permit);
 
             if (result.Code < 0)
             {
                 if (throwIfError)
-                    result.Throw();
+                    new ResultHandler<Permit>(result).Throw();
             }
             else
             {
@@ -133,16 +135,16 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Permit>> QueryTokenAsync(
+        public async Task<ResultSingle<Permit>> QueryTokenAsync(
             bool throwIfError = true)
         {
-            Cloud.ResultSingle<Permit> result =
+            ResultSingle<Permit> result =
                 await Keeper.Service.QueryTokenAsync(_permit);
 
             if (result.Code < 0)
             {
                 if (throwIfError)
-                    result.Throw();
+                    new ResultHandler<Permit>(result).Throw();
             }
             else
             {
@@ -152,16 +154,16 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Permit>> ResetTokenAsync(
+        public async Task<ResultSingle<Permit>> ResetTokenAsync(
             bool throwIfError = true)
         {
-            Cloud.ResultSingle<Permit> result = await
+            ResultSingle<Permit> result = await
                 Keeper.Service.ResetTokenAsync(_permit);
 
             if (result.Code < 0)
             {
                 if (throwIfError)
-                    result.Throw();
+                    new ResultHandler<Permit>(result).Throw();
             }
             else
             {
@@ -171,37 +173,37 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<User>> UpdateUserAsync(User user = null,
+        public async Task<ResultSingle<User>> UpdateUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
             User theUser = user == null ? _permit.Owner : user;
 
-            Cloud.ResultSingle<User> result = await Cloud.ResultSingle<User>.WaitForObjectAsync(
-                throwIfError, user, new Cloud.CachedHttpRequest<User, Cloud.ResultSingle<User>>(
+            ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
+                throwIfError, user, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
                     Keeper.Service.UpdateAsync), doCache);
 
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<User>> DeleteUserAsync(User user = null,
+        public async Task<ResultSingle<User>> DeleteUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
             User theUser = user == null ? _permit.Owner : user;
 
-            Cloud.ResultSingle<User> result = await Cloud.ResultSingle<User>.WaitForObjectAsync(
-                throwIfError, theUser, new Cloud.CachedHttpRequest<User, Cloud.ResultSingle<User>>(
+            ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
+                throwIfError, theUser, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
                     Keeper.Service.RemoveAsync), doCache);
 
             return result;
         }
 
-        public async Task< Cloud.ResultMultiple<UserEvent>> QueryUserEventsAsync(User user,
+        public async Task<ResultMultiple<UserEvent>> QueryUserEventsAsync(User user,
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
             userEventSeed.OwnedBy = Keeper.User;
 
-             Cloud.ResultMultiple<UserEvent> result = await Cloud.ResultMultiple<UserEvent>.WaitForObjectAsync(
+            ResultMultiple<UserEvent> result = await ResultMultipleUI<UserEvent>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, userEventSeed, doCache);
 
             if (result.Code >= 0)

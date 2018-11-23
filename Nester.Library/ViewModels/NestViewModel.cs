@@ -24,7 +24,9 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Xamarin.Forms;
+using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -110,13 +112,13 @@ namespace Inkton.Nester.ViewModels
             await QueryNestsAsync();
         }
 
-        public async Task<Cloud.ResultMultiple<NestPlatform>> QueryNestPlatformsAsync(
+        public async Task<ResultMultiple<NestPlatform>> QueryNestPlatformsAsync(
             bool doCache = false, bool throwIfError = true)
         {
             NestPlatform platformSeed = new NestPlatform();
             platformSeed.OwnedBy = _editApp;
 
-            Cloud.ResultMultiple<NestPlatform> result = await Cloud.ResultMultiple<NestPlatform>.WaitForObjectAsync(
+            ResultMultiple<NestPlatform> result = await ResultMultipleUI<NestPlatform>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, platformSeed, doCache);
 
             if (result.Code >= 0)
@@ -147,11 +149,11 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public async Task<Cloud.ResultMultiple<Inkton.Nest.Model.Nest>> QueryNestsAsync(
+        public async Task<ResultMultiple<Inkton.Nest.Model.Nest>> QueryNestsAsync(
             bool doCache = false, bool throwIfError = true)
         {
             _editNest.OwnedBy = _editApp;
-            Cloud.ResultMultiple<Inkton.Nest.Model.Nest> result = await Cloud.ResultMultiple<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
+            ResultMultiple<Inkton.Nest.Model.Nest> result = await ResultMultipleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, _editNest, doCache);
 
             if (result.Code >= 0)
@@ -164,13 +166,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Inkton.Nest.Model.Nest>> QueryNestAsync(Inkton.Nest.Model.Nest nest = null,
+        public async Task<ResultSingle<Inkton.Nest.Model.Nest>> QueryNestAsync(Inkton.Nest.Model.Nest nest = null,
              bool doCache = false, bool throwIfError = true)
         {
             Inkton.Nest.Model.Nest theNest = nest == null ? _editNest : nest;
 
-            Cloud.ResultSingle<Inkton.Nest.Model.Nest> result = await Cloud.ResultSingle<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
-                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, Cloud.ResultSingle<Inkton.Nest.Model.Nest>>(
+            ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
                     Keeper.Service.QueryAsync), doCache, null, null);
 
             if (result.Code >= 0)
@@ -187,13 +189,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Inkton.Nest.Model.Nest>> CreateNestAsync(Inkton.Nest.Model.Nest nest = null,
+        public async Task<ResultSingle<Inkton.Nest.Model.Nest>> CreateNestAsync(Inkton.Nest.Model.Nest nest = null,
             bool doCache = false, bool throwIfError = true)
         {
             Inkton.Nest.Model.Nest theNest = nest == null ? _editNest : nest;
 
-            Cloud.ResultSingle<Inkton.Nest.Model.Nest> result = await Cloud.ResultSingle<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
-                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, Cloud.ResultSingle<Inkton.Nest.Model.Nest>>(
+            ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
                     Keeper.Service.CreateAsync), doCache);
 
             if (result.Code >= 0)
@@ -213,13 +215,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Inkton.Nest.Model.Nest>> UpdateNestAsync(Inkton.Nest.Model.Nest nest = null,
+        public async Task<ResultSingle<Inkton.Nest.Model.Nest>> UpdateNestAsync(Inkton.Nest.Model.Nest nest = null,
             bool doCache = false, bool throwIfError = true)
         {
             Inkton.Nest.Model.Nest theNest = nest == null ? _editNest : nest;
 
-            Cloud.ResultSingle<Inkton.Nest.Model.Nest> result = await Cloud.ResultSingle<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
-                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, Cloud.ResultSingle<Inkton.Nest.Model.Nest>>(
+            ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
                     Keeper.Service.UpdateAsync), doCache);
 
             if (result.Code >= 0)
@@ -231,13 +233,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Inkton.Nest.Model.Nest>> RemoveNestAsync(Inkton.Nest.Model.Nest nest = null,
+        public async Task<ResultSingle<Inkton.Nest.Model.Nest>> RemoveNestAsync(Inkton.Nest.Model.Nest nest = null,
             bool doCache = false, bool throwIfError = true)
         {
             Inkton.Nest.Model.Nest theNest = nest == null ? _editNest : nest;
 
-            Cloud.ResultSingle <Inkton.Nest.Model.Nest> result = await Cloud.ResultSingle<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
-                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, Cloud.ResultSingle<Inkton.Nest.Model.Nest>>(
+            ResultSingle <Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
+                throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
                     Keeper.Service.RemoveAsync), doCache);
 
             if (result.Code >= 0)

@@ -24,6 +24,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Inkton.Nest.Model;
+using Inkton.Nest.Cloud;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -50,10 +52,10 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public async Task<Cloud.ResultMultiple<App>> LoadApps(
+        public async Task<ResultMultiple<App>> LoadApps(
             bool doCache = true, bool throwIfError = true)
         {
-            Cloud.ResultMultiple<App> result = await Cloud.ResultMultiple<App>.WaitForObjectAsync(
+            ResultMultiple<App> result = await ResultMultipleUI<App>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, _editApp, doCache);
 
             if (result.Code == 0)

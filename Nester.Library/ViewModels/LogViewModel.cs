@@ -25,7 +25,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -487,12 +489,12 @@ namespace Inkton.Nester.ViewModels
             return sql;
         }
 
-        public async Task<Cloud.ResultMultiple<NestLog>> QueryNestLogsAsync(
+        public async Task<ResultMultiple<NestLog>> QueryNestLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             string sql = FormSql("nest_log", "*", filter, orderBy, limit);
-            Cloud.ResultMultiple<NestLog> result = await QueryLogsAsync<NestLog>(
+            ResultMultiple<NestLog> result = await QueryLogsAsync<NestLog>(
                 sql, doCache, throwIfError);
 
             if (result.Code == 0)
@@ -504,14 +506,14 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<SystemCPULog>> QuerySystemCPULogsAsync(
+        public async Task<ResultMultiple<SystemCPULog>> QuerySystemCPULogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             _cpuSeries.Clear();
 
             string sql = FormSql("system_cpu", "*", filter, orderBy, limit);
-            Cloud.ResultMultiple<SystemCPULog> result = await QueryLogsAsync<SystemCPULog>(
+            ResultMultiple<SystemCPULog> result = await QueryLogsAsync<SystemCPULog>(
                 sql, doCache, throwIfError);
 
             if (result.Code == 0)
@@ -533,12 +535,12 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<DiskSpaceLog>> QueryDiskSpaceLogsAsync(
+        public async Task<ResultMultiple<DiskSpaceLog>> QueryDiskSpaceLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             string sql = FormSql("disk_space", "*", filter, orderBy, limit);
-            Cloud.ResultMultiple<DiskSpaceLog> result = await QueryLogsAsync<DiskSpaceLog>(
+            ResultMultiple<DiskSpaceLog> result = await QueryLogsAsync<DiskSpaceLog>(
                 sql, doCache, throwIfError);
 
             if (result.Code == 0)
@@ -556,14 +558,14 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<SystemIPV4Log>> QuerSystemIPV4LogsAsync(
+        public async Task<ResultMultiple<SystemIPV4Log>> QuerSystemIPV4LogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             _ipv4Series.Clear();
 
             string sql = FormSql("system_ipv4", "*", filter, orderBy, limit);
-            Cloud.ResultMultiple<SystemIPV4Log> result = await QueryLogsAsync<SystemIPV4Log>(
+            ResultMultiple<SystemIPV4Log> result = await QueryLogsAsync<SystemIPV4Log>(
                 sql, doCache, throwIfError);
 
             if (result.Code == 0)
@@ -582,14 +584,14 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<SystemRAMLog>> QuerSystemRAMLogsAsync(
+        public async Task<ResultMultiple<SystemRAMLog>> QuerSystemRAMLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
             _ramSeries.Clear();
 
             string sql = FormSql("system_ram", "*", filter, orderBy, limit);
-            Cloud.ResultMultiple<SystemRAMLog> result = await QueryLogsAsync<SystemRAMLog>(
+            ResultMultiple<SystemRAMLog> result = await QueryLogsAsync<SystemRAMLog>(
                 sql, doCache, throwIfError);
 
             if (result.Code == 0)
@@ -610,14 +612,14 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<T>> QueryLogsAsync<T>(string sql,
+        public async Task<ResultMultiple<T>> QueryLogsAsync<T>(string sql,
             bool doCache = false, bool throwIfError = false) where T : Log, new()
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("sql", sql);
 
             T logsSeed = new T();
-            return await Cloud.ResultMultiple<T>.WaitForObjectAsync(
+            return await ResultMultipleUI<T>.WaitForObjectAsync(
                 NesterControl.Backend, doCache, logsSeed, throwIfError, data);
         }
     }

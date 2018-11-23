@@ -26,7 +26,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Xamarin.Forms;
+using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -175,12 +177,12 @@ namespace Inkton.Nester.ViewModels
             await QuerySoftwareFrameworkVersionsAsync();
         }
 
-        public async Task<Cloud.ResultMultiple<Forest>> QueryForestsAsync(
+        public async Task<ResultMultiple<Forest>> QueryForestsAsync(
             bool doCache = true, bool throwIfError = true)
         {
             Forest forestSeed = new Forest();
 
-            Cloud.ResultMultiple<Forest> result = await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+            ResultMultiple<Forest> result = await ResultMultipleUI<Forest>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, forestSeed, doCache);
 
             if (result.Code >= 0)
@@ -197,7 +199,7 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<SoftwareFramework.Version>> QuerySoftwareFrameworkVersionsAsync(
+        public async Task<ResultMultiple<SoftwareFramework.Version>> QuerySoftwareFrameworkVersionsAsync(
             bool doCache = true, bool throwIfError = true)
         {
             SoftwareFramework frameworkSeed = new SoftwareFramework();
@@ -205,7 +207,7 @@ namespace Inkton.Nester.ViewModels
             SoftwareFramework.Version versionSeed = new SoftwareFramework.Version();
             versionSeed.OwnedBy = frameworkSeed;
 
-            Cloud.ResultMultiple<SoftwareFramework.Version> result = await Cloud.ResultMultiple<SoftwareFramework.Version>.WaitForObjectAsync(
+            ResultMultiple<SoftwareFramework.Version> result = await ResultMultipleUI<SoftwareFramework.Version>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, versionSeed, doCache);
 
             if (result.Code >= 0)
@@ -216,12 +218,12 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<Deployment>> QueryDeploymentsAsync(
+        public async Task<ResultMultiple<Deployment>> QueryDeploymentsAsync(
             Deployment deployment = null, bool doCache = false, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
-            Cloud.ResultMultiple<Deployment> result = await Cloud.ResultMultiple<Deployment>.WaitForObjectAsync(
+            ResultMultiple<Deployment> result = await ResultMultipleUI<Deployment>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, theDeployment, doCache);
             _editApp.Deployment = null;
 
@@ -240,15 +242,15 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Devkit>> QueryDevkitAsync(Devkit devkit,
+        public async Task<ResultSingle<Devkit>> QueryDevkitAsync(Devkit devkit,
             bool doCache = false, bool throwIfError = true)
         {
-            return await Cloud.ResultSingle<Devkit>.WaitForObjectAsync(
-                throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit, Cloud.ResultSingle<Devkit>>(
+            return await ResultSingleUI<Devkit>.WaitForObjectAsync(
+                throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit, ResultSingle<Devkit>>(
                     Keeper.Service.QueryAsync), doCache);
         }
 
-        public async Task<Cloud.ResultSingle<Deployment>> CreateDeployment(Deployment deployment = null,
+        public async Task<ResultSingle<Deployment>> CreateDeployment(Deployment deployment = null,
             bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
@@ -260,8 +262,8 @@ namespace Inkton.Nester.ViewModels
                 data.Add("credit_id", _applyCredit.Id.ToString());
             }
 
-            Cloud.ResultSingle<Deployment> result = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, Cloud.ResultSingle<Deployment>>(
+            ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
                     Keeper.Service.CreateAsync), doCache, data);
 
             if (result.Code >= 0)
@@ -280,7 +282,7 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Deployment>> UpdateDeploymentAsync(string activity,
+        public async Task<ResultSingle<Deployment>> UpdateDeploymentAsync(string activity,
             Deployment deployment = null, bool doCache = true, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
@@ -288,8 +290,8 @@ namespace Inkton.Nester.ViewModels
             Dictionary<string, string> data = new Dictionary<string, string>();
             data.Add("activity", activity);
 
-            Cloud.ResultSingle<Deployment> result = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, Cloud.ResultSingle<Deployment>>(
+            ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
                     Keeper.Service.UpdateAsync), doCache, data);
 
             if (result.Code >= 0)
@@ -301,13 +303,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<Deployment>> RemoveDeploymentAsync(Deployment deployment = null,
+        public async Task<ResultSingle<Deployment>> RemoveDeploymentAsync(Deployment deployment = null,
             bool doCache = false, bool throwIfError = true)
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
-            Cloud.ResultSingle<Deployment> result = await Cloud.ResultSingle<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, Cloud.ResultSingle<Deployment>>(
+            ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
+                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
                     Keeper.Service.RemoveAsync), doCache);
 
             if (result.Code == 0)
@@ -322,13 +324,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<AppBackup>> QueryAppBackupsAsync(AppBackup appBackup = null,
+        public async Task<ResultMultiple<AppBackup>> QueryAppBackupsAsync(AppBackup appBackup = null,
             bool doCache = false, bool throwIfError = true)
         {
             AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
             theBackup.OwnedBy = _editApp.Deployment;
 
-            Cloud.ResultMultiple<AppBackup> result = await Cloud.ResultMultiple<AppBackup>.WaitForObjectAsync(
+            ResultMultiple<AppBackup> result = await ResultMultipleUI<AppBackup>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, theBackup, doCache);
 
             if (result.Code >= 0)
@@ -340,25 +342,25 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<AppBackup>> RestoreAppAsync(AppBackup appBackup,
+        public async Task<ResultSingle<AppBackup>> RestoreAppAsync(AppBackup appBackup,
             bool doCache = false, bool throwIfError = true)
         {
             AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
             theBackup.OwnedBy = _editApp.Deployment;
 
-            return await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
-                throwIfError, appBackup, new Cloud.CachedHttpRequest<AppBackup, Cloud.ResultSingle<AppBackup>>(
+            return await ResultSingleUI<AppBackup>.WaitForObjectAsync(
+                throwIfError, appBackup, new Cloud.CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
                     Keeper.Service.UpdateAsync), doCache);
         }
 
-        public async Task<Cloud.ResultSingle<AppBackup>> BackupAppAsync(AppBackup appBackup = null,
+        public async Task<ResultSingle<AppBackup>> BackupAppAsync(AppBackup appBackup = null,
             bool doCache = false, bool throwIfError = true)
         {
             AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
             theBackup.OwnedBy = _editApp.Deployment;
 
-            Cloud.ResultSingle<AppBackup> result = await Cloud.ResultSingle<AppBackup>.WaitForObjectAsync(
-                throwIfError, theBackup, new Cloud.CachedHttpRequest<AppBackup, Cloud.ResultSingle<AppBackup>>(
+            ResultSingle<AppBackup> result = await ResultSingleUI<AppBackup>.WaitForObjectAsync(
+                throwIfError, theBackup, new Cloud.CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
                     Keeper.Service.CreateAsync), doCache);
 
             if (result.Code >= 0)
@@ -383,12 +385,12 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<AppAudit>> QueryAppAuditsAsync(IDictionary<string, string> filter,
+        public async Task<ResultMultiple<AppAudit>> QueryAppAuditsAsync(IDictionary<string, string> filter,
             AppAudit appAudit = null, bool doCache = false, bool throwIfError = true)
         {
             AppAudit theAudit = appAudit == null ? _editAudit : appAudit;
 
-            Cloud.ResultMultiple<AppAudit> result = await Cloud.ResultMultiple<AppAudit>.WaitForObjectAsync(
+            ResultMultiple<AppAudit> result = await ResultMultipleUI<AppAudit>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, theAudit, doCache, filter);
 
             if (result.Code >= 0)

@@ -25,7 +25,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Xamarin.Forms;
+using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -228,9 +230,9 @@ namespace Inkton.Nester.ViewModels
             await ServicesViewModel.QueryServicesAsync();
         }
 
-        async public Task<Cloud.ResultSingle<App>> QueryStatusAsync()
+        async public Task<ResultSingle<App>> QueryStatusAsync()
         {
-            Cloud.ResultSingle<App> result = await QueryAppAsync();
+            ResultSingle<App> result = await QueryAppAsync();
             if (result.Code == 0)
             {
                 await DeploymentViewModel.InitAsync();
@@ -248,14 +250,14 @@ namespace Inkton.Nester.ViewModels
             await ServicesViewModel.QueryServicesAsync();
         }
 
-        public async Task<Cloud.ResultMultiple<Notification>> QueryAppNotificationsAsync(App app = null,
+        public async Task<ResultMultiple<Notification>> QueryAppNotificationsAsync(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
             Notification notificationSeed = new Notification();
             notificationSeed.OwnedBy = theApp;
 
-            Cloud.ResultMultiple<Notification> result = await Cloud.ResultMultiple<Notification>.WaitForObjectAsync(
+            ResultMultiple<Notification> result = await ResultMultipleUI<Notification>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, notificationSeed, doCache);
 
             if (result.Code == 0)
@@ -266,13 +268,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<App>> QueryAppAsync(App app = null,
+        public async Task<ResultSingle<App>> QueryAppAsync(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
 
-            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
+            ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
                     Keeper.Service.QueryAsync), doCache);
 
             if (result.Code == 0)
@@ -291,13 +293,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<App>> RemoveAppAsync(App app = null,
+        public async Task<ResultSingle<App>> RemoveAppAsync(App app = null,
              bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
 
-            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
+            ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
                     Keeper.Service.RemoveAsync), doCache);
 
             if (result.Code == 0)
@@ -308,13 +310,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<App>> UpdateAppAsync(App app = null,
+        public async Task<ResultSingle<App>> UpdateAppAsync(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
 
-            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
+            ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
                     Keeper.Service.UpdateAsync), doCache);
 
             if (result.Code == 0)
@@ -325,14 +327,14 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultSingle<App>> CreateAppAsync(AppServiceTier tier,
+        public async Task<ResultSingle<App>> CreateAppAsync(AppServiceTier tier,
             App app = null, bool doCache = false, bool throwIfError = true)
         {
             App theApp = app == null ? _editApp : app;
             theApp.ServiceTierId = tier.Id;
 
-            Cloud.ResultSingle<App> result = await Cloud.ResultSingle<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, Cloud.ResultSingle<App>>(
+            ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
+                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
                     Keeper.Service.CreateAsync), doCache);
 
             if (result.Code == 0)
@@ -355,13 +357,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<Cloud.ResultMultiple<Forest>> QueryAppServiceTierLocationsAsync(AppServiceTier teir,
+        public async Task<ResultMultiple<Forest>> QueryAppServiceTierLocationsAsync(AppServiceTier teir,
             bool doCache = false, bool throwIfError = true)
         {
             Forest forestSeeder = new Forest();
             forestSeeder.OwnedBy = teir;
 
-            return await Cloud.ResultMultiple<Forest>.WaitForObjectAsync(
+            return await ResultMultipleUI<Forest>.WaitForObjectAsync(
                 Keeper.Service, throwIfError, forestSeeder, doCache);
         }
     }

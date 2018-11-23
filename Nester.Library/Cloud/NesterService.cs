@@ -280,7 +280,7 @@ namespace Inkton.Nester.Cloud
             string json = await flurlRequest.PostJsonAsync(seed)
                     .ReceiveString();
 
-            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
+            return ResultSingle<T>.ConvertObject(json, seed);
         }
 
         private async Task<ResultSingle<T>> GetAsync<T>(
@@ -289,7 +289,7 @@ namespace Inkton.Nester.Cloud
             string json = await flurlRequest.GetAsync()
                     .ReceiveString();
 
-            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
+            return ResultSingle<T>.ConvertObject(json, seed);
         }
 
         private async Task<ResultMultiple<T>> GetListAsync<T>(
@@ -298,7 +298,7 @@ namespace Inkton.Nester.Cloud
             string json = await flurlRequest.GetAsync()
                     .ReceiveString();
 
-            return Cloud.ResultMultiple<T>.ConvertObject(json, seed);
+            return ResultMultiple<T>.ConvertObject(json, seed);
         }
 
         private async Task<ResultSingle<T>> PutAsync<T>(
@@ -311,10 +311,10 @@ namespace Inkton.Nester.Cloud
                         .PutAsync(httpContent)
                         .ReceiveString();
 
-            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
+            return ResultSingle<T>.ConvertObject(json, seed);
         }
             
-        private async Task<Cloud.ResultSingle<T>> DeleteAsync<T>(
+        private async Task<ResultSingle<T>> DeleteAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
             string objJson = JsonConvert.SerializeObject(seed);
@@ -323,7 +323,7 @@ namespace Inkton.Nester.Cloud
             string json = await flurlRequest.DeleteAsync()
                     .ReceiveString();
 
-            return Cloud.ResultSingle<T>.ConvertObject(json, seed);
+            return ResultSingle<T>.ConvertObject(json, seed);
         }
 
         private async Task<ResultT> RetryWithFreshToken<PayloadT, ResultT, ResultReturnT>(
@@ -429,30 +429,30 @@ namespace Inkton.Nester.Cloud
 
         #endregion
 
-        public async Task<Cloud.ResultSingle<T>> CreateAsync<T>(T seed,
+        public async Task<ResultSingle<T>> CreateAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
-                new HttpRequest<T, Cloud.ResultSingle<T>>(PostAsync),
+            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+                new HttpRequest<T, ResultSingle<T>>(PostAsync),
                 seed, false, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ResultSingle<T>> QueryAsync<T>(T seed,
+        public async Task<ResultSingle<T>> QueryAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
             if (doCache && _cache.Load<T>(seed))
             {
-                Cloud.ResultSingle<T> result = new Cloud.ResultSingle<T>(0);
+                ResultSingle<T> result = new ResultSingle<T>(0);
                 result.Data.Payload = seed;
                 return result;
             }
 
-            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
-                new HttpRequest<T, Cloud.ResultSingle<T>>(GetAsync),
+            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+                new HttpRequest<T, ResultSingle<T>>(GetAsync),
                 seed, true, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ResultMultiple<T>> QueryAsyncListAsync<T>(T seed,
+        public async Task<ResultMultiple<T>> QueryAsyncListAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
             /*
@@ -460,30 +460,30 @@ namespace Inkton.Nester.Cloud
              *
             if (doCache && _storage.Load<T>(seed))
             {
-                Cloud.ServerStatus result = new Cloud.ServerStatus(0);
+                Cloud.ServerStatus result = new ServerStatus(0);
                 result.Payload = seed;
                 return result;
             }
             */
 
-            return await RetryWithFreshToken<T, Cloud.ResultMultiple<T>, ObservableCollection<T>>(
-                new HttpRequest<T, Cloud.ResultMultiple<T>>(GetListAsync),
+            return await RetryWithFreshToken<T, ResultMultiple<T>, ObservableCollection<T>>(
+                new HttpRequest<T, ResultMultiple<T>>(GetListAsync),
                 seed, false, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ResultSingle<T>> UpdateAsync<T>(T seed,
+        public async Task<ResultSingle<T>> UpdateAsync<T>(T seed,
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
-                new HttpRequest<T, Cloud.ResultSingle<T>>(PutAsync),
+            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+                new HttpRequest<T, ResultSingle<T>>(PutAsync),
                 seed, true, data, subPath, doCache);
         }
 
-        public async Task<Cloud.ResultSingle<T>> RemoveAsync<T>(T seed,
+        public async Task<ResultSingle<T>> RemoveAsync<T>(T seed,
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            return await RetryWithFreshToken<T, Cloud.ResultSingle<T>, T>(
-                new HttpRequest<T, Cloud.ResultSingle<T>>(DeleteAsync),
+            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+                new HttpRequest<T, ResultSingle<T>>(DeleteAsync),
                 seed, true, data, subPath, doCache);
         }
     }

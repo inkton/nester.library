@@ -245,9 +245,16 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<Devkit>> QueryDevkitAsync(Devkit devkit,
             bool doCache = false, bool throwIfError = true)
         {
-            return await ResultSingleUI<Devkit>.WaitForObjectAsync(
+            ResultSingle<Devkit> result = await ResultSingleUI<Devkit>.WaitForObjectAsync(
                 throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit, ResultSingle<Devkit>>(
                     Keeper.Service.QueryAsync), doCache);
+
+            if (result.Code >= 0)
+            {
+                result.Data.Payload.CopyTo(devkit);
+            }
+
+            return result;
         }
 
         public async Task<ResultSingle<Deployment>> CreateDeployment(Deployment deployment = null,

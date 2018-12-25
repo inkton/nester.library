@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Title>Inkton NesterLibrary</Title>
     <PackageId>Inkton.NesterLibrary</PackageId>
-    <PackageVersion>1.4.1</PackageVersion>
+    <PackageVersion>1.4.2</PackageVersion>
     <PackageTags>paas,docker,nest.yt</PackageTags>
     <Authors>nest.yt</Authors>
     <Description>A Client UI Library for Nest.yt</Description>
@@ -18,9 +18,12 @@
     <RepositoryType>github</RepositoryType>
     <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Flurl.Http" Version="2.4.0" />
-    <PackageReference Include="Inkton.NestModel" Version="1.1.1" />
+    <PackageReference Include="Inkton.NestModel" Version="1.1.2" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.1.1" />
     <PackageReference Include="Microsoft.Win32.Primitives" Version="4.3.0" />

@@ -62,14 +62,18 @@ namespace Inkton.Nester.Cloud
 
             if (_result.Text != null && _result.Text.Length > 0)
             {
-                ResourceManager resmgr = (Application.Current as INesterControl).GetResourceManager();
-                additionalInfo = resmgr.GetString(_result.Text,
-                    System.Globalization.CultureInfo.CurrentUICulture);
+                try
+                {
+                    ResourceManager resmgr = (Application.Current as INesterControl).GetResourceManager();
+                    additionalInfo = resmgr.GetString(_result.Text,
+                        System.Globalization.CultureInfo.CurrentUICulture);
+                }
+                catch (Exception) { }
             }
             if (_result.Notes != null && _result.Notes.Length > 0)
             {
                 if (additionalInfo.Length > 0)
-                    additionalInfo += "\n" + _result.Notes;
+                    additionalInfo += " - " + _result.Notes;
                 else
                     additionalInfo = _result.Notes;
             }

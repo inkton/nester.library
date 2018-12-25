@@ -34,30 +34,30 @@ namespace Inkton.Nester.ViewModels
     public class LogViewModel : ViewModel
     {
         private ObservableCollection<NestLog> _nestLogs;
-        private ObservableCollection<DiskSpaceLog> _diskSpaceLogs;
+        private ObservableCollection<SystemIOLog> _systemIOLogs;
         private ObservableCollection<SystemRAMLog> _systemRamLogs;
         private ObservableCollection<SystemCPULog> _systemCpuLogs;
-        private ObservableCollection<SystemIPV4Log> _ipv4Logs;
+        private ObservableCollection<SystemIPLog> _ipLogs;
 
         [Flags]
         public enum QueryIndex : byte
         {
             QueryIndexNestLog = 0x01,
-            QueryIndexDiskSpace = 0x02,
+            QueryIndexIO = 0x02,
             QueryIndexRam = 0x04,
             QueryIndexCpu = 0x08,
-            QueryIndexIpV4 = 0x10,
-            QueryIndexAll = QueryIndexNestLog | QueryIndexDiskSpace |
-                            QueryIndexRam | QueryIndexCpu | QueryIndexIpV4
+            QueryIndexIP = 0x10,
+            QueryIndexAll = QueryIndexNestLog | QueryIndexIO |
+                            QueryIndexRam | QueryIndexCpu | QueryIndexIP
         }
 
         private QueryIndex _queryIndexs = QueryIndex.QueryIndexAll;
         private NestLog _editNestLog;
 
-        private MultiCategoryData _diskSpaceData;
+        private MultiSeriesData _ioSeries;
         private MultiSeriesData _ramSeries;
         private MultiSeriesData _cpuSeries;
-        private MultiSeriesData _ipv4Series;
+        private MultiSeriesData _ipSeries;
 
         #region Data Classes
 
@@ -171,11 +171,13 @@ namespace Inkton.Nester.ViewModels
             _cpuSeries.Init("Nice");
             _cpuSeries.Init("IOWait");
 
-            _diskSpaceData = new MultiCategoryData();
+            _ioSeries = new MultiSeriesData();
+            _ioSeries.Init("In");
+            _ioSeries.Init("Out");
 
-            _ipv4Series = new MultiSeriesData();
-            _ipv4Series.Init("Sent");
-            _ipv4Series.Init("Received");
+            _ipSeries = new MultiSeriesData();
+            _ipSeries.Init("Sent");
+            _ipSeries.Init("Received");
 
             _ramSeries = new MultiSeriesData();
             _ramSeries.Init("Free");
@@ -289,60 +291,80 @@ namespace Inkton.Nester.ViewModels
         public ObservableCollection<SystemCPULog> SystemCPULogs
         {
             get
-            {
+            { 
                 return _systemCpuLogs;
             }
         }
 
-        public MultiCategoryData DiskSpaceSeries
+        public MultiSeriesData ioSeries
         {
             get
             {
-                return _diskSpaceData;
+                return _ioSeries;
             }
         }
 
-        public ObservableCollection<DiskSpaceLog> DiskSpaceLogs
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> IoSeriesIn
         {
             get
             {
-                return _diskSpaceLogs;
+                if (_ipSeries == null)
+                    return null;
+                return _ioSeries.Series["In"].Values;
             }
         }
 
-        public MultiSeriesData Ipv4Series
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> IoSeriesOut
         {
             get
             {
-                return _ipv4Series;
+                if (_ioSeries == null)
+                    return null;
+                return _ioSeries.Series["Out"].Values;
+            }
+        }
+
+        public ObservableCollection<SystemIOLog> SystemIOLogs
+        {
+            get
+            {
+                return _systemIOLogs;
+            }
+        }
+
+        public MultiSeriesData IpSeries
+        {
+            get
+            {
+                return _ipSeries;
             }
         }
         
-        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> Ipv4SeriesSent
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> IpSeriesSent
         {
             get
             {
-                if (_ipv4Series == null)
+                if (_ipSeries == null)
                     return null;
-                return _ipv4Series.Series["Sent"].Values;
+                return _ipSeries.Series["Sent"].Values;
             }
         }
 
-        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> Ipv4SeriesReceived
+        public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> IpSeriesReceived
         {
             get
             {
-                if (_ipv4Series == null)
+                if (_ipSeries == null)
                     return null;
-                return _ipv4Series.Series["Received"].Values;
+                return _ipSeries.Series["Received"].Values;
             }
         }
 
-        public ObservableCollection<SystemIPV4Log> SystemIPV4Logs
+        public ObservableCollection<SystemIPLog> SystemIPLogs
         {
             get
             {
-                return _ipv4Logs;
+                return _ipLogs;
             }
         }
 
@@ -412,15 +434,15 @@ namespace Inkton.Nester.ViewModels
                     filter, orderBy, limit, doCache, throwIfError);
             }
 
-            if ((_queryIndexs & QueryIndex.QueryIndexDiskSpace) == QueryIndex.QueryIndexDiskSpace)
+            if ((_queryIndexs & QueryIndex.QueryIndexIO) == QueryIndex.QueryIndexIO)
             {
-                await QueryDiskSpaceLogsAsync(
+                await QuerySystemIOLogsAsync(
                     filter, orderBy, limit, doCache, throwIfError);
             }
 
-            if ((_queryIndexs & QueryIndex.QueryIndexIpV4) == QueryIndex.QueryIndexIpV4)
+            if ((_queryIndexs & QueryIndex.QueryIndexIP) == QueryIndex.QueryIndexIP)
             {
-                await QuerSystemIPV4LogsAsync(
+                await QuerSystemIPLogsAsync(
                         filter, orderBy, limit, doCache, throwIfError);
             }
 
@@ -535,49 +557,50 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<ResultMultiple<DiskSpaceLog>> QueryDiskSpaceLogsAsync(
+        public async Task<ResultMultiple<SystemIOLog>> QuerySystemIOLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
-            string sql = FormSql("disk_space", "*", filter, orderBy, limit);
-            ResultMultiple<DiskSpaceLog> result = await QueryLogsAsync<DiskSpaceLog>(
+            string sql = FormSql("system_io", "*", filter, orderBy, limit);
+            ResultMultiple<SystemIOLog> result = await QueryLogsAsync<SystemIOLog>(
                 sql, doCache, throwIfError);
 
             if (result.Code == 0)
             {
-                _diskSpaceLogs = result.Data.Payload;
+                _systemIOLogs = result.Data.Payload;
 
-                if (_diskSpaceLogs.Any())
+                if (_systemIOLogs.Any())
                 {
-                    _diskSpaceData.DataLog = _diskSpaceLogs.Last();
+                    _systemIOLogs.All(log => { _ioSeries.AddLog(log); return true; });
 
-                    OnPropertyChanged("DiskSpaceSeries");
+                    OnPropertyChanged("IoSeriesIn");
+                    OnPropertyChanged("IoSeriesOut");
                 }
             }
 
             return result;
         }
 
-        public async Task<ResultMultiple<SystemIPV4Log>> QuerSystemIPV4LogsAsync(
+        public async Task<ResultMultiple<SystemIPLog>> QuerSystemIPLogsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
-            _ipv4Series.Clear();
+            _ipSeries.Clear();
 
-            string sql = FormSql("system_ipv4", "*", filter, orderBy, limit);
-            ResultMultiple<SystemIPV4Log> result = await QueryLogsAsync<SystemIPV4Log>(
+            string sql = FormSql("system_ip", "*", filter, orderBy, limit);
+            ResultMultiple<SystemIPLog> result = await QueryLogsAsync<SystemIPLog>(
                 sql, doCache, throwIfError);
 
             if (result.Code == 0)
             {
-                _ipv4Logs = result.Data.Payload;
+                _ipLogs = result.Data.Payload;
 
-                if (_ipv4Logs.Any())
+                if (_ipLogs.Any())
                 {
-                    _ipv4Logs.All(log => { _ipv4Series.AddLog(log); return true; });
+                    _ipLogs.All(log => { _ipSeries.AddLog(log); return true; });
 
-                    OnPropertyChanged("Ipv4SeriesSent");
-                    OnPropertyChanged("Ipv4SeriesReceived");
+                    OnPropertyChanged("IpSeriesSent");
+                    OnPropertyChanged("IpSeriesReceived");
                 }
             }
 

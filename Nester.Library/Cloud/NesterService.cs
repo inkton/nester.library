@@ -286,8 +286,19 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultSingle<T>> GetAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            string json = await flurlRequest.GetAsync()
-                    .ReceiveString();
+            /*
+             * 
+             * string json = await flurlRequest.GetAsync()
+             *        .ReceiveString();
+             *
+             * iOS: https://github.com/xamarin/xamarin-macios/issues/4380
+             * Android: https://github.com/xamarin/xamarin-android/issues/1472
+             * 
+             * The workaround seems to be to use GetAwaiter().GetResult() instead of await
+             */
+
+            HttpResponseMessage response = flurlRequest.GetAsync().GetAwaiter().GetResult();
+            string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -295,8 +306,19 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultMultiple<T>> GetListAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            string json = await flurlRequest.GetAsync()
-                    .ReceiveString();
+            /*
+             * 
+             * string json = await flurlRequest.GetAsync()
+             *        .ReceiveString();
+             *
+             * iOS: https://github.com/xamarin/xamarin-macios/issues/4380
+             * Android: https://github.com/xamarin/xamarin-android/issues/1472
+             * 
+             * The workaround seems to be to use GetAwaiter().GetResult() instead of await
+             */
+
+            HttpResponseMessage response = flurlRequest.GetAsync().GetAwaiter().GetResult();
+            string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
             return ResultMultiple<T>.ConvertObject(json, seed);
         }
@@ -455,17 +477,6 @@ namespace Inkton.Nester.Cloud
         public async Task<ResultMultiple<T>> QueryAsyncListAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
         {
-            /*
-             * todo: Load list from cache
-             *
-            if (doCache && _storage.Load<T>(seed))
-            {
-                Cloud.ServerStatus result = new ServerStatus(0);
-                result.Payload = seed;
-                return result;
-            }
-            */
-
             return await RetryWithFreshToken<T, ResultMultiple<T>, ObservableCollection<T>>(
                 new HttpRequest<T, ResultMultiple<T>>(GetListAsync),
                 seed, false, data, subPath, doCache);

@@ -486,4 +486,10 @@
   <data name="NEST_RESULT_ERROR_CREDIT_WTIER" xml:space="preserve">
     <value>The wrong app teir has been selected for the app</value>
   </data>
+  <data name="build" xml:space="preserve">
+    <value>Build</value>
+  </data>
+  <data name="jenkins_1" xml:space="preserve">
+    <value>Tier-1</value>
+  </data>
 </root>

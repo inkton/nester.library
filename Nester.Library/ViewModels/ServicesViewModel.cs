@@ -53,6 +53,7 @@ namespace Inkton.Nester.ViewModels
         private ServiceTableItem _selMonitorServiceTableItem;
         private ServiceTableItem _selBatchServiceTableItem;
         private ServiceTableItem _selTrackServiceTableItem;
+        private ServiceTableItem _selBuildServiceTableItem;
 
         public class ServiceTableItem : INotifyPropertyChanged
         {
@@ -174,6 +175,16 @@ namespace Inkton.Nester.ViewModels
             if (subscription != null)
             {
                 _selTrackServiceTableItem = ServicesViewModel.CreateServiceTableItem(
+                    subscription.ServiceTier);
+            }
+
+            _selBuildServiceTableItem = null;
+            subscription = _editApp.Subscriptions.FirstOrDefault(
+                x => (x.ServiceTier.OwnedBy as AppService).Type == "build");
+
+            if (subscription != null)
+            {
+                _selBuildServiceTableItem = ServicesViewModel.CreateServiceTableItem(
                     subscription.ServiceTier);
             }
         }
@@ -661,13 +672,26 @@ namespace Inkton.Nester.ViewModels
 
         #endregion
 
+        #region Build Service Tier
+
+        public ServiceTableItem SelectedBuildServiceTableItem
+        {
+            get
+            {
+                return _selBuildServiceTableItem;
+            }
+        }
+
+        #endregion
+
         public decimal CalculateServiceCost()
         {
             decimal total = SelectedAppServiceTableItem.Cost +
                     SelectedTrackServiceTableItem.Cost +
                     SelectedDomainServiceTableItem.Cost +
                     SelectedMonitorServiceTableItem.Cost +
-                    SelectedBatchServiceTableItem.Cost;
+                    SelectedBatchServiceTableItem.Cost +
+                    SelectedBuildServiceTableItem.Cost;
 
             if (StorageServiceEnabled)
             {

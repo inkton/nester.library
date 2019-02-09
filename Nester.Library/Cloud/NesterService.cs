@@ -465,6 +465,7 @@ namespace Inkton.Nester.Cloud
             if (doCache && _cache.Load<T>(seed))
             {
                 ResultSingle<T> result = new ResultSingle<T>(0);
+                result.Data = new DataContainer<T>();
                 result.Data.Payload = seed;
                 return result;
             }

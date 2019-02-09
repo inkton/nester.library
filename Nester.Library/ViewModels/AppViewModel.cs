@@ -102,6 +102,36 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public bool IsInteractive
+        {
+            get
+            {
+                // The app operations on the app are busy (IsBusy == true) or
+                // The app itself is busy
+                return !(IsBusy || EditApp.IsBusy);
+            }
+        }
+
+        public bool IsDeployed
+        {
+            get
+            {
+                // The UI is functioning and
+                // the app has been deployed
+                return (IsInteractive && EditApp.IsDeployed);
+            }
+        }
+
+        public bool IsActive
+        {
+            get
+            {
+                // The UI is functioning and
+                // the app has been deployed and is active
+                return (IsInteractive && EditApp.IsActive);
+            }
+        }
+
         public ContactViewModel ContactViewModel
         {
             get

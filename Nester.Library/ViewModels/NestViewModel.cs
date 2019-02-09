@@ -34,7 +34,7 @@ namespace Inkton.Nester.ViewModels
     {
         private Inkton.Nest.Model.Nest _editNest;
 
-        private ObservableCollection<Inkton.Nest.Model.Nest> _nests = null;        
+        private ObservableCollection<Inkton.Nest.Model.Nest> _nests = null;
         private ObservableCollection<NestPlatform> _platforms = null;
 
         public ICommand RemoveCommand { get; private set; }
@@ -129,26 +129,6 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        private void SetNestHosts(Inkton.Nest.Model.Nest nest)
-        {
-            foreach (NestPlatform platform in _platforms)
-            {
-                if (nest.PlatformId == platform.Id)
-                {
-                    nest.Platform = platform;
-                    break;
-                }
-            }
-        }
-
-        private void SetNestsHosts()
-        {
-            foreach (Inkton.Nest.Model.Nest nest in _nests)
-            {
-                SetNestHosts(nest);
-            }
-        }
-
         public async Task<ResultMultiple<Inkton.Nest.Model.Nest>> QueryNestsAsync(
             bool doCache = false, bool throwIfError = true)
         {
@@ -159,7 +139,6 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 _nests = result.Data.Payload;
-                SetNestsHosts();
                 OnPropertyChanged("Nests");
             }
 
@@ -178,7 +157,6 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 _editNest = result.Data.Payload;
-                SetNestHosts(_editNest);
 
                 if (nest != null)
                 {
@@ -201,12 +179,11 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 _editNest = result.Data.Payload;
-                SetNestHosts(_editNest);
 
                 if (nest != null)
                 {
                     _editNest.CopyTo(nest);
-                    _nests.Add(nest);               
+                    _nests.Add(nest);
                 }
 
                 OnPropertyChanged("Nests");
@@ -227,7 +204,6 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 _editNest = result.Data.Payload;
-                SetNestHosts(_editNest);
             }
 
             return result;
@@ -238,7 +214,7 @@ namespace Inkton.Nester.ViewModels
         {
             Inkton.Nest.Model.Nest theNest = nest == null ? _editNest : nest;
 
-            ResultSingle <Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
+            ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
                     Keeper.Service.RemoveAsync), doCache);
 

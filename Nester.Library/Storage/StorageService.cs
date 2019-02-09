@@ -97,6 +97,7 @@ namespace Inkton.Nester.Storage
 
             string json = File.ReadAllText(path);
             T received = JsonConvert.DeserializeObject<T>(json);
+            received.OwnedBy = obj.OwnedBy;
             received.CopyTo(obj);
             return true;
         }

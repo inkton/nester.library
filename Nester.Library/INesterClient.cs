@@ -30,8 +30,29 @@ using Inkton.Nester.Helpers;
 
 namespace Inkton.Nester
 {
-    public interface IClientResources
+    public interface INesterClient
     {
+        /// <summary>
+        /// The platform Api Version
+        /// </summary>
+        int ApiVersion
+        {
+            get;
+        }
+
+        string Signature
+        {
+            get;
+        }
+
+        /// <summary>
+        /// The platform user
+        /// </summary>
+        User User
+        {
+            get;
+        }
+
         /// <summary>
         /// The log service
         /// <summary>
@@ -45,6 +66,15 @@ namespace Inkton.Nester
         /// </summary>
         /// <returns>Resource Manager</returns>
         ResourceManager GetResourceManager();
+
+        /// <summary>
+        /// Reset the permit
+        /// <summary>
+        void ResetPermit(Permit permit = null);
+
+        /// <summary>
+        /// Reset the view optionally with app
+        /// <summary>
+        void ResetView(AppViewModel appModel = null);
     }
 }
-        

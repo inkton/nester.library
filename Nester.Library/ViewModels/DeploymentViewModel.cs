@@ -48,7 +48,7 @@ namespace Inkton.Nester.ViewModels
 
         public ICommand SelectForestCommand { get; private set; }
 
-        public DeploymentViewModel(App app) : base(app)
+        public DeploymentViewModel(NesterService platform, App app) : base(platform, app)
         {
             _deployments = new ObservableCollection<Deployment>();
             _forests = new ObservableCollection<Forest>();
@@ -183,7 +183,7 @@ namespace Inkton.Nester.ViewModels
             Forest forestSeed = new Forest();
 
             ResultMultiple<Forest> result = await ResultMultipleUI<Forest>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, forestSeed, doCache);
+                Platform, throwIfError, forestSeed, doCache);
 
             if (result.Code >= 0)
             {
@@ -208,7 +208,7 @@ namespace Inkton.Nester.ViewModels
             versionSeed.OwnedBy = frameworkSeed;
 
             ResultMultiple<SoftwareFramework.Version> result = await ResultMultipleUI<SoftwareFramework.Version>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, versionSeed, doCache);
+                Platform, throwIfError, versionSeed, doCache);
 
             if (result.Code >= 0)
             {
@@ -224,7 +224,7 @@ namespace Inkton.Nester.ViewModels
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
             ResultMultiple<Deployment> result = await ResultMultipleUI<Deployment>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, theDeployment, doCache);
+                Platform, throwIfError, theDeployment, doCache);
             _editApp.Deployment = null;
 
             if (result.Code >= 0)
@@ -247,7 +247,7 @@ namespace Inkton.Nester.ViewModels
         {
             ResultSingle<Devkit> result = await ResultSingleUI<Devkit>.WaitForObjectAsync(
                 throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit, ResultSingle<Devkit>>(
-                    Keeper.Service.QueryAsync), doCache);
+                    Platform.QueryAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -271,7 +271,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
                 throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
-                    Keeper.Service.CreateAsync), doCache, data);
+                    Platform.CreateAsync), doCache, data);
 
             if (result.Code >= 0)
             {
@@ -299,7 +299,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
                 throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
-                    Keeper.Service.UpdateAsync), doCache, data);
+                    Platform.UpdateAsync), doCache, data);
 
             if (result.Code >= 0)
             {
@@ -317,7 +317,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
                 throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
-                    Keeper.Service.RemoveAsync), doCache);
+                    Platform.RemoveAsync), doCache);
 
             if (result.Code == 0)
             {
@@ -338,7 +338,7 @@ namespace Inkton.Nester.ViewModels
             theBackup.OwnedBy = _editApp.Deployment;
 
             ResultMultiple<AppBackup> result = await ResultMultipleUI<AppBackup>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, theBackup, doCache);
+                Platform, throwIfError, theBackup, doCache);
 
             if (result.Code >= 0)
             {
@@ -357,7 +357,7 @@ namespace Inkton.Nester.ViewModels
 
             return await ResultSingleUI<AppBackup>.WaitForObjectAsync(
                 throwIfError, appBackup, new Cloud.CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
-                    Keeper.Service.UpdateAsync), doCache);
+                    Platform.UpdateAsync), doCache);
         }
 
         public async Task<ResultSingle<AppBackup>> BackupAppAsync(AppBackup appBackup = null,
@@ -368,7 +368,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppBackup> result = await ResultSingleUI<AppBackup>.WaitForObjectAsync(
                 throwIfError, theBackup, new Cloud.CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
-                    Keeper.Service.CreateAsync), doCache);
+                    Platform.CreateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -398,7 +398,7 @@ namespace Inkton.Nester.ViewModels
             AppAudit theAudit = appAudit == null ? _editAudit : appAudit;
 
             ResultMultiple<AppAudit> result = await ResultMultipleUI<AppAudit>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, theAudit, doCache, filter);
+                Platform, throwIfError, theAudit, doCache, filter);
 
             if (result.Code >= 0)
             {

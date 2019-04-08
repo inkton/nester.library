@@ -20,6 +20,7 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+using Inkton.Nester;
 using Xamarin.Forms;
 
 namespace Inkton.Nester.Helpers
@@ -28,7 +29,7 @@ namespace Inkton.Nester.Helpers
     {
         public static void Exception(string detail, string location)
         {
-            (Application.Current as IClientResources).Log
+            (Application.Current as INesterClient).Log
                 .Trace(detail, location, LogSeverity.LogSeverityCritical);
         }
     }

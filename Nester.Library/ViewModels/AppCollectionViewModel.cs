@@ -33,10 +33,10 @@ namespace Inkton.Nester.ViewModels
     {
         private ObservableCollection<AppViewModel> _appModels;
 
-        public AppCollectionViewModel()
+        public AppCollectionViewModel(NesterService service)
+            :base(service)
         {
             _editApp = new App();
-            _editApp.OwnedBy = Keeper.User;
             _appModels = new ObservableCollection<AppViewModel>();
         }
 
@@ -52,11 +52,21 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public void ResetOwner(User owner)
+        {
+            _editApp.OwnedBy = owner;
+
+            foreach (AppViewModel appModel in _appModels)
+            {
+                appModel.EditApp.OwnedBy = owner;
+            }
+        }
+
         public async Task<ResultMultiple<App>> LoadApps(
             bool doCache = true, bool throwIfError = true)
         {
             ResultMultiple<App> result = await ResultMultipleUI<App>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, _editApp, doCache);
+                Platform, throwIfError, _editApp, doCache);
 
             if (result.Code == 0)
             {
@@ -76,7 +86,8 @@ namespace Inkton.Nester.ViewModels
 
         public AppViewModel AddApp(App app)
         {
-            AppViewModel appModel = new AppViewModel();
+            AppViewModel appModel = new AppViewModel(
+                Client.ApiVersion, Client.Signature, _platform);
             appModel.EditApp = app;
             AddModel(appModel);
             return appModel;

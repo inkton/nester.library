@@ -35,11 +35,11 @@ namespace Inkton.Nester.ViewModels
         private ObservableCollection<UserEvent> _userEvents;
         private bool _canRecoverPassword = false;
 
-        public AuthViewModel()
+        public AuthViewModel(NesterService platform)
+            :base(platform)
         {
             _permit = new Permit();
-            _permit.Owner = Keeper.User;
-
+            _permit.Owner = new User();
             _userEvents = new ObservableCollection<UserEvent>();
         }
 
@@ -57,35 +57,23 @@ namespace Inkton.Nester.ViewModels
 
         public void Reset()
         {
-            Keeper.Service.Permit = null;
+            Platform.Permit = null;
             _permit.SecurityCode = null;
             _permit.Token = null;
         }
 
         public void ChangePermit(Permit newPermit)
         {
-            Keeper.User = newPermit.Owner;
-
-            if (Keeper.ViewModels.AppViewModel != null)
-                Keeper.ViewModels.AppViewModel
-                .EditApp.OwnedBy = newPermit.Owner;
-            if (Keeper.ViewModels.PaymentViewModel != null)
-                Keeper.ViewModels.PaymentViewModel
-                .EditPaymentMethod.OwnedBy = newPermit.Owner;
-            if (Keeper.ViewModels.AppCollectionViewModel != null)
-                Keeper.ViewModels.AppCollectionViewModel
-                .EditApp.OwnedBy = newPermit.Owner;
-            if (Keeper.Service != null)
-                Keeper.Service.Permit = newPermit;
-
+            Platform.Permit = newPermit;
             newPermit.CopyTo(_permit);
+            Client.ResetPermit(_permit);
         }
 
         public ResultSingle<Permit> Signup(
             bool throwIfError = true)
         {
             ResultSingle<Permit> result =
-                Keeper.Service.Signup(_permit);
+                Platform.Signup(_permit);
 
             if (result.Code < 0)
             {
@@ -95,7 +83,7 @@ namespace Inkton.Nester.ViewModels
             else
             {
                 _permit.Owner.CopyTo(
-                    Keeper.User);
+                    Client.User);
             }
 
             return result;
@@ -105,7 +93,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result = await
-                Keeper.Service.RecoverPasswordAsync(_permit);
+                Platform.RecoverPasswordAsync(_permit);
 
             if (result.Code < 0)
             {
@@ -120,7 +108,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result =
-                Keeper.Service.QueryToken(_permit);
+                Platform.QueryToken(_permit);
 
             if (result.Code < 0)
             {
@@ -139,7 +127,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result =
-                await Keeper.Service.QueryTokenAsync(_permit);
+                await Platform.QueryTokenAsync(_permit);
 
             if (result.Code < 0)
             {
@@ -158,7 +146,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result = await
-                Keeper.Service.ResetTokenAsync(_permit);
+                Platform.ResetTokenAsync(_permit);
 
             if (result.Code < 0)
             {
@@ -180,7 +168,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, user, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
-                    Keeper.Service.UpdateAsync), doCache);
+                    Platform.UpdateAsync), doCache);
 
             return result;
         }
@@ -192,7 +180,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, theUser, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
-                    Keeper.Service.RemoveAsync), doCache);
+                    Platform.RemoveAsync), doCache);
 
             return result;
         }
@@ -201,10 +189,10 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.OwnedBy = Keeper.User;
+            userEventSeed.OwnedBy = Client.User;
 
             ResultMultiple<UserEvent> result = await ResultMultipleUI<UserEvent>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, userEventSeed, doCache);
+                Platform, throwIfError, userEventSeed, doCache);
 
             if (result.Code >= 0)
             {

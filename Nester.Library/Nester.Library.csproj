@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Title>Inkton NesterLibrary</Title>
     <PackageId>Inkton.NesterLibrary</PackageId>
-    <PackageVersion>1.4.4</PackageVersion>
+    <PackageVersion>1.5.0</PackageVersion>
     <PackageTags>paas,docker,nest.yt</PackageTags>
     <Authors>nest.yt</Authors>
     <Description>A Client UI Library for Nest.yt</Description>
@@ -23,7 +23,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Flurl.Http" Version="2.4.0" />
-    <PackageReference Include="Inkton.NestModel" Version="1.1.2" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.1.1" />
     <PackageReference Include="Microsoft.Win32.Primitives" Version="4.3.0" />
@@ -42,5 +41,8 @@
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
     <PackageReference Include="Xam.Plugins.Settings" Version="3.1.1" />
     <PackageReference Include="Xamarin.Forms" Version="2.5.1.527436" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\nest.model\Nest.Model\Nest.Model.csproj" />
   </ItemGroup>
 </Project>

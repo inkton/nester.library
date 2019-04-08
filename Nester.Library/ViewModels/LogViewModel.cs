@@ -162,7 +162,7 @@ namespace Inkton.Nester.ViewModels
 
         #endregion
 
-        public LogViewModel(App app) : base(app)
+        public LogViewModel(NesterService platform, App app) : base(platform, app)
         {
             _cpuSeries = new MultiSeriesData();
             _cpuSeries.Init("User");
@@ -424,6 +424,15 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
+        public void ResetBackend()
+        {
+            // Set the backend address for querying logs and metrics
+            Platform.Endpoint = string.Format(
+                    "https://{0}/", EditApp.Hostname);
+            Platform.BasicAuth = new Inkton.Nester.Cloud.BasicAuth(true,
+                    EditApp.Tag, EditApp.NetworkPassword);
+        }
+
         public async Task QueryMetricsAsync(
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
@@ -643,7 +652,7 @@ namespace Inkton.Nester.ViewModels
 
             T logsSeed = new T();
             return await ResultMultipleUI<T>.WaitForObjectAsync(
-                NesterControl.Backend, doCache, logsSeed, throwIfError, data);
+                Platform, doCache, logsSeed, throwIfError, data);
         }
     }
 }

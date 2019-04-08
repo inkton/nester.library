@@ -39,7 +39,7 @@ namespace Inkton.Nester.ViewModels
 
         public ICommand RemoveCommand { get; private set; }
 
-        public NestViewModel(App app) : base(app)
+        public NestViewModel(NesterService platform, App app) : base(platform, app)
         {
             _nests = new ObservableCollection<Inkton.Nest.Model.Nest>();
             _platforms = new ObservableCollection<NestPlatform>();
@@ -119,7 +119,7 @@ namespace Inkton.Nester.ViewModels
             platformSeed.OwnedBy = _editApp;
 
             ResultMultiple<NestPlatform> result = await ResultMultipleUI<NestPlatform>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, platformSeed, doCache);
+                Platform, throwIfError, platformSeed, doCache);
 
             if (result.Code >= 0)
             {
@@ -134,7 +134,7 @@ namespace Inkton.Nester.ViewModels
         {
             _editNest.OwnedBy = _editApp;
             ResultMultiple<Inkton.Nest.Model.Nest> result = await ResultMultipleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, _editNest, doCache);
+                Platform, throwIfError, _editNest, doCache);
 
             if (result.Code >= 0)
             {
@@ -152,7 +152,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
-                    Keeper.Service.QueryAsync), doCache, null, null);
+                    Platform.QueryAsync), doCache, null, null);
 
             if (result.Code >= 0)
             {
@@ -174,7 +174,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
-                    Keeper.Service.CreateAsync), doCache);
+                    Platform.CreateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -199,7 +199,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
-                    Keeper.Service.UpdateAsync), doCache);
+                    Platform.UpdateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -216,7 +216,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Inkton.Nest.Model.Nest> result = await ResultSingleUI<Inkton.Nest.Model.Nest>.WaitForObjectAsync(
                 throwIfError, theNest, new Cloud.CachedHttpRequest<Inkton.Nest.Model.Nest, ResultSingle<Inkton.Nest.Model.Nest>>(
-                    Keeper.Service.RemoveAsync), doCache);
+                    Platform.RemoveAsync), doCache);
 
             if (result.Code >= 0)
             {

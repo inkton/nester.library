@@ -106,21 +106,6 @@ namespace Inkton.Nester.Cloud
             set { _permit = value; }
         }
 
-        public async Task<string> GetIPAsync(string host)
-        {
-            string ip = null;
-
-            try
-            {
-                IPAddress[] ipAddress = await Dns.GetHostAddressesAsync(host);
-                ip = ipAddress[0].MapToIPv4().ToString();
-                return ip;
-            }
-            catch (Exception) { }
-
-            return ip;
-        }
-
         public ResultSingle<Permit> Signup(Permit permit)
         {
             Dictionary<string, string> data = new Dictionary<string, string>();

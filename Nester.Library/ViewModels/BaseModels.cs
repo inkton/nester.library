@@ -1,4 +1,11 @@
-﻿using Inkton.Nest.Model;
+﻿using System;
+using System.IO;
+using System.Collections.Generic;
+using Xamarin.Forms;
+using Newtonsoft.Json;
+using Inkton.Nest.Model;
+using Inkton.Nester.Cloud;
+using Inkton.Nester.Storage;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -9,40 +16,48 @@ namespace Inkton.Nester.ViewModels
         private AppViewModel _appViewModel = null;
         private AppCollectionViewModel _appCollectionViewModel = null;
 
+        private NesterService _platform;
         protected bool _wizardMode = false;
 
-        public BaseViewModels(
-            AuthViewModel authViewModel = null,
-            PaymentViewModel paymentViewModel = null,
-            AppViewModel appViewModel = null,
-            AppCollectionViewModel appCollectionViewModel = null
-            )
+        public BaseViewModels()
         {
+            SetupPlatform();
+
+            _authViewModel = new AuthViewModel(_platform);
+            _paymentViewModel = new PaymentViewModel(_platform);
+            _appCollectionViewModel = new AppCollectionViewModel(_platform);
+        }
+
+        public BaseViewModels(
+            AuthViewModel authViewModel,
+            PaymentViewModel paymentViewModel,
+            AppViewModel newAppModel)
+        {
+            SetupPlatform();
+
             _authViewModel = authViewModel;
             _paymentViewModel = paymentViewModel;
-            _appViewModel = appViewModel;
-            _appCollectionViewModel = appCollectionViewModel;
+
+            _appCollectionViewModel = new AppCollectionViewModel(_platform);
+            _appCollectionViewModel.AddModel(newAppModel);
         }
 
         public BaseViewModels(
             BaseViewModels other
             )
         {
+            _platform = other._platform;
+
             _authViewModel = other._authViewModel;
             _paymentViewModel = other._paymentViewModel;
             _appViewModel = other._appViewModel;
             _appCollectionViewModel = other._appCollectionViewModel;
         }
 
-        public User Owner
+        public NesterService Platform
         {
-            set {
-                if (_appViewModel != null && 
-                    _appViewModel.EditApp != null)
-                {
-                    _appViewModel.EditApp.OwnedBy = value;
-                }
-            }
+            get { return _platform; }
+            set { _platform = value; }
         }
 
         public AuthViewModel AuthViewModel
@@ -73,6 +88,27 @@ namespace Inkton.Nester.ViewModels
         {
             get { return _wizardMode; }
             set { _wizardMode = value; }
+        }
+
+        public void SetupPlatform()
+        {
+            StorageService cache = new StorageService(Path.Combine(
+                    Path.GetTempPath(), "NesterCache-" + DateTime.Now.Ticks.ToString()));
+            cache.Clear();
+
+            INesterClient client = Application.Current as INesterClient;
+            _platform = new NesterService(
+                client.ApiVersion, client.Signature, cache);
+        }
+
+        public void ResetPermit(Permit permit = null)
+        {
+            if (PaymentViewModel != null && PaymentViewModel.EditPaymentMethod != null)
+                PaymentViewModel.EditPaymentMethod.OwnedBy = permit?.Owner;
+            if (AppCollectionViewModel != null)
+                AppCollectionViewModel.ResetOwner(permit?.Owner);
+
+            _platform.Permit = permit;
         }
     }
 }

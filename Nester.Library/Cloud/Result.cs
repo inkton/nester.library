@@ -64,7 +64,7 @@ namespace Inkton.Nester.Cloud
             {
                 try
                 {
-                    ResourceManager resmgr = (Application.Current as INesterControl).GetResourceManager();
+                    ResourceManager resmgr = (Application.Current as INesterClient).GetResourceManager();
                     additionalInfo = resmgr.GetString(_result.Text,
                         System.Globalization.CultureInfo.CurrentUICulture);
                 }

@@ -20,7 +20,7 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-using System;
+using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Inkton.Nest.Model;
@@ -31,22 +31,13 @@ namespace Inkton.Nester.ViewModels
 {
     public class AuthViewModel : ViewModel
     {
-        private Permit _permit;
         private ObservableCollection<UserEvent> _userEvents;
         private bool _canRecoverPassword = false;
 
         public AuthViewModel(NesterService platform)
             :base(platform)
         {
-            _permit = new Permit();
-            _permit.Owner = new User();
             _userEvents = new ObservableCollection<UserEvent>();
-        }
-
-        public Permit Permit
-        {
-            get { return _permit; }
-            set { SetProperty(ref _permit, value); }
         }
 
         public bool CanRecoverPassword
@@ -57,33 +48,65 @@ namespace Inkton.Nester.ViewModels
 
         public void Reset()
         {
-            Platform.Permit = null;
-            _permit.SecurityCode = null;
-            _permit.Token = null;
+            Permit permit = Platform.Permit;
+            permit.Invalid();
+            Platform.Permit = permit;
         }
 
         public void ChangePermit(Permit newPermit)
         {
             Platform.Permit = newPermit;
-            newPermit.CopyTo(_permit);
-            Client.ResetPermit(_permit);
+            Client.User = newPermit.Owner;
         }
 
         public ResultSingle<Permit> Signup(
             bool throwIfError = true)
         {
+            Debug.Assert(!string.IsNullOrWhiteSpace(Platform.Permit.Owner.Email));
+
+            if (string.IsNullOrWhiteSpace(Platform.Permit.Owner.Nickname)) {
+                Platform.Permit.Owner.Nickname = Platform.Permit.Owner.Email;
+            }
+
             ResultSingle<Permit> result =
-                Platform.Signup(_permit);
+                Platform.Signup();
 
             if (result.Code < 0)
             {
                 if (throwIfError)
                     new ResultHandler<Permit>(result).Throw();
             }
-            else
+           
+            return result;
+        }
+
+        public async Task<ResultSingle<Permit>> SignupAsync(
+            bool throwIfError = true)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(Platform.Permit.Owner.Email));
+
+            if (string.IsNullOrWhiteSpace(Platform.Permit.Owner.Nickname))
             {
-                _permit.Owner.CopyTo(
-                    Client.User);
+                Platform.Permit.Owner.Nickname = Platform.Permit.Owner.Email;
+            }
+
+            ResultSingle<Permit> result =
+                await Platform.SignupAsync();
+
+            if (result.Code < 0)
+            {
+                if (throwIfError)
+                {
+                    List<AuthError> reasons =
+                        JsonConvert.DeserializeObject<List<AuthError>>((result.Notes);
+                    allErrors.ForEach
+                    
+
+                    //string json1 = @"{'Name':'James'}";
+                    //var customer1 = JsonConvert.DeserializeAnonymousType(json1, definition);
+
+                    new ResultHandler<Permit>(result).Throw();
+                }
             }
 
             return result;
@@ -93,7 +116,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result = await
-                Platform.RecoverPasswordAsync(_permit);
+                Platform.RecoverPasswordAsync();
 
             if (result.Code < 0)
             {
@@ -108,7 +131,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result =
-                Platform.QueryToken(_permit);
+                Platform.QueryToken();
 
             if (result.Code < 0)
             {
@@ -127,7 +150,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result =
-                await Platform.QueryTokenAsync(_permit);
+                await Platform.QueryTokenAsync();
 
             if (result.Code < 0)
             {
@@ -146,7 +169,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result = await
-                Platform.ResetTokenAsync(_permit);
+                Platform.ResetTokenAsync();
 
             if (result.Code < 0)
             {
@@ -155,7 +178,7 @@ namespace Inkton.Nester.ViewModels
             }
             else
             {
-                ChangePermit(_permit);
+                ChangePermit(result.Data.Payload);
             }
 
             return result;
@@ -164,7 +187,7 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<User>> UpdateUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
-            User theUser = user == null ? _permit.Owner : user;
+            User theUser = user == null ? Client.User : user;
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, user, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
@@ -176,7 +199,7 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<User>> DeleteUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
-            User theUser = user == null ? _permit.Owner : user;
+            User theUser = user == null ? Client.User : user;
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, theUser, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
@@ -189,7 +212,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.OwnedBy = Client.User;
+            userEventSeed.OwnedBy = user == null ? Client.User : user;
 
             ResultMultiple<UserEvent> result = await ResultMultipleUI<UserEvent>.WaitForObjectAsync(
                 Platform, throwIfError, userEventSeed, doCache);

@@ -385,9 +385,7 @@ namespace Inkton.Nester.ViewModels
 
                 if (throwIfError && _editApp.Status != "assigned")
                 {
-                    string message = "Failed to initialize the app. Please contact support.";
-                    Helpers.ErrorHandler.Exception(message, string.Empty);
-                    throw new Exception(message);
+                    throw new Exception("Failed to initialize the app. Please contact support.");
                 }
 
                 await InitAsync();

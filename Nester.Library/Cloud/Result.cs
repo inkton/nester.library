@@ -92,7 +92,7 @@ namespace Inkton.Nester.Cloud
         }
     }
 
-    public class ResultSingleUI<PayloadT> : ResultSingle<PayloadT> where PayloadT : Inkton.Nest.Cloud.CloudObject, new()
+    public class ResultSingleUI<PayloadT> : ResultSingle<PayloadT> where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
     {
         public static ResultSingle<PayloadT> WaitForObject(bool throwIfError, PayloadT seed,
             CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request, bool doCache = true, IDictionary<string, string> data = null,
@@ -127,7 +127,7 @@ namespace Inkton.Nester.Cloud
 
     }
 
-    public class ResultMultipleUI<PayloadT> : ResultMultiple<PayloadT> where PayloadT : Inkton.Nest.Cloud.CloudObject, new()
+    public class ResultMultipleUI<PayloadT> : ResultMultiple<PayloadT> where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
     {
         public static ResultMultiple<PayloadT> WaitForObject(
             NesterService nesterService, bool throwIfError, PayloadT seed,

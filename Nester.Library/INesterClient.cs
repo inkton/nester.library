@@ -40,6 +40,9 @@ namespace Inkton.Nester
             get;
         }
 
+        /// <summary>
+        /// The client signature
+        /// </summary>
         string Signature
         {
             get;
@@ -50,15 +53,7 @@ namespace Inkton.Nester
         /// </summary>
         User User
         {
-            get;
-        }
-
-        /// <summary>
-        /// The log service
-        /// <summary>
-        LogService Log
-        {
-            get;
+            get; set;
         }
 
         /// <summary>
@@ -68,13 +63,8 @@ namespace Inkton.Nester
         ResourceManager GetResourceManager();
 
         /// <summary>
-        /// Reset the permit
-        /// <summary>
-        void ResetPermit(Permit permit = null);
-
-        /// <summary>
         /// Reset the view optionally with app
         /// <summary>
-        void ResetView(AppViewModel appModel = null);
+        void RefreshView();
     }
 }

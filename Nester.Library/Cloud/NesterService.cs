@@ -96,6 +96,8 @@ namespace Inkton.Nester.Cloud
         public NesterService(
             int version, string deviceSignature, StorageService cache)
         {
+            // The user credentials to access the 
+            // platform will be set here
             _permit = new Permit();
 
             _version = version;
@@ -281,8 +283,8 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultSingle<T>> PostAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string json = await flurlRequest.PostJsonAsync(seed)
-                    .ReceiveString();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Post, seed).ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -290,19 +292,8 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultSingle<T>> GetAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            /*
-             * 
-             * string json = await flurlRequest.GetAsync()
-             *        .ReceiveString();
-             *
-             * iOS: https://github.com/xamarin/xamarin-macios/issues/4380
-             * Android: https://github.com/xamarin/xamarin-android/issues/1472
-             * 
-             * The workaround seems to be to use GetAwaiter().GetResult() instead of await
-             */
-
-            HttpResponseMessage response = flurlRequest.GetAsync().GetAwaiter().GetResult();
-            string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Get, seed).ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -310,19 +301,8 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultMultiple<T>> GetListAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            /*
-             * 
-             * string json = await flurlRequest.GetAsync()
-             *        .ReceiveString();
-             *
-             * iOS: https://github.com/xamarin/xamarin-macios/issues/4380
-             * Android: https://github.com/xamarin/xamarin-android/issues/1472
-             * 
-             * The workaround seems to be to use GetAwaiter().GetResult() instead of await
-             */
-
-            HttpResponseMessage response = flurlRequest.GetAsync().GetAwaiter().GetResult();
-            string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Get, seed).ReceiveString();
 
             return ResultMultiple<T>.ConvertObject(json, seed);
         }
@@ -330,12 +310,8 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultSingle<T>> PutAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string objJson = JsonConvert.SerializeObject(seed);
-            var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
-
-            string json = await flurlRequest
-                        .PutAsync(httpContent)
-                        .ReceiveString();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Put, seed).ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -343,11 +319,8 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultSingle<T>> DeleteAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string objJson = JsonConvert.SerializeObject(seed);
-            var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
-
-            string json = await flurlRequest.DeleteAsync()
-                    .ReceiveString();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Delete, seed).ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }

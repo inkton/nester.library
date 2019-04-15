@@ -97,9 +97,9 @@ namespace Inkton.Nester.ViewModels
             {
                 if (throwIfError)
                 {
-                    List<AuthError> reasons =
-                        JsonConvert.DeserializeObject<List<AuthError>>((result.Notes);
-                    allErrors.ForEach
+                    //List<AuthError> reasons =
+                    //    JsonConvert.DeserializeObject<List<AuthError>>((result.Notes);
+                    //allErrors.ForEach
                     
 
                     //string json1 = @"{'Name':'James'}";

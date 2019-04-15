@@ -45,7 +45,7 @@ namespace Inkton.Nester.ViewModels
             _editCredit = new Credit();
 
             _editPaymentMethod = new PaymentMethod();
-            _editPaymentMethod.OwnedBy = Client.User;
+            //_editPaymentMethod.OwnedBy = Client.User;
         }
 
         public Credit EditCredit

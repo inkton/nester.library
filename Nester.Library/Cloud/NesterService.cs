@@ -92,7 +92,7 @@ namespace Inkton.Nester.Cloud
         private Permit _permit = new Permit();
         private bool _autoTokenRenew = true;
         private int _retryCount = 3;
-        private int _retryBaseIntervalInSecs = 3;
+        private int _retryBaseIntervalInSecs = 2;
         private StorageService _cache; 
 
         public NesterService(
@@ -140,7 +140,7 @@ namespace Inkton.Nester.Cloud
             set { _autoTokenRenew = value; }
         }
 
-        public bool RetryCount
+        public int RetryCount
         {
             get { return _retryCount; }
             set { _retryCount = value; }
@@ -198,16 +198,10 @@ namespace Inkton.Nester.Cloud
 
         public async Task<ResultSingle<Permit>> ResetTokenAsync()
         {
-            /*
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data.Add("token", _permit.Token);
-            data.Add("password", newPermit.Password);
-            */
-            ResultSingle<Permit> result = await DeleteAsync(
-                _permit, CreateRequest(
-                    _permit, true));
+            return await TrySend<Permit, ResultSingle<Permit>, Permit>(
+                new HttpRequest<Permit, ResultSingle<Permit>>(DeleteAsync),
+                _permit, true, null, null, false);
 
-            return result;
         }
 
         #region Utility
@@ -311,6 +305,10 @@ namespace Inkton.Nester.Cloud
                 where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
                 where ResultT : Result<ResultReturnT> , new()
         {
+            // Try-send is used to send after a session has been established
+            // it attaches the JWT token, attempts retry if failed and also 
+            // handle cacheing
+
             ResultT result = new ResultT();
 
             if (data == null)
@@ -323,9 +321,8 @@ namespace Inkton.Nester.Cloud
                 data.Add("token", _permit.Token);
             }
 
-            for (int i = 0; i < _retryCount; i++)
+            for (int attempt = 0; attempt < _retryCount; attempt++)
             {
-
                 try
                 {
                     result = await request(seed, CreateRequest(
@@ -339,19 +336,27 @@ namespace Inkton.Nester.Cloud
                             _permit = QueryToken().Data.Payload;
                             data["token"] = _permit.Token;
                         }
+                        else
+                        {
+                            return result;
+                        }
                     }
                     else
                     {
-                        UpdateCache<PayloadT, ResultT>(keyRequest, doCache, result);
+                        UpdateCache<PayloadT, ResultT, ResultReturnT>(seed, keyRequest, doCache, result);
                         return result;
                     }
                 }
                 catch (Exception ex)
                 {
                     SetFailedResult<ResultReturnT>(result, ex);
+                }
 
-                    // Wait period grows after each re-try. if interval is 3 seconds then 
-                    // the each try will be in 3, 9, 27 second intervals etc.
+                if (attempt < _retryCount)
+                {
+                    // Wait period grows after each re-try. if interval is 2 seconds then 
+                    // the each try will be in 2, 4, 8 second intervals etc. 
+                    // (Exponential back-off)
 
                     Task.Delay((int)Math.Pow(
                         _retryBaseIntervalInSecs, _retryCount) * 1000).Wait();
@@ -361,8 +366,10 @@ namespace Inkton.Nester.Cloud
             return result;
         }
 
-        private void UpdateCache<PayloadT, ResultT>(bool keyRequest,
-            bool doCache = true, ResultT result)
+        private void UpdateCache<PayloadT, ResultT, ResultReturnT>(
+            PayloadT seed, bool keyRequest, bool doCache, Result<ResultReturnT> result)
+                where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
+                where ResultT : Result<ResultReturnT>, new()
         {
             if (result.Code == 0)
             {

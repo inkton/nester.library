@@ -61,10 +61,5 @@ namespace Inkton.Nester
         /// </summary>
         /// <returns>Resource Manager</returns>
         ResourceManager GetResourceManager();
-
-        /// <summary>
-        /// Reset the view optionally with app
-        /// <summary>
-        void RefreshView();
     }
 }

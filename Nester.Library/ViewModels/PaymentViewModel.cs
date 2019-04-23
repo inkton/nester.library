@@ -226,20 +226,5 @@ namespace Inkton.Nester.ViewModels
 
             return result;
         }
-
-        public string PaymentNotice
-        {
-            get
-            {
-                if (Client.User.TerritoryISOCode == "AU")
-                {
-                    return "The prices are in US Dollars and do not include GST.";
-                }
-                else
-                {
-                    return "The prices are in US Dollars. ";
-                }
-            }
-        }
     }
 }

@@ -58,7 +58,7 @@ namespace Inkton.Nester.Cloud
                 message = "Oops! somthing went wrong!";
             }
 
-            string additionalInfo = string.Empty;
+            string additionalInfo = "";
 
             if (_result.Text != null && _result.Text.Length > 0)
             {
@@ -70,7 +70,7 @@ namespace Inkton.Nester.Cloud
                 }
                 catch (Exception) { }
             }
-            if (_result.Notes != null && _result.Notes.Length > 0)
+            if (_result.Notes.Length > 0)
             {
                 if (additionalInfo.Length > 0)
                     additionalInfo += " - " + _result.Notes;

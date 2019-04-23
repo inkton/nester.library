@@ -253,7 +253,7 @@ namespace Inkton.Nester.ViewModels
             System.Diagnostics.Debug.WriteLine(
                 string.Format("End - Init App - {0}", EditApp.Tag));
 
-            MessagingCenter.Send(this, "Updated", EditApp);
+            MessagingCenter.Send(EditApp, "Updated");
         }
 
         async public void NewAppAsync()

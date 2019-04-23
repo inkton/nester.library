@@ -37,7 +37,7 @@ namespace Inkton.Nester.ViewModels
 {
     public class ServicesViewModel : ViewModel
     {
-        private ObservableCollection<AppService> _appServices;
+        private static ObservableCollection<AppService> _appServices;
         public const string DefaultAppServiceTag = "nest-redbud";
 
         private string _selectedAppServiceTag = DefaultAppServiceTag;
@@ -99,7 +99,6 @@ namespace Inkton.Nester.ViewModels
 
         public ServicesViewModel(NesterService platform, App app) : base(platform, app)
         {
-            _appServices = new ObservableCollection<AppService>();
             _upgradableAppTiers = new ObservableCollection<AppServiceTier>();
         }
 
@@ -117,6 +116,12 @@ namespace Inkton.Nester.ViewModels
 
         public async Task InitAsync()
         {
+            if (_appServices == null)
+            {
+                _appServices = new ObservableCollection<AppService>();
+                await QueryServicesAsync();
+            }
+
             await QueryAppSubscriptions();
 
             CreateServicesTables();
@@ -256,11 +261,6 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultMultiple<AppServiceSubscription>> QueryAppSubscriptions(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
-            if (!_appServices.Any())
-            {
-                await QueryServicesAsync();
-            }
-
             AppServiceSubscription subSeeder = new AppServiceSubscription();
             subSeeder.OwnedBy = (app == null ? _editApp : app);
 

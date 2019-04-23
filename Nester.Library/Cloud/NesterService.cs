@@ -318,7 +318,7 @@ namespace Inkton.Nester.Cloud
 
             if (_permit != null)
             {
-                data.Add("token", _permit.Token);
+                data["token"] = _permit.Token;
             }
 
             for (int attempt = 0; attempt < _retryCount; attempt++)
@@ -358,8 +358,14 @@ namespace Inkton.Nester.Cloud
                     // the each try will be in 2, 4, 8 second intervals etc. 
                     // (Exponential back-off)
 
-                    Task.Delay((int)Math.Pow(
-                        _retryBaseIntervalInSecs, _retryCount) * 1000).Wait();
+                    int waitIntervalSecs = (int)Math.Pow(
+                        _retryBaseIntervalInSecs, attempt + 1);
+
+                    System.Diagnostics.Debug.WriteLine(
+                       string.Format("Re-attempt {0}, waiting for - {1} seconds ...",
+                        attempt, waitIntervalSecs));
+
+                    Task.Delay(waitIntervalSecs * 1000).Wait();
                 }
             }
 

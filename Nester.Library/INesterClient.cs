@@ -33,22 +33,6 @@ namespace Inkton.Nester
     public interface INesterClient
     {
         /// <summary>
-        /// The platform Api Version
-        /// </summary>
-        int ApiVersion
-        {
-            get;
-        }
-
-        /// <summary>
-        /// The client signature
-        /// </summary>
-        string Signature
-        {
-            get;
-        }
-
-        /// <summary>
         /// The platform user
         /// </summary>
         User User
@@ -61,10 +45,5 @@ namespace Inkton.Nester
         /// </summary>
         /// <returns>Resource Manager</returns>
         ResourceManager GetResourceManager();
-
-        /// <summary>
-        /// Reset the view optionally with app
-        /// <summary>
-        void RefreshView();
     }
 }

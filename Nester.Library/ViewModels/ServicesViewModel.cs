@@ -42,9 +42,8 @@ namespace Inkton.Nester.ViewModels
 
         private string _selectedAppServiceTag = DefaultAppServiceTag;
         private ObservableCollection<AppServiceTier> _upgradableAppTiers;
-        private AppServiceTier _upgradeAppServiceTier = null;
-        ObservableCollection<ServiceTableItem> _appServiceTierTable =
-                    new ObservableCollection<ServiceTableItem>();
+        private AppServiceTier _upgradeAppServiceTier;
+        ObservableCollection<ServiceTableItem> _appServiceTierTable;
 
         // Selected Service Table items
         private ServiceTableItem _selAppServiceTableItem;
@@ -61,7 +60,7 @@ namespace Inkton.Nester.ViewModels
              * A table for presenting (UX) service tiers
              */
 
-            decimal _cost = 0M;
+            decimal _cost;
 
             public string Name { get; set; }
 
@@ -100,6 +99,7 @@ namespace Inkton.Nester.ViewModels
         public ServicesViewModel(NesterService platform, App app) : base(platform, app)
         {
             _upgradableAppTiers = new ObservableCollection<AppServiceTier>();
+            _appServiceTierTable = new ObservableCollection<ServiceTableItem>();
         }
 
         public ObservableCollection<AppService> Services
@@ -332,18 +332,19 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<ResultSingle<AppServiceTier>> UpdateAppUpgradeServiceTierAsync(
-            AppService service = null, AppServiceTier tierSeed = null, Deployment deployment = null,
+            AppService service = null, AppServiceTier teir = null, Deployment deployment = null,
             bool doCache = true, bool throwIfError = true)
         {
             AppService theService = service == null ? AppService : service;
-
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
+            AppServiceTier theTier = teir == null ? _upgradeAppServiceTier : teir;
+
             theService.OwnedBy = theDeployment;
 
             _upgradeAppServiceTier.OwnedBy = theService;
 
             return await ResultSingleUI<AppServiceTier>.WaitForObjectAsync(
-                throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier, ResultSingle<AppServiceTier>>(
+                throwIfError, theTier, new Cloud.CachedHttpRequest<AppServiceTier, ResultSingle<AppServiceTier>>(
                     Platform.UpdateAsync), doCache);
         }
 

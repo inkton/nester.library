@@ -193,6 +193,18 @@
     <value>Monitoring</value>
     <comment>ditto</comment>
   </data>
+  <data name="NEST_RESULT_HTTP_400" xml:space="preserve">
+    <value>Bad Request</value>
+  </data>
+  <data name="NEST_RESULT_HTTP_401" xml:space="preserve">
+    <value>Access Unauthorized</value>
+  </data>
+  <data name="NEST_RESULT_HTTP_403" xml:space="preserve">
+    <value>Access Forbidden</value>
+  </data>
+  <data name="NEST_RESULT_HTTP_ERROR" xml:space="preserve">
+    <value>A HTTP error - refer to notes</value>
+  </data>
   <data name="NEST_RESULT_DOMAIN_ALIAS_MALFORMED" xml:space="preserve">
     <value>The domain alias list is incorrectly formed, domain name invalid or does not point to the App IP address</value>
   </data>

@@ -100,7 +100,7 @@ namespace Inkton.Nester.Helpers
 
                     if (fi.Length >= _maxSize)
                     {
-                        string newPath = this.Path + string.Format(@"\%s",
+                        string newPath = this.Path + string.Format(@"\{0}",
                                 System.DateTime.UtcNow.ToString("yyyy-MM-ddTHHZ"));
 
                         File.Move(path, newPath);
@@ -115,8 +115,7 @@ namespace Inkton.Nester.Helpers
 
                             foreach (string file in files)
                             {
-                                if (!file.EndsWith(".log"))
-                                {
+                                if (!file.EndsWith(".log", StringComparison.CurrentCulture))
                                     try
                                     {
                                         DateTime fileTime = DateTime.Parse(
@@ -132,10 +131,9 @@ namespace Inkton.Nester.Helpers
                                     catch (FormatException e)
                                     {
                                         writer = File.AppendText(path);
-                                        writer.WriteLine(@"{'%s', '%s'}\n", e.Message, "LogService.Trace");
+                                        writer.WriteLine("'{0}', 'LogService.Trace'", e.Message);
                                         return;
                                     }
-                                }
                             }
 
                             if (oldestFile != null)
@@ -150,7 +148,10 @@ namespace Inkton.Nester.Helpers
                 writer = File.AppendText(path);
                 writer.WriteLine(@"{0}, {1}\n", info, location);
             }
-            catch (Exception) { }
+            catch (Exception e) 
+            {
+                System.Console.Write(e.Message); 
+            }
         }
 
         /// <summary>

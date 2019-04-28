@@ -359,6 +359,9 @@ namespace Inkton.Nester.ViewModels
                         case "update-nest": caps.CanUpdateNest = true; break;
                         case "delete-nest": caps.CanDeleteNest = true; break;
                         case "view-nest": caps.CanViewNest = true; break;
+                        default:
+                            System.Diagnostics.Debugger.Break();
+                            break;
                     }
                 }
 
@@ -369,13 +372,13 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<ResultSingle<Permission>> UpdatePermissionAsync(Contact contact = null,
-            bool doCache = false, bool throwIfError = true)
+            bool doCache = false)
         {
             Contact theContact = contact == null ? _editContact : contact;
             Permission seedPermission = new Permission();
             seedPermission.OwnedBy = theContact;
 
-            PermissionSwitch[] switches = new PermissionSwitch[] {
+            PermissionSwitch[] switches = {
                 new PermissionSwitch(caps => caps.CanViewApp, "view-app"),
                 new PermissionSwitch(caps => caps.CanUpdateApp, "update-app"),
                 new PermissionSwitch(caps => caps.CanDeleteApp, "delete-app"),
@@ -433,7 +436,7 @@ namespace Inkton.Nester.ViewModels
             theCollaboration.AccountId = "0";
 
             ResultSingle<Collaboration> result = await ResultSingleUI<Collaboration>.WaitForObjectAsync(
-                false, theCollaboration, new Cloud.CachedHttpRequest<Collaboration, ResultSingle<Collaboration>>(
+                throwIfError, theCollaboration, new Cloud.CachedHttpRequest<Collaboration, ResultSingle<Collaboration>>(
                     Platform.QueryAsync), doCache, null, null);
 
             if (result.Code >= 0)

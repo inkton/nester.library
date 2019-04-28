@@ -35,14 +35,18 @@ namespace Inkton.Nester.ViewModels
         protected NesterService _platform;
         protected App _editApp;
 
-        protected bool _validated = false;
-        protected bool _canUpdate = false;
-        protected bool _isBusy = false;
+        protected bool _validated;
+        protected bool _canUpdate;
+        protected bool _isBusy;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public ViewModel(NesterService platform, App app = null)
+        protected ViewModel(NesterService platform, App app = null)
         {
+            _validated = false;
+            _canUpdate = false;
+            _isBusy = false;
+
             _platform = platform;
             _editApp = app;
         }

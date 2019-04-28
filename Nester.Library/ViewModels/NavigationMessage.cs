@@ -57,19 +57,13 @@ namespace Inkton.Nester.ViewModels
 
     public class ManagedObjectMessage<T> : NavigationMessage
     {
-        private T _object = default(T);
-
         public ManagedObjectMessage(string type, T Object)
             : base(type)
         {
-            _object = Object;
+            this.Object = Object;
         }
 
-        public T Object
-        {
-            get { return _object; }
-            set { _object = value; }
-        }
+        public T Object { get; set; } = default(T);
     }
 
 }

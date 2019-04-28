@@ -40,7 +40,7 @@ namespace Inkton.Nester {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Inkton.Nester.Resources", typeof(Resources).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Inkton.Nester.Text", typeof(Resources).GetTypeInfo().Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -258,7 +258,51 @@ namespace Inkton.Nester {
                 return ResourceManager.GetString("monitor", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to The domain alias list is incorrectly formed or a domain name invalid.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_400
+        {
+            get
+            {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_400", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The domain alias list is incorrectly formed or a domain name invalid.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_401
+        {
+            get
+            {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_401", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The domain alias list is incorrectly formed or a domain name invalid.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_403
+        {
+            get
+            {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_403", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The domain alias list is incorrectly formed or a domain name invalid.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_ERROR
+        {
+            get
+            {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_ERROR", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to The domain alias list is incorrectly formed or a domain name invalid.
         /// </summary>

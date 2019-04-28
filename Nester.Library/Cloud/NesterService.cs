@@ -83,6 +83,14 @@ namespace Inkton.Nester.Cloud
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.ICloudObject, new();
     }
 
+    public interface INesterServiceNotify
+    {
+        void BeginQuery();
+        bool CanProgress(int attempt);
+        void Waiting(int seconds);
+        void EndQuery();
+    }
+
     public class NesterService : INesterService
     {
         private int _version = 1;
@@ -93,7 +101,8 @@ namespace Inkton.Nester.Cloud
         private bool _autoTokenRenew = true;
         private int _retryCount = 3;
         private int _retryBaseIntervalInSecs = 2;
-        private StorageService _cache; 
+        private StorageService _cache;
+        private INesterServiceNotify _notifier;
 
         public NesterService(
             int version, string deviceSignature, StorageService cache)
@@ -152,9 +161,15 @@ namespace Inkton.Nester.Cloud
             set { _retryBaseIntervalInSecs = value; }
         }
 
+        public INesterServiceNotify Notifier
+        {
+            get { return _notifier; }
+            set { _notifier = value; }
+        }
+
         public ResultSingle<Permit> Signup()
         {
-            ResultSingle<Permit> result = ResultSingle<Permit>.WaitAsync(
+            ResultSingle<Permit> result = Result<Permit>.WaitAsync(
                 Task<ResultSingle<Permit>>.Run(async () => await PostAsync(
                     _permit, CreateRequest(_permit, false)))
                 ).Result;
@@ -177,11 +192,14 @@ namespace Inkton.Nester.Cloud
         }
 
         public ResultSingle<Permit> QueryToken()
-        {           
-            ResultSingle<Permit> result = ResultSingle<Permit>.WaitAsync(
+        {
+            var data = new Dictionary<string, string>();
+            data["password"] = _permit.Password;
+
+            ResultSingle<Permit> result = Result<Permit>.WaitAsync(
                 Task<ResultSingle<Permit>>.Run(async () => await GetAsync(
                     _permit, CreateRequest(
-                        _permit, true)))
+                        _permit, true, data)))
                 ).Result;
 
             return result;
@@ -189,9 +207,12 @@ namespace Inkton.Nester.Cloud
 
         public async Task<ResultSingle<Permit>> QueryTokenAsync()
         {
+            var data = new Dictionary<string, string>();
+            data["password"] = _permit.Password;
+
             ResultSingle<Permit> result = await GetAsync(
                 _permit, CreateRequest(
-                    _permit, true));
+                    _permit, true, data));
 
             return result;
         }
@@ -212,13 +233,45 @@ namespace Inkton.Nester.Cloud
             if (ex is FlurlHttpException)
             {
                 FlurlHttpException httpEx = ex as FlurlHttpException;
+                string notes = "Failed to connect with " + _endpoint + "\n";
+                result.Text = "NEST_RESULT_HTTP_ERROR";
+
                 if (httpEx.Call.Response != null)
                 {
                     result.HttpStatus = httpEx.Call.Response.StatusCode;
-                }
-            }
 
-            result.Notes = "Failed to connect to remote server";
+                    switch (result.HttpStatus)
+                    {
+                        case System.Net.HttpStatusCode.BadRequest:
+                            result.Text = "NEST_RESULT_HTTP_400"; break;
+                        case System.Net.HttpStatusCode.Unauthorized:
+                            result.Text = "NEST_RESULT_HTTP_401"; break;
+                        case System.Net.HttpStatusCode.Forbidden:
+                            result.Text = "NEST_RESULT_HTTP_403"; break;
+                        default:
+                            result.Text = "NEST_RESULT_HTTP_ERROR";
+                            result.Notes += "Http error " + result.HttpStatus.ToString() + "\n";
+                            break;
+                    }
+
+                    var inner = httpEx.InnerException;
+                    if (inner != null)
+                    {
+                        notes += $"Reason A : {inner.Message}";
+                        if (inner.InnerException != null)
+                        {
+                            notes += $"Reason B : {inner.InnerException.Message}";
+                        }
+                    }
+                }
+
+                result.Notes = notes;
+            }
+            else
+            {
+                result.Text = "NEST_RESULT_ERROR";
+                result.Notes = ex.Message;
+            }
         }
 
         private IFlurlRequest CreateRequest<T>(T seed, bool keyRequest,
@@ -243,7 +296,9 @@ namespace Inkton.Nester.Cloud
             IFlurlRequest request = fullUrl.SetQueryParams(data)
                 .WithHeader("x-device-signature", _deviceSignature)
                 .WithHeader("x-api-version", string.Format("{0}.0", _version))
-                .WithHeader("Accept", string.Format("application/vnd.nest.v{0}+json", _version));
+                .WithHeader("Accept", "application/json")
+                .WithHeader("Accept", string.Format("application/vnd.nest.v{0}+json", _version))
+                .WithOAuthBearerToken(_permit.Token);
 
             if (_basicAuth.Enabled)
             {
@@ -257,7 +312,8 @@ namespace Inkton.Nester.Cloud
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
             string json = await flurlRequest.SendJsonAsync(
-                HttpMethod.Post, seed).ReceiveString();
+                HttpMethod.Post, seed)
+                .ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -265,8 +321,7 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultSingle<T>> GetAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string json = await flurlRequest.SendJsonAsync(
-                HttpMethod.Get, seed).ReceiveString();
+            string json = await flurlRequest.GetStringAsync();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -274,8 +329,7 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultMultiple<T>> GetListAsync<T>(
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string json = await flurlRequest.SendJsonAsync(
-                HttpMethod.Get, seed).ReceiveString();
+            string json = await flurlRequest.GetStringAsync();
 
             return ResultMultiple<T>.ConvertObject(json, seed);
         }
@@ -284,7 +338,8 @@ namespace Inkton.Nester.Cloud
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
             string json = await flurlRequest.SendJsonAsync(
-                HttpMethod.Put, seed).ReceiveString();
+                HttpMethod.Put, seed)
+                .ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -293,7 +348,8 @@ namespace Inkton.Nester.Cloud
             T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
             string json = await flurlRequest.SendJsonAsync(
-                HttpMethod.Delete, seed).ReceiveString();
+                HttpMethod.Delete, seed)
+                .ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
@@ -328,6 +384,16 @@ namespace Inkton.Nester.Cloud
                     result = await request(seed, CreateRequest(
                                 seed, keyRequest, data, subPath));
 
+                    UpdateCache<PayloadT, ResultT, ResultReturnT>(seed, keyRequest, doCache, result);
+
+                    _notifier?.EndQuery();
+
+                    return result;
+                }
+                catch (FlurlHttpException ex)
+                {
+                    SetFailedResult<ResultReturnT>(result, ex);
+
                     if (result.HttpStatus == System.Net.HttpStatusCode.Unauthorized)
                     {
                         if (_permit != null && _autoTokenRenew)
@@ -338,13 +404,9 @@ namespace Inkton.Nester.Cloud
                         }
                         else
                         {
+                            _notifier?.EndQuery();
                             return result;
                         }
-                    }
-                    else
-                    {
-                        UpdateCache<PayloadT, ResultT, ResultReturnT>(seed, keyRequest, doCache, result);
-                        return result;
                     }
                 }
                 catch (Exception ex)
@@ -354,6 +416,13 @@ namespace Inkton.Nester.Cloud
 
                 if (attempt < _retryCount)
                 {
+                    if (_notifier != null && !_notifier.CanProgress(attempt + 1))
+                    {
+                        // Ask the notifier whether its okay to proceed
+                        _notifier?.EndQuery();
+                        return result;
+                    }
+
                     // Wait period grows after each re-try. if interval is 2 seconds then 
                     // the each try will be in 2, 4, 8 second intervals etc. 
                     // (Exponential back-off)
@@ -361,9 +430,10 @@ namespace Inkton.Nester.Cloud
                     int waitIntervalSecs = (int)Math.Pow(
                         _retryBaseIntervalInSecs, attempt + 1);
 
-                    System.Diagnostics.Debug.WriteLine(
-                       string.Format("Re-attempt {0}, waiting for - {1} seconds ...",
-                        attempt, waitIntervalSecs));
+                    System.Console.WriteLine(string.Format("Re-attempt {0}, waiting for - {1} seconds ...",
+                        attempt + 1, waitIntervalSecs));
+
+                    _notifier?.Waiting(waitIntervalSecs);
 
                     Task.Delay(waitIntervalSecs * 1000).Wait();
                 }
@@ -429,49 +499,81 @@ namespace Inkton.Nester.Cloud
         public async Task<ResultSingle<T>> CreateAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await TrySend<T, ResultSingle<T>, T>(
+            _notifier?.BeginQuery();
+
+            ResultSingle<T> result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(PostAsync),
                 seed, false, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultSingle<T>> QueryAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
+            ResultSingle<T> result;
+            _notifier?.BeginQuery();
+
             if (doCache && _cache.Load<T>(seed))
             {
-                ResultSingle<T> result = new ResultSingle<T>(0);
+                result = new ResultSingle<T>(0);
                 result.Data = new DataContainer<T>();
                 result.Data.Payload = seed;
+                _notifier?.EndQuery();
                 return result;
             }
 
-            return await TrySend<T, ResultSingle<T>, T>(
+            result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(GetAsync),
                 seed, true, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultMultiple<T>> QueryAsyncListAsync<T>(T seed,
             IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await TrySend<T, ResultMultiple<T>, ObservableCollection<T>>(
+            _notifier?.BeginQuery();
+
+            ResultMultiple<T> result = await TrySend<T, ResultMultiple<T>, ObservableCollection<T>>(
                 new HttpRequest<T, ResultMultiple<T>>(GetListAsync),
                 seed, false, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultSingle<T>> UpdateAsync<T>(T seed,
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await TrySend<T, ResultSingle<T>, T>(
+            _notifier?.BeginQuery();
+
+            ResultSingle<T> result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(PutAsync),
                 seed, true, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultSingle<T>> RemoveAsync<T>(T seed,
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await TrySend<T, ResultSingle<T>, T>(
+            _notifier?.BeginQuery();
+
+            ResultSingle<T> result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(DeleteAsync),
                 seed, true, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
     }
 }

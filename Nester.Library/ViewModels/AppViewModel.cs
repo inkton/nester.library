@@ -75,7 +75,7 @@ namespace Inkton.Nester.ViewModels
                     Description ="A Websocket Server",
                     Image ="websocketnet32.png",
                     Tag = "biflow"
-                },
+                }
             };
 
             _contactViewModel = new ContactViewModel(platform, _editApp);
@@ -256,7 +256,7 @@ namespace Inkton.Nester.ViewModels
             MessagingCenter.Send(EditApp, "Updated");
         }
 
-        async public void NewAppAsync()
+        async public Task NewAppAsync()
         {
             _editApp = new App();
             _editApp.Type = "uniflow";
@@ -284,7 +284,7 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        async public void Reload()
+        async public Task Reload()
         {
             await InitAsync();
 

@@ -68,7 +68,10 @@ namespace Inkton.Nester.Storage
                     Directory.Delete(Path, true);
                 }
             }
-            catch (Exception) { }
+            catch (Exception e) 
+            {
+                System.Console.Write(e.Message);
+            }
         }
 
         private string GetObjectPath(ICloudObject obj)

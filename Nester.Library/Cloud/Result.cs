@@ -47,40 +47,44 @@ namespace Inkton.Nester.Cloud
 
         public string GetMessage()
         {
-            string message;
+            string message = string.Empty;
 
-            if (_result.Code >= 0)
-            {
-                 message = "Sucess!";
-            }
-            else
-            {
-                message = "Oops! somthing went wrong!";
-            }
-
-            string additionalInfo = "";
-
-            if (_result.Text != null && _result.Text.Length > 0)
+            if (!string.IsNullOrEmpty(_result.Text))
             {
                 try
                 {
                     ResourceManager resmgr = (Application.Current as INesterClient).GetResourceManager();
-                    additionalInfo = resmgr.GetString(_result.Text,
+                    message = resmgr.GetString(_result.Text,
                         System.Globalization.CultureInfo.CurrentUICulture);
                 }
-                catch (Exception) { }
-            }
-            if (_result.Notes.Length > 0)
-            {
-                if (additionalInfo.Length > 0)
-                    additionalInfo += " - " + _result.Notes;
-                else
-                    additionalInfo = _result.Notes;
-            }
+                catch (Exception e) 
+                {
+                    System.Console.Write(e.Message);
+                }
 
-            if (additionalInfo.Length > 0)
-            {
-                message += "\n" + additionalInfo;
+                if (message == string.Empty)
+                {
+                    if (_result.Code >= 0)
+                    {
+                        message = "Sucess!";
+                    }
+                    else
+                    {
+                        message = "Oops! somthing went wrong!";
+                    }
+
+                    if (!string.IsNullOrEmpty(_result.Notes))
+                    {
+                        message += "\n" + _result.Notes;
+                    }
+                }
+                else
+                {
+                    if (_result.Text == "NEST_RESULT_HTTP_ERROR")
+                    {
+                        message += " - " + _result.HttpStatus.ToString();
+                    }
+                }
             }
 
             return message;
@@ -98,7 +102,7 @@ namespace Inkton.Nester.Cloud
             CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request, bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
-            ResultSingle<PayloadT> result = ResultSingle<PayloadT>.WaitAsync(
+            ResultSingle<PayloadT> result = Result<PayloadT>.WaitAsync(
                 Task<ResultSingleUI<PayloadT>>.Run(async () => await request(seed, data, subPath, doCache))
                 ).Result;
 
@@ -134,7 +138,7 @@ namespace Inkton.Nester.Cloud
             bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
-            ResultMultiple<PayloadT> result = ResultMultiple<PayloadT>.WaitAsync(
+            ResultMultiple<PayloadT> result = Result<PayloadT>.WaitAsync(
                 Task<ResultMultiple<PayloadT>>.Run(async () => await nesterService.QueryAsyncListAsync(seed, data, subPath, doCache))
                 ).Result;
 

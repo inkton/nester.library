@@ -33,8 +33,8 @@ namespace Inkton.Nester.ViewModels
     {
         private Credit _editCredit;
         private PaymentMethod _editPaymentMethod;
-        private bool _displayPaymentMethodProof = false;
-        private bool _displayPaymentMethodEntry = true;
+        private bool _displayPaymentMethodProof;
+        private bool _displayPaymentMethodEntry;
         private string _paymentMethodProofDetail;
         private ObservableCollection<BillingCycle> _billingCycles;
         private ObservableCollection<UserBillingTask> _userBillingTasks;  
@@ -43,7 +43,8 @@ namespace Inkton.Nester.ViewModels
             : base(platform)
         {
             _editCredit = new Credit();
-
+            _displayPaymentMethodEntry = false;
+            _displayPaymentMethodEntry = false;
             _editPaymentMethod = new PaymentMethod();
             //_editPaymentMethod.OwnedBy = Client.User;
         }

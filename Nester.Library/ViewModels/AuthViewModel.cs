@@ -32,12 +32,13 @@ namespace Inkton.Nester.ViewModels
     public class AuthViewModel : ViewModel
     {
         private ObservableCollection<UserEvent> _userEvents;
-        private bool _canRecoverPassword = false;
+        private bool _canRecoverPassword;
 
         public AuthViewModel(NesterService platform)
             :base(platform)
         {
             _userEvents = new ObservableCollection<UserEvent>();
+            _canRecoverPassword = false;
         }
 
         public bool CanRecoverPassword
@@ -53,10 +54,17 @@ namespace Inkton.Nester.ViewModels
             Platform.Permit = permit;
         }
 
-        public void ChangePermit(Permit newPermit)
+        public void UpdatePermit(ResultSingle<Permit> result, 
+            bool throwIfError)
         {
-            Platform.Permit = newPermit;
-            Client.User = newPermit.Owner;
+            if (result.Code == 0)
+            {
+                result.Data.Payload.CopyTo(Platform.Permit);
+            }
+            else if (throwIfError)
+            {
+                new ResultHandler<Permit>(result).Throw();
+            }
         }
 
         public ResultSingle<Permit> Signup(
@@ -64,19 +72,11 @@ namespace Inkton.Nester.ViewModels
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(Platform.Permit.Owner.Email));
 
-            if (string.IsNullOrWhiteSpace(Platform.Permit.Owner.Nickname)) {
-                Platform.Permit.Owner.Nickname = Platform.Permit.Owner.Email;
-            }
-
             ResultSingle<Permit> result =
                 Platform.Signup();
 
-            if (result.Code < 0)
-            {
-                if (throwIfError)
-                    new ResultHandler<Permit>(result).Throw();
-            }
-           
+            UpdatePermit(result, throwIfError);
+
             return result;
         }
 
@@ -85,29 +85,10 @@ namespace Inkton.Nester.ViewModels
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(Platform.Permit.Owner.Email));
 
-            if (string.IsNullOrWhiteSpace(Platform.Permit.Owner.Nickname))
-            {
-                Platform.Permit.Owner.Nickname = Platform.Permit.Owner.Email;
-            }
-
             ResultSingle<Permit> result =
                 await Platform.SignupAsync();
 
-            if (result.Code < 0)
-            {
-                if (throwIfError)
-                {
-                    //List<AuthError> reasons =
-                    //    JsonConvert.DeserializeObject<List<AuthError>>((result.Notes);
-                    //allErrors.ForEach
-                    
-
-                    //string json1 = @"{'Name':'James'}";
-                    //var customer1 = JsonConvert.DeserializeAnonymousType(json1, definition);
-
-                    new ResultHandler<Permit>(result).Throw();
-                }
-            }
+            UpdatePermit(result, throwIfError);
 
             return result;
         }
@@ -133,15 +114,7 @@ namespace Inkton.Nester.ViewModels
             ResultSingle<Permit> result =
                 Platform.QueryToken();
 
-            if (result.Code < 0)
-            {
-                if (throwIfError)
-                    new ResultHandler<Permit>(result).Throw();
-            }
-            else
-            {
-                ChangePermit(result.Data.Payload);
-            }
+            UpdatePermit(result, throwIfError);
 
             return result;
         }
@@ -152,15 +125,7 @@ namespace Inkton.Nester.ViewModels
             ResultSingle<Permit> result =
                 await Platform.QueryTokenAsync();
 
-            if (result.Code < 0)
-            {
-                if (throwIfError)
-                    new ResultHandler<Permit>(result).Throw();
-            }
-            else
-            {
-                ChangePermit(result.Data.Payload);
-            }
+            UpdatePermit(result, throwIfError);
 
             return result;
         }
@@ -171,15 +136,7 @@ namespace Inkton.Nester.ViewModels
             ResultSingle<Permit> result = await
                 Platform.ResetTokenAsync();
 
-            if (result.Code < 0)
-            {
-                if (throwIfError)
-                    new ResultHandler<Permit>(result).Throw();
-            }
-            else
-            {
-                ChangePermit(result.Data.Payload);
-            }
+            UpdatePermit(result, throwIfError);
 
             return result;
         }

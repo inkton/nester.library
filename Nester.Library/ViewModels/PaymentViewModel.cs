@@ -46,7 +46,7 @@ namespace Inkton.Nester.ViewModels
             _displayPaymentMethodEntry = false;
             _displayPaymentMethodEntry = false;
             _editPaymentMethod = new PaymentMethod();
-            //_editPaymentMethod.OwnedBy = Client.User;
+            _editPaymentMethod.OwnedBy = Platform.Permit.Owner;
         }
 
         public Credit EditCredit
@@ -214,7 +214,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();
-            seed.OwnedBy = Client.User;
+            seed.OwnedBy = Platform.Permit.Owner;
 
             ResultMultiple<UserBillingTask> result = await ResultMultipleUI<UserBillingTask>.WaitForObjectAsync(
                 Platform, throwIfError, seed, doCache, filter);

@@ -33,14 +33,6 @@ namespace Inkton.Nester
     public interface INesterClient
     {
         /// <summary>
-        /// The platform user
-        /// </summary>
-        User User
-        {
-            get; set;
-        }
-
-        /// <summary>
         /// The Resource Manager for the app
         /// </summary>
         /// <returns>Resource Manager</returns>

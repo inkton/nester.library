@@ -54,14 +54,14 @@ namespace Inkton.Nester.ViewModels
 
         private ObservableCollection<AppType> _applicationTypes;
 
-        public AppViewModel(int serviceVersion, string device, NesterService platform)
+        public AppViewModel(NesterService platform)
             :base(platform)
         {
             // when editing this will 
             // select uniflow default
             _editApp = new App();
             _editApp.Type = "uniflow";
-            _editApp.OwnedBy = Client.User;
+            _editApp.OwnedBy = platform.Permit.Owner;
 
             _applicationTypes = new ObservableCollection<AppType> {
                 new AppType {
@@ -89,7 +89,7 @@ namespace Inkton.Nester.ViewModels
             cache.Clear();
 
             NesterService backend = new NesterService(
-                serviceVersion, device, cache);
+                platform.Version, platform.DeviceSignature, cache);
 
             _logViewModel = new LogViewModel(backend, _editApp);
         }
@@ -256,21 +256,6 @@ namespace Inkton.Nester.ViewModels
             MessagingCenter.Send(EditApp, "Updated");
         }
 
-        async public Task NewAppAsync()
-        {
-            _editApp = new App();
-            _editApp.Type = "uniflow";
-            _editApp.OwnedBy = Client.User;
-
-            _contactViewModel.EditApp = _editApp;
-            _nestViewModel.EditApp = _editApp;
-            _domainViewModel.EditApp = _editApp;
-            _deploymentViewModel.EditApp = _editApp;
-            _servicesViewModel.EditApp = _editApp;
-
-            await ServicesViewModel.QueryServicesAsync();
-        }
-
         async public Task<ResultSingle<App>> QueryStatusAsync()
         {
             ResultSingle<App> result = await QueryAppAsync();
@@ -284,7 +269,7 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        async public Task Reload()
+        async public Task ReloadAsync()
         {
             await InitAsync();
 
@@ -322,9 +307,9 @@ namespace Inkton.Nester.ViewModels
             {
                 EditApp = result.Data.Payload;
 
-                if (_editApp.UserId == Client.User.Id)
+                if (_editApp.UserId == Platform.Permit.Owner.Id)
                 {
-                    _editApp.OwnedBy = Client.User;
+                    _editApp.OwnedBy = Platform.Permit.Owner;
                 }
 
                 if (app != null)
@@ -381,7 +366,7 @@ namespace Inkton.Nester.ViewModels
             if (result.Code == 0)
             {
                 EditApp = result.Data.Payload;
-                _editApp.OwnedBy = Client.User;
+                _editApp.OwnedBy = Platform.Permit.Owner;
 
                 if (throwIfError && _editApp.Status != "assigned")
                 {

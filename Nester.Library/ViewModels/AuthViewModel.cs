@@ -49,9 +49,7 @@ namespace Inkton.Nester.ViewModels
 
         public void Reset()
         {
-            Permit permit = Platform.Permit;
-            permit.Invalid();
-            Platform.Permit = permit;
+            Platform.Permit.Invalid();
         }
 
         public void UpdatePermit(ResultSingle<Permit> result, 
@@ -59,25 +57,13 @@ namespace Inkton.Nester.ViewModels
         {
             if (result.Code == 0)
             {
-                result.Data.Payload.CopyTo(Platform.Permit);
+                result.Data.Payload.Owner.CopyTo(Platform.Permit.Owner);
+                Platform.Permit.Token = result.Data.Payload.Token;
             }
             else if (throwIfError)
             {
                 new ResultHandler<Permit>(result).Throw();
             }
-        }
-
-        public ResultSingle<Permit> Signup(
-            bool throwIfError = true)
-        {
-            Debug.Assert(!string.IsNullOrWhiteSpace(Platform.Permit.Owner.Email));
-
-            ResultSingle<Permit> result =
-                Platform.Signup();
-
-            UpdatePermit(result, throwIfError);
-
-            return result;
         }
 
         public async Task<ResultSingle<Permit>> SignupAsync(
@@ -108,24 +94,13 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public ResultSingle<Permit> QueryToken(
-            bool throwIfError = true)
-        {
-            ResultSingle<Permit> result =
-                Platform.QueryToken();
-
-            UpdatePermit(result, throwIfError);
-
-            return result;
-        }
-
         public async Task<ResultSingle<Permit>> QueryTokenAsync(
             bool throwIfError = true)
         {
             ResultSingle<Permit> result =
                 await Platform.QueryTokenAsync();
 
-            UpdatePermit(result, throwIfError);
+             UpdatePermit(result, throwIfError);
 
             return result;
         }
@@ -144,7 +119,7 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<User>> UpdateUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
-            User theUser = user == null ? Client.User : user;
+            User theUser = user == null ? Platform.Permit.Owner : user;
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, user, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
@@ -156,7 +131,7 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<User>> DeleteUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
-            User theUser = user == null ? Client.User : user;
+            User theUser = user == null ? Platform.Permit.Owner : user;
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, theUser, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
@@ -169,7 +144,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.OwnedBy = user == null ? Client.User : user;
+            userEventSeed.OwnedBy = user == null ? Platform.Permit.Owner : user;
 
             ResultMultiple<UserEvent> result = await ResultMultipleUI<UserEvent>.WaitForObjectAsync(
                 Platform, throwIfError, userEventSeed, doCache);

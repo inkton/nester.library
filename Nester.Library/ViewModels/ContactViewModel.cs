@@ -215,7 +215,7 @@ namespace Inkton.Nester.ViewModels
                     await QueryPermissionsAsync(contact, throwIfError);
 
                     if (contact.UserId != null &&
-                        contact.UserId == Client.User.Id)
+                        contact.UserId == Platform.Permit.Owner.Id)
                     {
                         _ownerContact = contact;
                         _editContact = contact;
@@ -351,6 +351,7 @@ namespace Inkton.Nester.ViewModels
                 {
                     switch (permission.AppPermissionTag)
                     {
+                        case "create-app": break;
                         case "view-app": caps.CanViewApp = true; break;
                         case "update-app": caps.CanUpdateApp = true; break;
                         case "delete-app": caps.CanDeleteApp = true; break;
@@ -372,7 +373,7 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<ResultSingle<Permission>> UpdatePermissionAsync(Contact contact = null,
-            bool doCache = false)
+            bool doCache = false, bool throwIfError = true)
         {
             Contact theContact = contact == null ? _editContact : contact;
             Permission seedPermission = new Permission();

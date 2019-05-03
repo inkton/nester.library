@@ -87,7 +87,7 @@ namespace Inkton.Nester.ViewModels
 
                 if (_editApp != null)
                 {
-                    isOwner = (_editApp.OwnedBy as User).Id == Client.User.Id;
+                    isOwner = (_editApp.OwnedBy as User).Id == _platform.Permit.Owner.Id;
                 }
 
                 return isOwner;

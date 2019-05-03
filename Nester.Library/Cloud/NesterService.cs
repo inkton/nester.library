@@ -28,11 +28,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Flurl;
 using Flurl.Http;
+using Flurl.Http.Configuration;
 using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
 using Inkton.Nester.Storage;
+using System.Reflection;
 
 namespace Inkton.Nester.Cloud
 {
@@ -65,10 +68,8 @@ namespace Inkton.Nester.Cloud
         BasicAuth BasicAuth { get; set; }
         Permit Permit { get; set; }
 
-        ResultSingle<Permit> Signup();
         Task<ResultSingle<Permit>> SignupAsync();
         Task<ResultSingle<Permit>> RecoverPasswordAsync();
-        ResultSingle<Permit> QueryToken();
         Task<ResultSingle<Permit>> QueryTokenAsync();
 
         Task<ResultSingle<T>> CreateAsync<T>(T seed,
@@ -91,6 +92,72 @@ namespace Inkton.Nester.Cloud
         void EndQuery();
     }
 
+    public class PropertyRenameAndIgnoreSerializerContractResolver : DefaultContractResolver
+    {
+        private readonly Dictionary<Type, HashSet<string>> _ignores;
+        private readonly Dictionary<Type, Dictionary<string, string>> _renames;
+
+        public PropertyRenameAndIgnoreSerializerContractResolver()
+        {
+            _ignores = new Dictionary<Type, HashSet<string>>();
+            _renames = new Dictionary<Type, Dictionary<string, string>>();
+        }
+
+        public void IgnoreProperty(Type type, params string[] jsonPropertyNames)
+        {
+            if (!_ignores.ContainsKey(type))
+                _ignores[type] = new HashSet<string>();
+
+            foreach (var prop in jsonPropertyNames)
+                _ignores[type].Add(prop);
+        }
+
+        public void RenameProperty(Type type, string propertyName, string newJsonPropertyName)
+        {
+            if (!_renames.ContainsKey(type))
+                _renames[type] = new Dictionary<string, string>();
+
+            _renames[type][propertyName] = newJsonPropertyName;
+        }
+
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+        {
+            var property = base.CreateProperty(member, memberSerialization);
+
+            if (IsIgnored(property.DeclaringType, property.PropertyName))
+            {
+                property.ShouldSerialize = i => false;
+                property.Ignored = true;
+            }
+
+            if (IsRenamed(property.DeclaringType, property.PropertyName, out var newJsonPropertyName))
+                property.PropertyName = newJsonPropertyName;
+
+            return property;
+        }
+
+        private bool IsIgnored(Type type, string jsonPropertyName)
+        {
+            if (!_ignores.ContainsKey(type))
+                return false;
+
+            return _ignores[type].Contains(jsonPropertyName);
+        }
+
+        private bool IsRenamed(Type type, string jsonPropertyName, out string newJsonPropertyName)
+        {
+            Dictionary<string, string> renames;
+
+            if (!_renames.TryGetValue(type, out renames) || !renames.TryGetValue(jsonPropertyName, out newJsonPropertyName))
+            {
+                newJsonPropertyName = null;
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     public class NesterService : INesterService
     {
         private int _version = 1;
@@ -103,6 +170,7 @@ namespace Inkton.Nester.Cloud
         private int _retryBaseIntervalInSecs = 2;
         private StorageService _cache;
         private INesterServiceNotify _notifier;
+        //private JsonSerializerSettings _serializerSettings;
 
         public NesterService(
             int version, string deviceSignature, StorageService cache)
@@ -111,6 +179,8 @@ namespace Inkton.Nester.Cloud
             _cache = cache;
             _deviceSignature = deviceSignature;
             _endpoint = "https://api.nest.yt/";
+
+            //AddCustomRules();
         }
 
         public int Version
@@ -167,15 +237,11 @@ namespace Inkton.Nester.Cloud
             set { _notifier = value; }
         }
 
-        public ResultSingle<Permit> Signup()
-        {
-            ResultSingle<Permit> result = Result<Permit>.WaitAsync(
-                Task<ResultSingle<Permit>>.Run(async () => await PostAsync(
-                    _permit, CreateRequest(_permit, false)))
-                ).Result;
-
-            return result;
-        }
+        //public JsonSerializerSettings SerializerSettings
+        //{
+        //    get { return _serializerSettings; }
+        //    set { _serializerSettings = value; }
+        //}
 
         public async Task<ResultSingle<Permit>> SignupAsync()
         {
@@ -187,20 +253,6 @@ namespace Inkton.Nester.Cloud
         {
              ResultSingle<Permit> result = await PutAsync(_permit, 
                 CreateRequest(_permit, true));
-
-            return result;
-        }
-
-        public ResultSingle<Permit> QueryToken()
-        {
-            var data = new Dictionary<string, string>();
-            data["password"] = _permit.Password;
-
-            ResultSingle<Permit> result = Result<Permit>.WaitAsync(
-                Task<ResultSingle<Permit>>.Run(async () => await GetAsync(
-                    _permit, CreateRequest(
-                        _permit, true, data)))
-                ).Result;
 
             return result;
         }
@@ -222,10 +274,39 @@ namespace Inkton.Nester.Cloud
             return await TrySend<Permit, ResultSingle<Permit>, Permit>(
                 new HttpRequest<Permit, ResultSingle<Permit>>(DeleteAsync),
                 _permit, true, null, null, false);
-
         }
 
         #region Utility
+
+/*
+        private void AddCustomRules()
+        {
+            var jsonResolver = new PropertyRenameAndIgnoreSerializerContractResolver();
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "Id", "id");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "Email", "email");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "NormalizedEmail", "normalized_email");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "UserName", "username");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "NormalizedUserName", "normalized_username");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "EmailConfirmed", "email_confirmed");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PasswordHash", "password_hash");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "SecurityStamp", "security_stamp");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "ConcurrencyStamp", "concurrency_stamp");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PhoneNumber", "phonenumber");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PhoneNumberConfirmed", "phonenumber_confirmed");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "TwoFactorEnabled", "two_factor_enabled");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "LockoutEnd", "lockout_end");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "LockoutEnabled", "lockout_enabled");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "AccessFailedCount", "access_failed_count");
+
+            _serializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = jsonResolver
+            };
+            FlurlHttp.Configure(settings => {
+                settings.JsonSerializer = new NewtonsoftJsonSerializer(_serializerSettings);
+            });
+        }   
+        */
 
         private void SetFailedResult<T>(
             Result<T> result, Exception ex)
@@ -399,7 +480,7 @@ namespace Inkton.Nester.Cloud
                         if (_permit != null && _autoTokenRenew)
                         {
                             // Re-try with a fresh token
-                            _permit = QueryToken().Data.Payload;
+                            await QueryTokenAsync();
                             data["token"] = _permit.Token;
                         }
                         else

@@ -30,16 +30,8 @@ using Inkton.Nester.Helpers;
 
 namespace Inkton.Nester
 {
-    public interface IClientResources
+    public interface INesterClient
     {
-        /// <summary>
-        /// The log service
-        /// <summary>
-        LogService Log
-        {
-            get;
-        }
-
         /// <summary>
         /// The Resource Manager for the app
         /// </summary>
@@ -47,4 +39,3 @@ namespace Inkton.Nester
         ResourceManager GetResourceManager();
     }
 }
-        

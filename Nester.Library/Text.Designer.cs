@@ -10,7 +10,6 @@
 
 namespace Inkton.Nester {
     using System;
-    using System.Reflection;
     
     
     /// <summary>
@@ -20,17 +19,17 @@ namespace Inkton.Nester {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    internal class Text {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
         private static global::System.Globalization.CultureInfo resourceCulture;
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal Resources() {
+        internal Text() {
         }
         
         /// <summary>
@@ -40,7 +39,7 @@ namespace Inkton.Nester {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Inkton.Nester.Resources", typeof(Resources).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Inkton.Nester.Text", typeof(Text).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -134,6 +133,15 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Build.
+        /// </summary>
+        internal static string build {
+            get {
+                return ResourceManager.GetString("build", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Configuration.
         /// </summary>
         internal static string configuration {
@@ -157,6 +165,33 @@ namespace Inkton.Nester {
         internal static string cpu {
             get {
                 return ResourceManager.GetString("cpu", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Credit Award.
+        /// </summary>
+        internal static string credit_award {
+            get {
+                return ResourceManager.GetString("credit_award", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Credit Deduction.
+        /// </summary>
+        internal static string credit_deduction {
+            get {
+                return ResourceManager.GetString("credit_deduction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dedicated.
+        /// </summary>
+        internal static string dedicated {
+            get {
+                return ResourceManager.GetString("dedicated", resourceCulture);
             }
         }
         
@@ -206,11 +241,47 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Fail.
+        /// </summary>
+        internal static string fail {
+            get {
+                return ResourceManager.GetString("fail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Upgrade/Downgrade Plan.
         /// </summary>
         internal static string flexible {
             get {
                 return ResourceManager.GetString("flexible", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invoice.
+        /// </summary>
+        internal static string invoice {
+            get {
+                return ResourceManager.GetString("invoice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tier-1.
+        /// </summary>
+        internal static string jenkins_1 {
+            get {
+                return ResourceManager.GetString("jenkins_1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Login.
+        /// </summary>
+        internal static string login {
+            get {
+                return ResourceManager.GetString("login", resourceCulture);
             }
         }
         
@@ -260,7 +331,7 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The domain alias list is incorrectly formed or a domain name invalid.
+        ///   Looks up a localized string similar to The domain alias list is incorrectly formed, domain name invalid or does not point to the App IP address.
         /// </summary>
         internal static string NEST_RESULT_DOMAIN_ALIAS_MALFORMED {
             get {
@@ -296,6 +367,15 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No audit records found.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_AEVENT_NFOUND {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_AEVENT_NFOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Deploy the app before this operation.
         /// </summary>
         internal static string NEST_RESULT_ERROR_APP_ASSIGN_TREE {
@@ -319,6 +399,15 @@ namespace Inkton.Nester {
         internal static string NEST_RESULT_ERROR_APP_EXISTS {
             get {
                 return ResourceManager.GetString("NEST_RESULT_ERROR_APP_EXISTS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Finalize the apps by removing deployments first.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_APP_FINALIZE {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_APP_FINALIZE", resourceCulture);
             }
         }
         
@@ -449,6 +538,15 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A backup is in progress.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_BACKUP_IN_PROGRESS {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_BACKUP_IN_PROGRESS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Number of users allowed for the plan exceeded.
         /// </summary>
         internal static string NEST_RESULT_ERROR_CONTACT_EXCEEDED {
@@ -463,6 +561,42 @@ namespace Inkton.Nester {
         internal static string NEST_RESULT_ERROR_CONTACT_NFOUND {
             get {
                 return ResourceManager.GetString("NEST_RESULT_ERROR_CONTACT_NFOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Discount credit code expired.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_CREDIT_EXPIRED {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_CREDIT_EXPIRED", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Discount credit code not found.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_CREDIT_NFOUND {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_CREDIT_NFOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Discount credit has already been used.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_CREDIT_USED {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_CREDIT_USED", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The wrong app teir has been selected for the app.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_CREDIT_WTIER {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_CREDIT_WTIER", resourceCulture);
             }
         }
         
@@ -508,6 +642,15 @@ namespace Inkton.Nester {
         internal static string NEST_RESULT_ERROR_DOMAIN_CERT_NFOUND {
             get {
                 return ResourceManager.GetString("NEST_RESULT_ERROR_DOMAIN_CERT_NFOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Domain IP does not match the App IP address.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_DOMAIN_IP {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_DOMAIN_IP", resourceCulture);
             }
         }
         
@@ -584,6 +727,15 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The system is temporarily down for maintenance.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_IN_MAINTAINENCE {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_IN_MAINTAINENCE", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The service cannot be added.
         /// </summary>
         internal static string NEST_RESULT_ERROR_INVALID_SERVICE_LEVEL {
@@ -598,6 +750,15 @@ namespace Inkton.Nester {
         internal static string NEST_RESULT_ERROR_INVITATION_NFOUND {
             get {
                 return ResourceManager.GetString("NEST_RESULT_ERROR_INVITATION_NFOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Restrict the time limit to 24 hours.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_LIMIT_TO_24HOURS {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_LIMIT_TO_24HOURS", resourceCulture);
             }
         }
         
@@ -665,6 +826,15 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Payment outstanding..
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_PAYMENT_OUTSTANDING {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_PAYMENT_OUTSTANDING", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Permission already exist.
         /// </summary>
         internal static string NEST_RESULT_ERROR_PERM_FOUND {
@@ -688,6 +858,15 @@ namespace Inkton.Nester {
         internal static string NEST_RESULT_ERROR_PMETHOD_NFOUND {
             get {
                 return ResourceManager.GetString("NEST_RESULT_ERROR_PMETHOD_NFOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The password must have at least one character and number.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_PWD {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_PWD", resourceCulture);
             }
         }
         
@@ -737,11 +916,38 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Please use an unreserved tag.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_TAG_RESERVED {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_TAG_RESERVED", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tree not found.
         /// </summary>
         internal static string NEST_RESULT_ERROR_TREE_NFOUND {
             get {
                 return ResourceManager.GetString("NEST_RESULT_ERROR_TREE_NFOUND", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The trial app cannot be upgraded.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_TRIAL_APP {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_TRIAL_APP", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The user with this email address already exists.
+        /// </summary>
+        internal static string NEST_RESULT_ERROR_USER_EXIST {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_ERROR_USER_EXIST", resourceCulture);
             }
         }
         
@@ -764,6 +970,42 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Bad Request.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_400 {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_400", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Access Unauthorized.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_401 {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_401", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Access Forbidden.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_403 {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_403", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A HTTP error.
+        /// </summary>
+        internal static string NEST_RESULT_HTTP_ERROR {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_HTTP_ERROR", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A handler nest not found - add a handler nest.
         /// </summary>
         internal static string NEST_RESULT_NEST_HANDLER_NFOUND {
@@ -778,6 +1020,15 @@ namespace Inkton.Nester {
         internal static string NEST_RESULT_SUCCESS {
             get {
                 return ResourceManager.GetString("NEST_RESULT_SUCCESS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An email notification will be sent when the removal is complete .
+        /// </summary>
+        internal static string NEST_RESULT_SUCCESS_USER_PDELETE {
+            get {
+                return ResourceManager.GetString("NEST_RESULT_SUCCESS_USER_PDELETE", resourceCulture);
             }
         }
         
@@ -818,11 +1069,29 @@ namespace Inkton.Nester {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Success.
+        /// </summary>
+        internal static string success {
+            get {
+                return ResourceManager.GetString("success", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Team Management.
         /// </summary>
         internal static string team_management {
             get {
                 return ResourceManager.GetString("team_management", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tier-0.
+        /// </summary>
+        internal static string tier_0 {
+            get {
+                return ResourceManager.GetString("tier_0", resourceCulture);
             }
         }
         

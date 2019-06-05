@@ -26,22 +26,45 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Xamarin.Forms;
 using Inkton.Nest.Model;
+using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
     public abstract class ViewModel : INotifyPropertyChanged
     {
+        protected NesterService _platform;
         protected App _editApp;
 
-        protected bool _validated = false;
-        protected bool _canUpdate = false;
-        protected bool _isBusy = false;
+        protected bool _validated;
+        protected bool _canUpdate;
+        protected bool _isBusy;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public ViewModel(App app = null)
+        protected ViewModel(NesterService platform, App app = null)
         {
+            _validated = false;
+            _canUpdate = false;
+            _isBusy = false;
+
+            _platform = platform;
             _editApp = app;
+        }
+
+        public NesterService Platform
+        {
+            get
+            {
+                return _platform;
+            }
+        }
+
+        public INesterClient Client
+        {
+            get
+            {
+                return Application.Current as INesterClient;
+            }
         }
 
         virtual public App EditApp
@@ -64,7 +87,7 @@ namespace Inkton.Nester.ViewModels
 
                 if (_editApp != null)
                 {
-                    isOwner = (_editApp.OwnedBy as User).Id == Keeper.User.Id;
+                    isOwner = (_editApp.OwnedBy as User).Id == _platform.Permit.Owner.Id;
                 }
 
                 return isOwner;
@@ -76,30 +99,6 @@ namespace Inkton.Nester.ViewModels
             get
             {
                 return _editApp != null && _editApp.Id > 0;
-            }
-        }
-
-        public IKeeper Keeper
-        {
-            get
-            {
-                return Application.Current as IKeeper;
-            }
-        }
-
-        public IClientResources ClientResources
-        {
-            get
-            {
-                return Application.Current as IClientResources;
-            }
-        }
-
-        public INesterControl NesterControl
-        {
-            get
-            {
-                return Application.Current as INesterControl;
             }
         }
 

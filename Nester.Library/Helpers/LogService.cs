@@ -100,7 +100,7 @@ namespace Inkton.Nester.Helpers
 
                     if (fi.Length >= _maxSize)
                     {
-                        string newPath = this.Path + string.Format(@"\%s",
+                        string newPath = this.Path + string.Format(@"\{0}",
                                 System.DateTime.UtcNow.ToString("yyyy-MM-ddTHHZ"));
 
                         File.Move(path, newPath);
@@ -115,8 +115,7 @@ namespace Inkton.Nester.Helpers
 
                             foreach (string file in files)
                             {
-                                if (!file.EndsWith(".log"))
-                                {
+                                if (!file.EndsWith(".log", StringComparison.CurrentCulture))
                                     try
                                     {
                                         DateTime fileTime = DateTime.Parse(
@@ -132,10 +131,9 @@ namespace Inkton.Nester.Helpers
                                     catch (FormatException e)
                                     {
                                         writer = File.AppendText(path);
-                                        writer.WriteLine(@"{'%s', '%s'}\n", e.Message, "LogService.Trace");
+                                        writer.WriteLine("'{0}', 'LogService.Trace'", e.Message);
                                         return;
                                     }
-                                }
                             }
 
                             if (oldestFile != null)
@@ -146,10 +144,63 @@ namespace Inkton.Nester.Helpers
                     }
                 }
 
+                WaitForFile(path);
                 writer = File.AppendText(path);
                 writer.WriteLine(@"{0}, {1}\n", info, location);
             }
-            catch (Exception) { }
+            catch (Exception e) 
+            {
+                System.Console.Write(e.Message); 
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the file is not locked any more.
+        /// </summary>
+        /// <param name="fullPath"></param>
+        private bool WaitForFile(string fullPath)
+        {
+            // Thank you -> https://stackoverflow.com/questions/41290/file-access-strategy-in-a-multi-threaded-environment-web-app#41559
+
+            int numTries = 0;
+            while (true)
+            {
+                ++numTries;
+                try
+                {
+                    // Attempt to open the file exclusively.
+                    using (FileStream fs = new FileStream(fullPath,
+                        FileMode.Open, FileAccess.ReadWrite,
+                        FileShare.None, 100))
+                    {
+                        fs.ReadByte();
+
+                        // If we got this far the file is ready
+                        break;
+                    }
+                }
+                catch (Exception)
+                {
+                    //Log.LogWarning(
+                    //   "WaitForFile {0} failed to get an exclusive lock: {1}",
+                    //    fullPath, ex.ToString());
+
+                    if (numTries > 10)
+                    {
+                        //Log.LogWarning(
+                        //    "WaitForFile {0} giving up after 10 tries",
+                        //    fullPath);
+                        return false;
+                    }
+
+                    // Wait for the lock to be released
+                    System.Threading.Thread.Sleep(500);
+                }
+            }
+
+            //Log.LogTrace("WaitForFile {0} returning true after {1} tries",
+            //    fullPath, numTries);
+            return true;
         }
     }
 }

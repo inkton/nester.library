@@ -33,18 +33,20 @@ namespace Inkton.Nester.ViewModels
     {
         private Credit _editCredit;
         private PaymentMethod _editPaymentMethod;
-        private bool _displayPaymentMethodProof = false;
-        private bool _displayPaymentMethodEntry = true;
+        private bool _displayPaymentMethodProof;
+        private bool _displayPaymentMethodEntry;
         private string _paymentMethodProofDetail;
         private ObservableCollection<BillingCycle> _billingCycles;
         private ObservableCollection<UserBillingTask> _userBillingTasks;  
 
-        public PaymentViewModel()
+        public PaymentViewModel(NesterService platform)
+            : base(platform)
         {
             _editCredit = new Credit();
-
+            _displayPaymentMethodEntry = false;
+            _displayPaymentMethodEntry = false;
             _editPaymentMethod = new PaymentMethod();
-            _editPaymentMethod.OwnedBy = Keeper.User;
+            _editPaymentMethod.OwnedBy = Platform.Permit.Owner;
         }
 
         public Credit EditCredit
@@ -109,7 +111,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Credit> result = await ResultSingleUI<Credit>.WaitForObjectAsync(
                 throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit, ResultSingle<Credit>>(
-                    Keeper.Service.QueryAsync), dCache, null, null);
+                    Platform.QueryAsync), dCache, null, null);
 
             if (result.Code >= 0)
             {
@@ -124,7 +126,7 @@ namespace Inkton.Nester.ViewModels
         {
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
-                    Keeper.Service.QueryAsync), dCache, null, null);
+                    Platform.QueryAsync), dCache, null, null);
 
             if (result.Code >= 0)
             {                
@@ -164,7 +166,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
-                    Keeper.Service.CreateAsync), doCache, data);
+                    Platform.CreateAsync), doCache, data);
 
             if (result.Code >= 0)
             {
@@ -197,7 +199,7 @@ namespace Inkton.Nester.ViewModels
             BillingCycle seed = new BillingCycle();
 
             ResultMultiple<BillingCycle> result = await ResultMultipleUI<BillingCycle>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, seed, doCache);
+                Platform, throwIfError, seed, doCache);
 
             if (result.Code == 0)
             {
@@ -212,10 +214,10 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();
-            seed.OwnedBy = Keeper.User;
+            seed.OwnedBy = Platform.Permit.Owner;
 
             ResultMultiple<UserBillingTask> result = await ResultMultipleUI<UserBillingTask>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, seed, doCache, filter);
+                Platform, throwIfError, seed, doCache, filter);
 
             if (result.Code == 0)
             {
@@ -224,21 +226,6 @@ namespace Inkton.Nester.ViewModels
             }
 
             return result;
-        }
-
-        public string PaymentNotice
-        {
-            get
-            {
-                if (Keeper.User.TerritoryISOCode == "AU")
-                {
-                    return "The prices are in US Dollars and do not include GST.";
-                }
-                else
-                {
-                    return "The prices are in US Dollars. ";
-                }
-            }
         }
     }
 }

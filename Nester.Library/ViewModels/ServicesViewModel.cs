@@ -37,14 +37,13 @@ namespace Inkton.Nester.ViewModels
 {
     public class ServicesViewModel : ViewModel
     {
-        private ObservableCollection<AppService> _appServices;
+        private static ObservableCollection<AppService> _appServices;
         public const string DefaultAppServiceTag = "nest-redbud";
 
         private string _selectedAppServiceTag = DefaultAppServiceTag;
         private ObservableCollection<AppServiceTier> _upgradableAppTiers;
-        private AppServiceTier _upgradeAppServiceTier = null;
-        ObservableCollection<ServiceTableItem> _appServiceTierTable =
-                    new ObservableCollection<ServiceTableItem>();
+        private AppServiceTier _upgradeAppServiceTier;
+        ObservableCollection<ServiceTableItem> _appServiceTierTable;
 
         // Selected Service Table items
         private ServiceTableItem _selAppServiceTableItem;
@@ -61,7 +60,7 @@ namespace Inkton.Nester.ViewModels
              * A table for presenting (UX) service tiers
              */
 
-            decimal _cost = 0M;
+            decimal _cost;
 
             public string Name { get; set; }
 
@@ -97,10 +96,10 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ServicesViewModel(App app) : base(app)
+        public ServicesViewModel(NesterService platform, App app) : base(platform, app)
         {
-            _appServices = new ObservableCollection<AppService>();
             _upgradableAppTiers = new ObservableCollection<AppServiceTier>();
+            _appServiceTierTable = new ObservableCollection<ServiceTableItem>();
         }
 
         public ObservableCollection<AppService> Services
@@ -117,6 +116,12 @@ namespace Inkton.Nester.ViewModels
 
         public async Task InitAsync()
         {
+            if (_appServices == null)
+            {
+                _appServices = new ObservableCollection<AppService>();
+                await QueryServicesAsync();
+            }
+
             await QueryAppSubscriptions();
 
             CreateServicesTables();
@@ -195,7 +200,7 @@ namespace Inkton.Nester.ViewModels
             AppService serviceSeed = new AppService();
 
             ResultMultiple<AppService> result = await ResultMultipleUI<AppService>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, serviceSeed, doCache);
+                Platform, throwIfError, serviceSeed, doCache);
 
             if (result.Code < 0)
             {
@@ -211,7 +216,7 @@ namespace Inkton.Nester.ViewModels
                 tierSeed.OwnedBy = service;
 
                 resultTier = await ResultMultipleUI<AppServiceTier>.WaitForObjectAsync(
-                    Keeper.Service, throwIfError, tierSeed, doCache);
+                    Platform, throwIfError, tierSeed, doCache);
 
                 if (result.Code == 0)
                 {
@@ -229,7 +234,7 @@ namespace Inkton.Nester.ViewModels
             forestSeeder.OwnedBy = teir;
 
             return await ResultMultipleUI<Forest>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, forestSeeder, doCache);
+                Platform, throwIfError, forestSeeder, doCache);
         }
 
         public async Task<ResultSingle<AppServiceSubscription>> CreateSubscription(AppServiceTier tier,
@@ -242,7 +247,7 @@ namespace Inkton.Nester.ViewModels
 
             return await ResultSingleUI<AppServiceSubscription>.WaitForObjectAsync(
                 throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription, ResultSingle<AppServiceSubscription>>(
-                    Keeper.Service.CreateAsync), doCache);
+                    Platform.CreateAsync), doCache);
         }
 
         public async Task<ResultSingle<AppServiceSubscription>> RemoveSubscriptionAsync(AppServiceSubscription subscription,
@@ -250,22 +255,17 @@ namespace Inkton.Nester.ViewModels
         {
             return await ResultSingleUI<AppServiceSubscription>.WaitForObjectAsync(
                 throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription, ResultSingle<AppServiceSubscription>>(
-                    Keeper.Service.RemoveAsync), doCache);
+                    Platform.RemoveAsync), doCache);
         }
 
         public async Task<ResultMultiple<AppServiceSubscription>> QueryAppSubscriptions(App app = null,
             bool doCache = false, bool throwIfError = true)
         {
-            if (!_appServices.Any())
-            {
-                await QueryServicesAsync();
-            }
-
             AppServiceSubscription subSeeder = new AppServiceSubscription();
             subSeeder.OwnedBy = (app == null ? _editApp : app);
 
             ResultMultiple<AppServiceSubscription> result = await ResultMultipleUI<AppServiceSubscription>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, subSeeder, doCache);
+                Platform, throwIfError, subSeeder, doCache);
 
             if (result.Code >= 0)
             {
@@ -321,7 +321,7 @@ namespace Inkton.Nester.ViewModels
             tierSeed.OwnedBy = theService;
 
             ResultMultiple<AppServiceTier> result = await ResultMultipleUI<AppServiceTier>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, tierSeed, doCache);
+                Platform, throwIfError, tierSeed, doCache);
 
             if (result.Code >= 0)
             {
@@ -332,19 +332,20 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<ResultSingle<AppServiceTier>> UpdateAppUpgradeServiceTierAsync(
-            AppService service = null, AppServiceTier tierSeed = null, Deployment deployment = null,
+            AppService service = null, AppServiceTier teir = null, Deployment deployment = null,
             bool doCache = true, bool throwIfError = true)
         {
             AppService theService = service == null ? AppService : service;
-
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
+            AppServiceTier theTier = teir == null ? _upgradeAppServiceTier : teir;
+
             theService.OwnedBy = theDeployment;
 
             _upgradeAppServiceTier.OwnedBy = theService;
 
             return await ResultSingleUI<AppServiceTier>.WaitForObjectAsync(
-                throwIfError, _upgradeAppServiceTier, new Cloud.CachedHttpRequest<AppServiceTier, ResultSingle<AppServiceTier>>(
-                    Keeper.Service.UpdateAsync), doCache);
+                throwIfError, theTier, new Cloud.CachedHttpRequest<AppServiceTier, ResultSingle<AppServiceTier>>(
+                    Platform.UpdateAsync), doCache);
         }
 
         public static ServiceTableItem CreateServiceTableItem(AppServiceTier tier)
@@ -382,7 +383,7 @@ namespace Inkton.Nester.ViewModels
             List<string> values = JsonConvert.DeserializeObject<List<string>>(
                 service.FeaturesAll);
                 
-            ResourceManager resmgr = (Application.Current as INesterControl)
+            ResourceManager resmgr = (Application.Current as INesterClient)
                 .GetResourceManager();
 
             List<string> TranslatedValues = new List<string>();

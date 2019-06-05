@@ -21,6 +21,7 @@
 */
 
 using System;
+using System.IO;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,6 +29,7 @@ using Xamarin.Forms;
 using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
 using Inkton.Nester.Cloud;
+using Inkton.Nester.Storage;
 
 namespace Inkton.Nester.ViewModels
 {
@@ -52,13 +54,14 @@ namespace Inkton.Nester.ViewModels
 
         private ObservableCollection<AppType> _applicationTypes;
 
-        public AppViewModel()
+        public AppViewModel(NesterService platform)
+            :base(platform)
         {
             // when editing this will 
             // select uniflow default
             _editApp = new App();
             _editApp.Type = "uniflow";
-            _editApp.OwnedBy = Keeper.User;
+            _editApp.OwnedBy = platform.Permit.Owner;
 
             _applicationTypes = new ObservableCollection<AppType> {
                 new AppType {
@@ -72,15 +75,23 @@ namespace Inkton.Nester.ViewModels
                     Description ="A Websocket Server",
                     Image ="websocketnet32.png",
                     Tag = "biflow"
-                },
+                }
             };
 
-            _contactViewModel = new ContactViewModel(_editApp);
-            _nestViewModel = new NestViewModel(_editApp);
-            _domainViewModel = new DomainViewModel(_editApp);
-            _deploymentViewModel = new DeploymentViewModel(_editApp);
-            _servicesViewModel = new ServicesViewModel(_editApp);
-            _logViewModel = new LogViewModel(_editApp);
+            _contactViewModel = new ContactViewModel(platform, _editApp);
+            _nestViewModel = new NestViewModel(platform, _editApp);
+            _domainViewModel = new DomainViewModel(platform, _editApp);
+            _deploymentViewModel = new DeploymentViewModel(platform, _editApp);
+            _servicesViewModel = new ServicesViewModel(platform, _editApp);
+
+            StorageService cache = new StorageService(Path.Combine(
+                    Path.GetTempPath(), "NesterAppCache_" + _editApp.Tag));
+            cache.Clear();
+
+            NesterService backend = new NesterService(
+                platform.Version, platform.DeviceSignature, cache);
+
+            _logViewModel = new LogViewModel(backend, _editApp);
         }
 
         override public App EditApp
@@ -242,22 +253,7 @@ namespace Inkton.Nester.ViewModels
             System.Diagnostics.Debug.WriteLine(
                 string.Format("End - Init App - {0}", EditApp.Tag));
 
-            MessagingCenter.Send(this, "Updated", EditApp);
-        }
-
-        async public void NewAppAsync()
-        {
-            _editApp = new App();
-            _editApp.Type = "uniflow";
-            _editApp.OwnedBy = Keeper.User;
-
-            _contactViewModel.EditApp = _editApp;
-            _nestViewModel.EditApp = _editApp;
-            _domainViewModel.EditApp = _editApp;
-            _deploymentViewModel.EditApp = _editApp;
-            _servicesViewModel.EditApp = _editApp;
-
-            await ServicesViewModel.QueryServicesAsync();
+            MessagingCenter.Send(EditApp, "Updated");
         }
 
         async public Task<ResultSingle<App>> QueryStatusAsync()
@@ -273,7 +269,7 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        async public void Reload()
+        async public Task ReloadAsync()
         {
             await InitAsync();
 
@@ -288,7 +284,7 @@ namespace Inkton.Nester.ViewModels
             notificationSeed.OwnedBy = theApp;
 
             ResultMultiple<Notification> result = await ResultMultipleUI<Notification>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, notificationSeed, doCache);
+                Platform, throwIfError, notificationSeed, doCache);
 
             if (result.Code == 0)
             {
@@ -305,15 +301,15 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
-                    Keeper.Service.QueryAsync), doCache);
+                    Platform.QueryAsync), doCache);
 
-            if (result.Code == 0)
+            if (result.Code == 0)   
             {
                 EditApp = result.Data.Payload;
 
-                if (_editApp.UserId == Keeper.User.Id)
+                if (_editApp.UserId == Platform.Permit.Owner.Id)
                 {
-                    _editApp.OwnedBy = Keeper.User;
+                    _editApp.OwnedBy = Platform.Permit.Owner;
                 }
 
                 if (app != null)
@@ -330,7 +326,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
-                    Keeper.Service.RemoveAsync), doCache);
+                    Platform.RemoveAsync), doCache);
 
             if (result.Code == 0)
             {
@@ -347,7 +343,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
-                    Keeper.Service.UpdateAsync), doCache);
+                    Platform.UpdateAsync), doCache);
 
             if (result.Code == 0)
             {
@@ -365,21 +361,19 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
                 throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
-                    Keeper.Service.CreateAsync), doCache);
+                    Platform.CreateAsync), doCache);
 
             if (result.Code == 0)
             {
                 EditApp = result.Data.Payload;
-                _editApp.OwnedBy = Keeper.User;
+                _editApp.OwnedBy = Platform.Permit.Owner;
 
                 if (throwIfError && _editApp.Status != "assigned")
                 {
                     string message = "Failed to initialize the app. Please contact support.";
-                    Helpers.ErrorHandler.Exception(message, string.Empty);
+                    //Helpers.ErrorHandler.Exception(message, string.Empty);
                     throw new Exception(message);
                 }
-
-                await InitAsync();
 
                 if (app != null)
                     _editApp.CopyTo(app);
@@ -394,7 +388,7 @@ namespace Inkton.Nester.ViewModels
             forestSeeder.OwnedBy = teir;
 
             return await ResultMultipleUI<Forest>.WaitForObjectAsync(
-                Keeper.Service, throwIfError, forestSeeder, doCache);
+                Platform, throwIfError, forestSeeder, doCache);
         }
     }
 }

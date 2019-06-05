@@ -480,7 +480,9 @@ namespace Inkton.Nester.Cloud
                         if (_permit != null && _autoTokenRenew)
                         {
                             // Re-try with a fresh token
-                            await QueryTokenAsync();
+                            ResultSingle<Permit> permitResult =
+                                await QueryTokenAsync();
+                            _permit.Token = permitResult.Data.Payload.Token;
                             data["token"] = _permit.Token;
                         }
                         else

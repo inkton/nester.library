@@ -203,7 +203,7 @@
     <value>Access Forbidden</value>
   </data>
   <data name="NEST_RESULT_HTTP_ERROR" xml:space="preserve">
-    <value>A HTTP error - refer to notes</value>
+    <value>A HTTP error</value>
   </data>
   <data name="NEST_RESULT_DOMAIN_ALIAS_MALFORMED" xml:space="preserve">
     <value>The domain alias list is incorrectly formed, domain name invalid or does not point to the App IP address</value>

@@ -375,8 +375,6 @@ namespace Inkton.Nester.ViewModels
                     throw new Exception(message);
                 }
 
-                await InitAsync();
-
                 if (app != null)
                     _editApp.CopyTo(app);
             }

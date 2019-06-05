@@ -34,8 +34,8 @@ namespace Inkton.Nester.ViewModels
     {
         private Inkton.Nest.Model.Nest _editNest;
 
-        private ObservableCollection<Inkton.Nest.Model.Nest> _nests = null;
-        private ObservableCollection<NestPlatform> _platforms = null;
+        private ObservableCollection<Inkton.Nest.Model.Nest> _nests;
+        private ObservableCollection<NestPlatform> _platforms;
 
         public ICommand RemoveCommand { get; private set; }
 

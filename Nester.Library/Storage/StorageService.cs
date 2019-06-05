@@ -28,7 +28,20 @@ using Inkton.Nest.Cloud;
 
 namespace Inkton.Nester.Storage
 {
-    public class StorageService
+    public interface IStorageService
+    {
+        string Path { get; set; }
+
+        void Clear();
+
+        void Save<T>(T obj) where T : ICloudObject;
+
+        bool Load<T>(T obj) where T : ICloudObject;
+
+        void Remove<T>(T obj) where T : ICloudObject;
+    }
+
+    public class StorageService : IStorageService
     {
         private string _path;
 
@@ -68,15 +81,18 @@ namespace Inkton.Nester.Storage
                     Directory.Delete(Path, true);
                 }
             }
-            catch (Exception) { }
+            catch (Exception e) 
+            {
+                System.Console.Write(e.Message);
+            }
         }
 
-        private string GetObjectPath(CloudObject obj)
+        private string GetObjectPath(ICloudObject obj)
         {
             return Path + @"\" + obj.CollectionKey.TrimEnd('/') + ".json";
         }
 
-        public void Save<T>(T obj) where T : CloudObject
+        public void Save<T>(T obj) where T : ICloudObject
         {
             if (!Directory.Exists(Path + @"\" + obj.CollectionPath))
             {
@@ -87,7 +103,7 @@ namespace Inkton.Nester.Storage
             File.WriteAllText(GetObjectPath(obj), json);
         }
 
-        public bool Load<T>(T obj) where T : CloudObject
+        public bool Load<T>(T obj) where T : ICloudObject
         {
             string path = GetObjectPath(obj);
             if (!File.Exists(path))
@@ -102,7 +118,7 @@ namespace Inkton.Nester.Storage
             return true;
         }
 
-        public void Remove<T>(T obj) where T : CloudObject
+        public void Remove<T>(T obj) where T : ICloudObject
         {
             if (File.Exists(GetObjectPath(obj)))
             {

@@ -189,6 +189,11 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 _invitations = result.Data.Payload;
+
+                if (_invitations.Any())
+                {
+                    _editInvitation = _invitations.FirstOrDefault();
+                }
             }
 
             return result;
@@ -215,7 +220,7 @@ namespace Inkton.Nester.ViewModels
                     await QueryPermissionsAsync(contact, throwIfError);
 
                     if (contact.UserId != null &&
-                        contact.UserId == Client.User.Id)
+                        contact.UserId == Platform.Permit.Owner.Id)
                     {
                         _ownerContact = contact;
                         _editContact = contact;
@@ -351,6 +356,7 @@ namespace Inkton.Nester.ViewModels
                 {
                     switch (permission.AppPermissionTag)
                     {
+                        case "create-app": break;
                         case "view-app": caps.CanViewApp = true; break;
                         case "update-app": caps.CanUpdateApp = true; break;
                         case "delete-app": caps.CanDeleteApp = true; break;
@@ -359,6 +365,9 @@ namespace Inkton.Nester.ViewModels
                         case "update-nest": caps.CanUpdateNest = true; break;
                         case "delete-nest": caps.CanDeleteNest = true; break;
                         case "view-nest": caps.CanViewNest = true; break;
+                        default:
+                            System.Diagnostics.Debugger.Break();
+                            break;
                     }
                 }
 
@@ -375,7 +384,7 @@ namespace Inkton.Nester.ViewModels
             Permission seedPermission = new Permission();
             seedPermission.OwnedBy = theContact;
 
-            PermissionSwitch[] switches = new PermissionSwitch[] {
+            PermissionSwitch[] switches = {
                 new PermissionSwitch(caps => caps.CanViewApp, "view-app"),
                 new PermissionSwitch(caps => caps.CanUpdateApp, "update-app"),
                 new PermissionSwitch(caps => caps.CanDeleteApp, "delete-app"),
@@ -433,7 +442,7 @@ namespace Inkton.Nester.ViewModels
             theCollaboration.AccountId = "0";
 
             ResultSingle<Collaboration> result = await ResultSingleUI<Collaboration>.WaitForObjectAsync(
-                false, theCollaboration, new Cloud.CachedHttpRequest<Collaboration, ResultSingle<Collaboration>>(
+                throwIfError, theCollaboration, new Cloud.CachedHttpRequest<Collaboration, ResultSingle<Collaboration>>(
                     Platform.QueryAsync), doCache, null, null);
 
             if (result.Code >= 0)

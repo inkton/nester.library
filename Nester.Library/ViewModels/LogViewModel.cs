@@ -61,21 +61,12 @@ namespace Inkton.Nester.ViewModels
 
         #region Data Classes
 
-        public class DataSeries
-        {
-            public DataSeries()
-            {
-            }
-        }
+        public class DataSeries { }
 
         public class MultiCategoryData : DataSeries
         {
             protected Log _dataLog;
 
-            public MultiCategoryData()
-            {
-            }
-            
             public Log DataLog
             {
                 get
@@ -112,11 +103,11 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            private Dictionary<string, DataSeriesPoints> _namedSeries = 
-                new Dictionary<string, DataSeriesPoints>();
+            private Dictionary<string, DataSeriesPoints> _namedSeries;
 
             public MultiSeriesData()
             {
+                _namedSeries = new Dictionary<string, DataSeriesPoints>();
             }
 
             public Dictionary<string, DataSeriesPoints> Series

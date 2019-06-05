@@ -33,8 +33,8 @@ namespace Inkton.Nester.ViewModels
     {
         private Credit _editCredit;
         private PaymentMethod _editPaymentMethod;
-        private bool _displayPaymentMethodProof = false;
-        private bool _displayPaymentMethodEntry = true;
+        private bool _displayPaymentMethodProof;
+        private bool _displayPaymentMethodEntry;
         private string _paymentMethodProofDetail;
         private ObservableCollection<BillingCycle> _billingCycles;
         private ObservableCollection<UserBillingTask> _userBillingTasks;  
@@ -43,9 +43,10 @@ namespace Inkton.Nester.ViewModels
             : base(platform)
         {
             _editCredit = new Credit();
-
+            _displayPaymentMethodEntry = false;
+            _displayPaymentMethodEntry = false;
             _editPaymentMethod = new PaymentMethod();
-            _editPaymentMethod.OwnedBy = Client.User;
+            _editPaymentMethod.OwnedBy = Platform.Permit.Owner;
         }
 
         public Credit EditCredit
@@ -213,7 +214,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();
-            seed.OwnedBy = Client.User;
+            seed.OwnedBy = Platform.Permit.Owner;
 
             ResultMultiple<UserBillingTask> result = await ResultMultipleUI<UserBillingTask>.WaitForObjectAsync(
                 Platform, throwIfError, seed, doCache, filter);
@@ -225,21 +226,6 @@ namespace Inkton.Nester.ViewModels
             }
 
             return result;
-        }
-
-        public string PaymentNotice
-        {
-            get
-            {
-                if (Client.User.TerritoryISOCode == "AU")
-                {
-                    return "The prices are in US Dollars and do not include GST.";
-                }
-                else
-                {
-                    return "The prices are in US Dollars. ";
-                }
-            }
         }
     }
 }

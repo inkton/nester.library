@@ -28,11 +28,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Flurl;
 using Flurl.Http;
+using Flurl.Http.Configuration;
 using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
 using Inkton.Nester.Storage;
+using System.Reflection;
 
 namespace Inkton.Nester.Cloud
 {
@@ -53,19 +56,121 @@ namespace Inkton.Nester.Cloud
     }
 
     public delegate Task<ResultT> HttpRequest<PayloadT, ResultT>(
-        PayloadT seed, IFlurlRequest flurlRequestl) where PayloadT : CloudObject, new();
+        PayloadT seed, IFlurlRequest flurlRequestl) where PayloadT : ICloudObject, new();
     public delegate Task<ResultT> CachedHttpRequest<PayloadT, ResultT>(PayloadT seed,
-        IDictionary<string, string> data, string subPath = null, bool doCache = true) where PayloadT : CloudObject, new();
+        IDictionary<string, string> data, string subPath = null, bool doCache = true) where PayloadT : ICloudObject, new();
 
-    public class NesterService
+    public interface INesterService
     {
+        int Version { get; set; }
+        string DeviceSignature { get; set; }
+        string Endpoint { get; set; }
+        BasicAuth BasicAuth { get; set; }
+        Permit Permit { get; set; }
+
+        Task<ResultSingle<Permit>> SignupAsync();
+        Task<ResultSingle<Permit>> RecoverPasswordAsync();
+        Task<ResultSingle<Permit>> QueryTokenAsync();
+
+        Task<ResultSingle<T>> CreateAsync<T>(T seed,
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new();
+        Task<ResultSingle<T>> QueryAsync<T>(T seed,
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new();
+        Task<ResultMultiple<T>> QueryAsyncListAsync<T>(T seed,
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new();
+        Task<ResultSingle<T>> UpdateAsync<T>(T seed,
+                IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new();
+        Task<ResultSingle<T>> RemoveAsync<T>(T seed,
+                IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.ICloudObject, new();
+    }
+
+    public interface INesterServiceNotify
+    {
+        void BeginQuery();
+        bool CanProgress(int attempt);
+        void Waiting(int seconds);
+        void EndQuery();
+    }
+
+    public class PropertyRenameAndIgnoreSerializerContractResolver : DefaultContractResolver
+    {
+        private readonly Dictionary<Type, HashSet<string>> _ignores;
+        private readonly Dictionary<Type, Dictionary<string, string>> _renames;
+
+        public PropertyRenameAndIgnoreSerializerContractResolver()
+        {
+            _ignores = new Dictionary<Type, HashSet<string>>();
+            _renames = new Dictionary<Type, Dictionary<string, string>>();
+        }
+
+        public void IgnoreProperty(Type type, params string[] jsonPropertyNames)
+        {
+            if (!_ignores.ContainsKey(type))
+                _ignores[type] = new HashSet<string>();
+
+            foreach (var prop in jsonPropertyNames)
+                _ignores[type].Add(prop);
+        }
+
+        public void RenameProperty(Type type, string propertyName, string newJsonPropertyName)
+        {
+            if (!_renames.ContainsKey(type))
+                _renames[type] = new Dictionary<string, string>();
+
+            _renames[type][propertyName] = newJsonPropertyName;
+        }
+
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+        {
+            var property = base.CreateProperty(member, memberSerialization);
+
+            if (IsIgnored(property.DeclaringType, property.PropertyName))
+            {
+                property.ShouldSerialize = i => false;
+                property.Ignored = true;
+            }
+
+            if (IsRenamed(property.DeclaringType, property.PropertyName, out var newJsonPropertyName))
+                property.PropertyName = newJsonPropertyName;
+
+            return property;
+        }
+
+        private bool IsIgnored(Type type, string jsonPropertyName)
+        {
+            if (!_ignores.ContainsKey(type))
+                return false;
+
+            return _ignores[type].Contains(jsonPropertyName);
+        }
+
+        private bool IsRenamed(Type type, string jsonPropertyName, out string newJsonPropertyName)
+        {
+            Dictionary<string, string> renames;
+
+            if (!_renames.TryGetValue(type, out renames) || !renames.TryGetValue(jsonPropertyName, out newJsonPropertyName))
+            {
+                newJsonPropertyName = null;
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    public class NesterService : INesterService
+    {
+        private int _version = 1;
+        private string _deviceSignature;
         private string _endpoint;
         private BasicAuth _basicAuth;
-
-        private Permit _permit;
-        private int _version = 1;
+        private Permit _permit = new Permit();
+        private bool _autoTokenRenew = true;
+        private int _retryCount = 3;
+        private int _retryBaseIntervalInSecs = 2;
         private StorageService _cache;
-        private string _deviceSignature;
+        private INesterServiceNotify _notifier;
+        //private JsonSerializerSettings _serializerSettings;
 
         public NesterService(
             int version, string deviceSignature, StorageService cache)
@@ -74,6 +179,8 @@ namespace Inkton.Nester.Cloud
             _cache = cache;
             _deviceSignature = deviceSignature;
             _endpoint = "https://api.nest.yt/";
+
+            //AddCustomRules();
         }
 
         public int Version
@@ -106,63 +213,150 @@ namespace Inkton.Nester.Cloud
             set { _permit = value; }
         }
 
-        public ResultSingle<Permit> Signup(Permit permit)
+        public bool AutoTokenRenew
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data.Add("password", permit.Password);
-            data.Add("email", permit.Owner.Email);
+            get { return _autoTokenRenew; }
+            set { _autoTokenRenew = value; }
+        }
 
-            if (permit.SecurityCode != null)
-            {
-                data.Add("security_code", permit.SecurityCode);
-                data.Add("nickname", permit.Owner.Nickname);
-                data.Add("first_name", permit.Owner.FirstName);
-                data.Add("surname", permit.Owner.LastName);
-                data.Add("territory_iso_code", permit.Owner.TerritoryISOCode);
-            }
+        public int RetryCount
+        {
+            get { return _retryCount; }
+            set { _retryCount = value; }
+        }
 
-            ResultSingle<Permit> result = ResultSingle<Permit>.WaitAsync(
-                Task<ResultSingle<Permit>>.Run(async () => await PostAsync(
-                    permit, CreateRequest(permit, false, data)))
-                ).Result;
+        public int RetryBaseIntervalInSecs
+        {
+            get { return _retryBaseIntervalInSecs; }
+            set { _retryBaseIntervalInSecs = value; }
+        }
+
+        public INesterServiceNotify Notifier
+        {
+            get { return _notifier; }
+            set { _notifier = value; }
+        }
+
+        //public JsonSerializerSettings SerializerSettings
+        //{
+        //    get { return _serializerSettings; }
+        //    set { _serializerSettings = value; }
+        //}
+
+        public async Task<ResultSingle<Permit>> SignupAsync()
+        {
+            return await PostAsync(_permit, 
+                CreateRequest(_permit, false));
+        }
+
+        public async Task<ResultSingle<Permit>> RecoverPasswordAsync()
+        {
+             ResultSingle<Permit> result = await PutAsync(_permit, 
+                CreateRequest(_permit, true));
 
             return result;
         }
 
-        public async Task<ResultSingle<Permit>> SignupAsync(Permit permit)
+        public async Task<ResultSingle<Permit>> QueryTokenAsync()
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data.Add("password", permit.Password);
-            data.Add("email", permit.Owner.Email);
+            var data = new Dictionary<string, string>();
+            data["password"] = _permit.Password;
 
-            if (permit.SecurityCode != null)
-            {
-                data.Add("security_code", permit.SecurityCode);
-                data.Add("nickname", permit.Owner.Nickname);
-                data.Add("first_name", permit.Owner.FirstName);
-                data.Add("surname", permit.Owner.LastName);
-                data.Add("territory_iso_code", permit.Owner.TerritoryISOCode);
-            }
-
-            return await PostAsync(permit, 
-                CreateRequest(permit, false, data));
-        }
-
-        public async Task<ResultSingle<Permit>> RecoverPasswordAsync(Permit permit)
-        {
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data.Add("email", permit.Owner.Email);
-
-            ResultSingle<Permit> result = await PutAsync(permit, 
-                CreateRequest(permit, true, data));
+            ResultSingle<Permit> result = await GetAsync(
+                _permit, CreateRequest(
+                    _permit, true, data));
 
             return result;
+        }
+
+        public async Task<ResultSingle<Permit>> ResetTokenAsync()
+        {
+            return await TrySend<Permit, ResultSingle<Permit>, Permit>(
+                new HttpRequest<Permit, ResultSingle<Permit>>(DeleteAsync),
+                _permit, true, null, null, false);
         }
 
         #region Utility
 
+/*
+        private void AddCustomRules()
+        {
+            var jsonResolver = new PropertyRenameAndIgnoreSerializerContractResolver();
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "Id", "id");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "Email", "email");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "NormalizedEmail", "normalized_email");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "UserName", "username");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "NormalizedUserName", "normalized_username");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "EmailConfirmed", "email_confirmed");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PasswordHash", "password_hash");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "SecurityStamp", "security_stamp");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "ConcurrencyStamp", "concurrency_stamp");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PhoneNumber", "phonenumber");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PhoneNumberConfirmed", "phonenumber_confirmed");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "TwoFactorEnabled", "two_factor_enabled");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "LockoutEnd", "lockout_end");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "LockoutEnabled", "lockout_enabled");
+            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "AccessFailedCount", "access_failed_count");
+
+            _serializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = jsonResolver
+            };
+            FlurlHttp.Configure(settings => {
+                settings.JsonSerializer = new NewtonsoftJsonSerializer(_serializerSettings);
+            });
+        }   
+        */
+
+        private void SetFailedResult<T>(
+            Result<T> result, Exception ex)
+        {
+            if (ex is FlurlHttpException)
+            {
+                FlurlHttpException httpEx = ex as FlurlHttpException;
+                string notes = "Failed to connect with " + _endpoint + "\n";
+                result.Text = "NEST_RESULT_HTTP_ERROR";
+
+                if (httpEx.Call.Response != null)
+                {
+                    result.HttpStatus = httpEx.Call.Response.StatusCode;
+
+                    switch (result.HttpStatus)
+                    {
+                        case System.Net.HttpStatusCode.BadRequest:
+                            result.Text = "NEST_RESULT_HTTP_400"; break;
+                        case System.Net.HttpStatusCode.Unauthorized:
+                            result.Text = "NEST_RESULT_HTTP_401"; break;
+                        case System.Net.HttpStatusCode.Forbidden:
+                            result.Text = "NEST_RESULT_HTTP_403"; break;
+                        default:
+                            result.Text = "NEST_RESULT_HTTP_ERROR";
+                            result.Notes += "Http error " + result.HttpStatus.ToString() + "\n";
+                            break;
+                    }
+
+                    var inner = httpEx.InnerException;
+                    if (inner != null)
+                    {
+                        notes += $"Reason A : {inner.Message}";
+                        if (inner.InnerException != null)
+                        {
+                            notes += $"Reason B : {inner.InnerException.Message}";
+                        }
+                    }
+                }
+
+                result.Notes = notes;
+            }
+            else
+            {
+                result.Text = "NEST_RESULT_ERROR";
+                result.Notes = ex.Message;
+            }
+        }
+
         private IFlurlRequest CreateRequest<T>(T seed, bool keyRequest,
-            IDictionary<string, string> data = null, string subPath = null) where T : Inkton.Nest.Cloud.CloudObject, new()
+            IDictionary<string, string> data = null, string subPath = null) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
             string fullUrl = Endpoint;
 
@@ -183,7 +377,9 @@ namespace Inkton.Nester.Cloud
             IFlurlRequest request = fullUrl.SetQueryParams(data)
                 .WithHeader("x-device-signature", _deviceSignature)
                 .WithHeader("x-api-version", string.Format("{0}.0", _version))
-                .WithHeader("Accept", string.Format("application/vnd.nest.v{0}+json", _version));
+                .WithHeader("Accept", "application/json")
+                .WithHeader("Accept", string.Format("application/vnd.nest.v{0}+json", _version))
+                .WithOAuthBearerToken(_permit.Token);
 
             if (_basicAuth.Enabled)
             {
@@ -193,154 +389,63 @@ namespace Inkton.Nester.Cloud
             return request;
         }   
 
-        private void LogConnectFailure<T>(
-            Result<T> result, Exception ex)
-        {       
-            if (ex is FlurlHttpException)
-            {
-                FlurlHttpException httpEx = ex as FlurlHttpException;
-                if (httpEx.Call.Response != null)
-                {
-                    result.HttpStatus = httpEx.Call.Response.StatusCode;
-                }
-            }
-
-            Helpers.ErrorHandler.Exception(
-                ex.Message, ex.StackTrace);
-            result.Notes = "Failed to connect to remote server";
-        }
-
-        public ResultSingle<Permit> QueryToken(Permit permit = null)
-        {
-            if (permit != null)
-            {
-                _permit = permit;
-            }
-
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data.Add("password", _permit.Password);
-
-            ResultSingle<Permit> result = ResultSingle<Permit>.WaitAsync(
-                Task<ResultSingle<Permit>>.Run(async () => await GetAsync(
-                    _permit, CreateRequest(
-                        _permit, true, data)))
-                ).Result;
-
-            return result;
-        }
-
-        public async Task<ResultSingle<Permit>> QueryTokenAsync(Permit permit = null)
-        {
-            if (permit != null)
-            {
-                _permit = permit;
-            }
-
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data.Add("password", _permit.Password);
-
-            ResultSingle<Permit> result = await GetAsync(
-                _permit, CreateRequest(
-                    _permit, true, data));
-
-            return result;
-        }
-
-        public async Task<ResultSingle<Permit>> ResetTokenAsync(Permit newPermit)
-        {
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data.Add("token", _permit.Token);
-            data.Add("password", newPermit.Password);
-
-            ResultSingle<Permit> result = await DeleteAsync(
-                _permit, CreateRequest(
-                    _permit, true, data));
-
-            return result;
-        }
-
         private async Task<ResultSingle<T>> PostAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string json = await flurlRequest.PostJsonAsync(seed)
-                    .ReceiveString();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Post, seed)
+                .ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
 
         private async Task<ResultSingle<T>> GetAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            /*
-             * 
-             * string json = await flurlRequest.GetAsync()
-             *        .ReceiveString();
-             *
-             * iOS: https://github.com/xamarin/xamarin-macios/issues/4380
-             * Android: https://github.com/xamarin/xamarin-android/issues/1472
-             * 
-             * The workaround seems to be to use GetAwaiter().GetResult() instead of await
-             */
-
-            HttpResponseMessage response = flurlRequest.GetAsync().GetAwaiter().GetResult();
-            string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            string json = await flurlRequest.GetStringAsync();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
 
         private async Task<ResultMultiple<T>> GetListAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            /*
-             * 
-             * string json = await flurlRequest.GetAsync()
-             *        .ReceiveString();
-             *
-             * iOS: https://github.com/xamarin/xamarin-macios/issues/4380
-             * Android: https://github.com/xamarin/xamarin-android/issues/1472
-             * 
-             * The workaround seems to be to use GetAwaiter().GetResult() instead of await
-             */
-
-            HttpResponseMessage response = flurlRequest.GetAsync().GetAwaiter().GetResult();
-            string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            string json = await flurlRequest.GetStringAsync();
 
             return ResultMultiple<T>.ConvertObject(json, seed);
         }
 
         private async Task<ResultSingle<T>> PutAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string objJson = JsonConvert.SerializeObject(seed);
-            var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
-
-            string json = await flurlRequest
-                        .PutAsync(httpContent)
-                        .ReceiveString();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Put, seed)
+                .ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
             
         private async Task<ResultSingle<T>> DeleteAsync<T>(
-            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.CloudObject, new()
+            T seed, IFlurlRequest flurlRequest) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            string objJson = JsonConvert.SerializeObject(seed);
-            var httpContent = new StringContent(objJson, Encoding.UTF8, "application/json");
-
-            string json = await flurlRequest.DeleteAsync()
-                    .ReceiveString();
+            string json = await flurlRequest.SendJsonAsync(
+                HttpMethod.Delete, seed)
+                .ReceiveString();
 
             return ResultSingle<T>.ConvertObject(json, seed);
         }
 
-        private async Task<ResultT> RetryWithFreshToken<PayloadT, ResultT, ResultReturnT>(
+        private async Task<ResultT> TrySend<PayloadT, ResultT, ResultReturnT>(
             HttpRequest<PayloadT, ResultT> request,
             PayloadT seed, bool keyRequest, IDictionary<string, string> data,
             string subPath = null, bool doCache = true) 
-                where PayloadT : Inkton.Nest.Cloud.CloudObject, new()
+                where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
                 where ResultT : Result<ResultReturnT> , new()
         {
-            int retryCount = 3;
+            // Try-send is used to send after a session has been established
+            // it attaches the JWT token, attempts retry if failed and also 
+            // handle cacheing
+
             ResultT result = new ResultT();
 
             if (data == null)
@@ -348,140 +453,210 @@ namespace Inkton.Nester.Cloud
                 data = new Dictionary<string, string>();
             }
 
-            for (int i = 0; i < retryCount; i++)
+            if (_permit != null)
             {
-                // the service allows some non-secure calls
-                // such as browse all apps. these do not
-                // require a permit.           
-                if (_permit != null)
-                {
-                    if (data.Keys.Contains("token"))
-                    {
-                        data.Remove("token");
-                    }
+                data["token"] = _permit.Token;
+            }
 
-                    data.Add("token", _permit.Token);
-                }
-
+            for (int attempt = 0; attempt < _retryCount; attempt++)
+            {
                 try
                 {
                     result = await request(seed, CreateRequest(
                                 seed, keyRequest, data, subPath));
 
-                    if (result.HttpStatus != System.Net.HttpStatusCode.Unauthorized)
+                    UpdateCache<PayloadT, ResultT, ResultReturnT>(seed, keyRequest, doCache, result);
+
+                    _notifier?.EndQuery();
+
+                    return result;
+                }
+                catch (FlurlHttpException ex)
+                {
+                    SetFailedResult<ResultReturnT>(result, ex);
+
+                    if (result.HttpStatus == System.Net.HttpStatusCode.Unauthorized)
                     {
-                        if (result.Code == 0)
+                        if (_permit != null && _autoTokenRenew)
                         {
-                            if (doCache)
-                            {
-                                if (keyRequest)
-                                {
-                                    _cache.Save(seed);
-                                }
-                                else
-                                {
-                                    ObservableCollection<PayloadT> list = result.Data.Payload 
-                                        as ObservableCollection<PayloadT>;
-
-                                    if (list != null)
-                                    {
-                                        list.All(obj =>
-                                        {
-                                            _cache.Save(obj);
-                                            return true;
-                                        });
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if (keyRequest)
-                                {
-                                    _cache.Remove(seed);
-                                }
-                                else
-                                {
-                                    ObservableCollection<PayloadT> list = result.Data.Payload 
-                                        as ObservableCollection<PayloadT>;
-                                    
-                                    if (list != null)
-                                    {
-                                        list.All(obj =>
-                                        {
-                                            _cache.Remove(obj);
-                                            return true;
-                                        });
-                                    }
-                                }
-                            }
+                            // Re-try with a fresh token
+                            ResultSingle<Permit> permitResult =
+                                await QueryTokenAsync();
+                            _permit.Token = permitResult.Data.Payload.Token;
+                            data["token"] = _permit.Token;
                         }
-
-                        return result;
+                        else
+                        {
+                            _notifier?.EndQuery();
+                            return result;
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    LogConnectFailure<ResultReturnT>(result, ex);
+                    SetFailedResult<ResultReturnT>(result, ex);
                 }
 
-                if (_permit != null)
+                if (attempt < _retryCount)
                 {
-                    // Re-try with a fresh token
-                    _permit = QueryToken().Data.Payload;
+                    if (_notifier != null && !_notifier.CanProgress(attempt + 1))
+                    {
+                        // Ask the notifier whether its okay to proceed
+                        _notifier?.EndQuery();
+                        return result;
+                    }
+
+                    // Wait period grows after each re-try. if interval is 2 seconds then 
+                    // the each try will be in 2, 4, 8 second intervals etc. 
+                    // (Exponential back-off)
+
+                    int waitIntervalSecs = (int)Math.Pow(
+                        _retryBaseIntervalInSecs, attempt + 1);
+
+                    System.Console.WriteLine(string.Format("Re-attempt {0}, waiting for - {1} seconds ...",
+                        attempt + 1, waitIntervalSecs));
+
+                    _notifier?.Waiting(waitIntervalSecs);
+
+                    Task.Delay(waitIntervalSecs * 1000).Wait();
                 }
             }
 
             return result;
         }
 
+        private void UpdateCache<PayloadT, ResultT, ResultReturnT>(
+            PayloadT seed, bool keyRequest, bool doCache, Result<ResultReturnT> result)
+                where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
+                where ResultT : Result<ResultReturnT>, new()
+        {
+            if (result.Code == 0)
+            {
+                if (doCache)
+                {
+                    if (keyRequest)
+                    {
+                        _cache.Save(seed);
+                    }
+                    else
+                    {
+                        ObservableCollection<PayloadT> list = result.Data.Payload
+                            as ObservableCollection<PayloadT>;
+
+                        if (list != null)
+                        {
+                            list.All(obj =>
+                            {
+                                _cache.Save(obj);
+                                return true;
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    if (keyRequest)
+                    {
+                        _cache.Remove(seed);
+                    }
+                    else
+                    {
+                        ObservableCollection<PayloadT> list = result.Data.Payload
+                            as ObservableCollection<PayloadT>;
+
+                        if (list != null)
+                        {
+                            list.All(obj =>
+                            {
+                                _cache.Remove(obj);
+                                return true;
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
         #endregion
 
         public async Task<ResultSingle<T>> CreateAsync<T>(T seed,
-            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+            _notifier?.BeginQuery();
+
+            ResultSingle<T> result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(PostAsync),
                 seed, false, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultSingle<T>> QueryAsync<T>(T seed,
-            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
+            ResultSingle<T> result;
+            _notifier?.BeginQuery();
+
             if (doCache && _cache.Load<T>(seed))
             {
-                ResultSingle<T> result = new ResultSingle<T>(0);
+                result = new ResultSingle<T>(0);
                 result.Data = new DataContainer<T>();
                 result.Data.Payload = seed;
+                _notifier?.EndQuery();
                 return result;
             }
 
-            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+            result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(GetAsync),
                 seed, true, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultMultiple<T>> QueryAsyncListAsync<T>(T seed,
-            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
+            IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await RetryWithFreshToken<T, ResultMultiple<T>, ObservableCollection<T>>(
+            _notifier?.BeginQuery();
+
+            ResultMultiple<T> result = await TrySend<T, ResultMultiple<T>, ObservableCollection<T>>(
                 new HttpRequest<T, ResultMultiple<T>>(GetListAsync),
                 seed, false, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultSingle<T>> UpdateAsync<T>(T seed,
-                IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.CloudObject, new()
+                IDictionary<string, string> data = null, string subPath = null, bool doCache = true) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+            _notifier?.BeginQuery();
+
+            ResultSingle<T> result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(PutAsync),
                 seed, true, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
 
         public async Task<ResultSingle<T>> RemoveAsync<T>(T seed,
-                IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.CloudObject, new()
+                IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.ICloudObject, new()
         {
-            return await RetryWithFreshToken<T, ResultSingle<T>, T>(
+            _notifier?.BeginQuery();
+
+            ResultSingle<T> result = await TrySend<T, ResultSingle<T>, T>(
                 new HttpRequest<T, ResultSingle<T>>(DeleteAsync),
                 seed, true, data, subPath, doCache);
+
+            _notifier?.EndQuery();
+
+            return result;
         }
     }
 }

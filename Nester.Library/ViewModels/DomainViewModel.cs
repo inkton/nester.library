@@ -229,7 +229,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomainCertificate> result = await ResultSingleUI<AppDomainCertificate>.WaitForObjectAsync(
                 throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate, ResultSingle<AppDomainCertificate>>(
-                    Platform.CreateAsync));
+                    Platform.CreateAsync), doCache);
 
             if (result.Code >= 0)
             {

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Inkton.Nester.Helpers
 {
-    public class IpTools
+    public static class IpTools
     {
         public static async Task<string> GetIPAsync(string host)
         {
@@ -18,7 +18,10 @@ namespace Inkton.Nester.Helpers
                 ip = ipAddress[0].MapToIPv4().ToString();
                 return ip;
             }
-            catch (Exception) { }
+            catch (Exception e) 
+            {
+                System.Console.Write(e.Message); 
+            }
 
             return ip;
         }

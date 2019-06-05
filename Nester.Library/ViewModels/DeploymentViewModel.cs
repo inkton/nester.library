@@ -383,7 +383,7 @@ namespace Inkton.Nester.ViewModels
                 {
                     if (backup.Id == _editBackup.Id)
                     {
-                        _editBackup.CopyTo(appBackup);
+                        _editBackup.CopyTo(backup);
                         break;
                     }
                 }

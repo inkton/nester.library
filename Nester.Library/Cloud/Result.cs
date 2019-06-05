@@ -87,6 +87,11 @@ namespace Inkton.Nester.Cloud
                 }
             }
 
+            if (!string.IsNullOrEmpty(_result.Notes))
+            {
+                message += "\n" + _result.Notes;
+            }
+
             return message;
         }
 

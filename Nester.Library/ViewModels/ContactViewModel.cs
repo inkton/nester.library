@@ -189,6 +189,11 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 _invitations = result.Data.Payload;
+
+                if (_invitations.Any())
+                {
+                    _editInvitation = _invitations.FirstOrDefault();
+                }
             }
 
             return result;

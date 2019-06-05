@@ -47,9 +47,9 @@ namespace Inkton.Nester.ViewModels
             set { SetProperty(ref _canRecoverPassword, value); }
         }
 
-        public void Reset()
+        public bool IsAuthenticated
         {
-            Platform.Permit.Invalid();
+            get { return Platform.Permit.Token.Length > 0; }
         }
 
         public void UpdatePermit(ResultSingle<Permit> result, 

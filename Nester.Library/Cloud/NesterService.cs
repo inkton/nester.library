@@ -20,8 +20,7 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using System.Text;
-using System.Net;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -31,7 +30,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Flurl;
 using Flurl.Http;
-using Flurl.Http.Configuration;
 using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
 using Inkton.Nester.Storage;
@@ -170,7 +168,6 @@ namespace Inkton.Nester.Cloud
         private int _retryBaseIntervalInSecs = 2;
         private StorageService _cache;
         private INesterServiceNotify _notifier;
-        //private JsonSerializerSettings _serializerSettings;
 
         public NesterService(
             int version, string deviceSignature, StorageService cache)
@@ -179,8 +176,6 @@ namespace Inkton.Nester.Cloud
             _cache = cache;
             _deviceSignature = deviceSignature;
             _endpoint = "https://api.nest.yt/";
-
-            //AddCustomRules();
         }
 
         public int Version
@@ -237,12 +232,6 @@ namespace Inkton.Nester.Cloud
             set { _notifier = value; }
         }
 
-        //public JsonSerializerSettings SerializerSettings
-        //{
-        //    get { return _serializerSettings; }
-        //    set { _serializerSettings = value; }
-        //}
-
         public async Task<ResultSingle<Permit>> SignupAsync()
         {
             return await PostAsync(_permit, 
@@ -278,39 +267,11 @@ namespace Inkton.Nester.Cloud
 
         #region Utility
 
-/*
-        private void AddCustomRules()
-        {
-            var jsonResolver = new PropertyRenameAndIgnoreSerializerContractResolver();
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "Id", "id");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "Email", "email");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "NormalizedEmail", "normalized_email");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "UserName", "username");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "NormalizedUserName", "normalized_username");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "EmailConfirmed", "email_confirmed");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PasswordHash", "password_hash");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "SecurityStamp", "security_stamp");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "ConcurrencyStamp", "concurrency_stamp");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PhoneNumber", "phonenumber");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "PhoneNumberConfirmed", "phonenumber_confirmed");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "TwoFactorEnabled", "two_factor_enabled");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "LockoutEnd", "lockout_end");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "LockoutEnabled", "lockout_enabled");
-            jsonResolver.RenameProperty(typeof(Microsoft.AspNetCore.Identity.IdentityUser<int>), "AccessFailedCount", "access_failed_count");
-
-            _serializerSettings = new JsonSerializerSettings
-            {
-                ContractResolver = jsonResolver
-            };
-            FlurlHttp.Configure(settings => {
-                settings.JsonSerializer = new NewtonsoftJsonSerializer(_serializerSettings);
-            });
-        }   
-        */
-
         private void SetFailedResult<T>(
             Result<T> result, Exception ex)
         {
+            Debug.Write(ex);
+
             if (ex is FlurlHttpException)
             {
                 FlurlHttpException httpEx = ex as FlurlHttpException;
@@ -438,9 +399,9 @@ namespace Inkton.Nester.Cloud
         private async Task<ResultT> TrySend<PayloadT, ResultT, ResultReturnT>(
             HttpRequest<PayloadT, ResultT> request,
             PayloadT seed, bool keyRequest, IDictionary<string, string> data,
-            string subPath = null, bool doCache = true) 
+            string subPath = null, bool doCache = true)
                 where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
-                where ResultT : Result<ResultReturnT> , new()
+                where ResultT : Result<ResultReturnT>, new()
         {
             // Try-send is used to send after a session has been established
             // it attaches the JWT token, attempts retry if failed and also 
@@ -462,21 +423,40 @@ namespace Inkton.Nester.Cloud
             {
                 try
                 {
+                    Debug.Print("Making a request to {0}",
+                        seed.CollectionPath);
+
                     result = await request(seed, CreateRequest(
                                 seed, keyRequest, data, subPath));
+
+                    Debug.Print("The request to {0} resulted in code {1}",
+                        seed.CollectionPath, result.Code);
 
                     UpdateCache<PayloadT, ResultT, ResultReturnT>(seed, keyRequest, doCache, result);
 
                     _notifier?.EndQuery();
 
                     return result;
+
                 }
                 catch (FlurlHttpException ex)
                 {
                     SetFailedResult<ResultReturnT>(result, ex);
 
-                    if (result.HttpStatus == System.Net.HttpStatusCode.Unauthorized)
+                    if (result.HttpStatus == System.Net.HttpStatusCode.Forbidden)
                     {
+                        /* 
+                         * The user does not have access rights
+                         */
+                        _notifier?.EndQuery();
+                        return result;
+                    }
+                    else if (result.HttpStatus == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        /* 
+                         * The token has expired. Renew is auto-renew option
+                         * has been requested.
+                         */
                         if (_permit != null && _autoTokenRenew)
                         {
                             // Re-try with a fresh token
@@ -512,11 +492,11 @@ namespace Inkton.Nester.Cloud
 
                     int waitIntervalSecs = (int)Math.Pow(
                         _retryBaseIntervalInSecs, attempt + 1);
-
-                    System.Console.WriteLine(string.Format("Re-attempt {0}, waiting for - {1} seconds ...",
-                        attempt + 1, waitIntervalSecs));
-
+                        
                     _notifier?.Waiting(waitIntervalSecs);
+
+                    Debug.Print("Re-attempt {0}, waiting for - {1} seconds ...",
+                        attempt + 1, waitIntervalSecs);
 
                     Task.Delay(waitIntervalSecs * 1000).Wait();
                 }
@@ -524,6 +504,7 @@ namespace Inkton.Nester.Cloud
 
             return result;
         }
+
 
         private void UpdateCache<PayloadT, ResultT, ResultReturnT>(
             PayloadT seed, bool keyRequest, bool doCache, Result<ResultReturnT> result)

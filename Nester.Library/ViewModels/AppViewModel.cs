@@ -272,8 +272,6 @@ namespace Inkton.Nester.ViewModels
         async public Task ReloadAsync()
         {
             await InitAsync();
-
-            await ServicesViewModel.QueryServicesAsync();
         }
 
         public async Task<ResultMultiple<Notification>> QueryAppNotificationsAsync(App app = null,

@@ -62,6 +62,8 @@ namespace Inkton.Nester.ViewModels
 
             decimal _cost;
 
+            public string Tag { get; set; }
+
             public string Name { get; set; }
 
             public string ProvidedBy { get; set; }
@@ -102,6 +104,7 @@ namespace Inkton.Nester.ViewModels
             _appServiceTierTable = new ObservableCollection<ServiceTableItem>();
         }
 
+
         public ObservableCollection<AppService> Services
         {
             get
@@ -118,8 +121,8 @@ namespace Inkton.Nester.ViewModels
         {
             if (_appServices == null)
             {
-                _appServices = new ObservableCollection<AppService>();
-                await QueryServicesAsync();
+                // Only needed once
+                await QueryServicesAsync(Platform);
             }
 
             await QueryAppSubscriptions();
@@ -194,17 +197,16 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public async Task<ResultMultiple<AppService>> QueryServicesAsync(
-            bool doCache = true, bool throwIfError = true)
+        public static async Task QueryServicesAsync(NesterService platform)
         {
             AppService serviceSeed = new AppService();
 
             ResultMultiple<AppService> result = await ResultMultipleUI<AppService>.WaitForObjectAsync(
-                Platform, throwIfError, serviceSeed, doCache);
+                platform, true, serviceSeed, true);
 
             if (result.Code < 0)
             {
-                return result;
+                return;
             }
 
             _appServices = result.Data.Payload;
@@ -216,15 +218,13 @@ namespace Inkton.Nester.ViewModels
                 tierSeed.OwnedBy = service;
 
                 resultTier = await ResultMultipleUI<AppServiceTier>.WaitForObjectAsync(
-                    Platform, throwIfError, tierSeed, doCache);
+                    platform, true, tierSeed, true);
 
                 if (result.Code == 0)
                 {
                     service.Tiers = resultTier.Data.Payload;
                 }
             }
-
-            return result;
         }
 
         public async Task<ResultMultiple<Forest>> QueryAppServiceTierLocationsAsync(AppServiceTier teir,
@@ -352,6 +352,7 @@ namespace Inkton.Nester.ViewModels
         {
             ServiceTableItem item = new ServiceTableItem();
 
+            item.Tag = tier.Tag;
             item.Name = tier.Name;
             item.ProvidedBy = (tier.OwnedBy as AppService).Name;
             item.Period = tier.Period;

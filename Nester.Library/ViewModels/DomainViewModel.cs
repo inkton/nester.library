@@ -39,7 +39,7 @@ namespace Inkton.Nester.ViewModels
 
         public ICommand EditCertCommand { get; private set; }
 
-        public DomainViewModel(NesterService platform, App app) : base(platform, app)
+        public DomainViewModel(BackendService backend, App app) : base(backend, app)
         {
             _domains = new ObservableCollection<AppDomain>();
             _primary = false;
@@ -115,7 +115,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             ResultMultiple<AppDomain> result = await ResultMultipleUI<AppDomain>.WaitForObjectAsync(
-                Platform, throwIfError, _editDomain, doCache);
+                Backend, throwIfError, _editDomain, doCache);
 
             if (result.Code >= 0)
             {
@@ -132,7 +132,7 @@ namespace Inkton.Nester.ViewModels
 
                     ResultMultiple<AppDomainCertificate> certResult = 
                         await ResultMultipleUI<AppDomainCertificate>.WaitForObjectAsync(
-                            Platform, throwIfError, seedCert);
+                            Backend, throwIfError, seedCert);
 
                     if (certResult.Code >= 0)
                     {
@@ -157,7 +157,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomain> result = await ResultSingleUI<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain, ResultSingle<AppDomain>>(
-                    Platform.QueryAsync), doCache, null, null);
+                    Backend.QueryAsync), doCache, null, null);
 
             if (result.Code >= 0)
             {
@@ -168,7 +168,7 @@ namespace Inkton.Nester.ViewModels
 
                 ResultMultiple<AppDomainCertificate> certResult = 
                         await ResultMultipleUI<AppDomainCertificate>.WaitForObjectAsync(
-                            Platform, throwIfError, seedCert, doCache);
+                            Backend, throwIfError, seedCert, doCache);
 
                 if (certResult.Code >= 0)
                 {
@@ -197,7 +197,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomain> result = await ResultSingleUI<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain, ResultSingle<AppDomain>>(
-                    Platform.CreateAsync), doCache);
+                    Backend.CreateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -229,7 +229,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomainCertificate> result = await ResultSingleUI<AppDomainCertificate>.WaitForObjectAsync(
                 throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate, ResultSingle<AppDomainCertificate>>(
-                    Platform.CreateAsync), doCache);
+                    Backend.CreateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -251,7 +251,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomain> result = await ResultSingleUI<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain, ResultSingle<AppDomain>>(
-                    Platform.RemoveAsync), doCache);
+                    Backend.RemoveAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -274,7 +274,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomainCertificate> result = await ResultSingleUI<AppDomainCertificate>.WaitForObjectAsync(
                 throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate, ResultSingle<AppDomainCertificate>>(
-                    Platform.RemoveAsync), doCache);
+                    Backend.RemoveAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -294,7 +294,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomain> result = await ResultSingleUI<AppDomain>.WaitForObjectAsync(
                 throwIfError, theDomain, new Cloud.CachedHttpRequest<AppDomain, ResultSingle<AppDomain>>(
-                    Platform.UpdateAsync), doCache);
+                    Backend.UpdateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -316,7 +316,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<AppDomainCertificate> result = await ResultSingleUI<AppDomainCertificate>.WaitForObjectAsync(
                 throwIfError, theCert, new Cloud.CachedHttpRequest<AppDomainCertificate, ResultSingle<AppDomainCertificate>>(
-                    Platform.UpdateAsync), doCache);
+                    Backend.UpdateAsync), doCache);
 
             if (result.Code >= 0)
             {

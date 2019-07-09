@@ -139,12 +139,12 @@ namespace Inkton.Nester.Cloud
     public class ResultMultipleUI<PayloadT> : ResultMultiple<PayloadT> where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
     {
         public static ResultMultiple<PayloadT> WaitForObject(
-            NesterService nesterService, bool throwIfError, PayloadT seed,
+            BackendService backend, bool throwIfError, PayloadT seed,
             bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
             ResultMultiple<PayloadT> result = Result<PayloadT>.WaitAsync(
-                Task<ResultMultiple<PayloadT>>.Run(async () => await nesterService.QueryAsyncListAsync(seed, data, subPath, doCache))
+                Task<ResultMultiple<PayloadT>>.Run(async () => await backend.QueryAsyncListAsync(seed, data, subPath, doCache))
                 ).Result;
 
             if (result.Code < 0 && throwIfError)
@@ -156,12 +156,12 @@ namespace Inkton.Nester.Cloud
         }
 
         public static async Task<ResultMultiple<PayloadT>> WaitForObjectAsync(
-            NesterService nesterService, bool throwIfError, PayloadT seed,
+            BackendService backend, bool throwIfError, PayloadT seed,
             bool doCache = true, IDictionary<string, string> data = null,
             string subPath = null)
         {
             ResultMultiple<PayloadT> result = await
-                nesterService.QueryAsyncListAsync(seed, data, subPath, doCache);
+                backend.QueryAsyncListAsync(seed, data, subPath, doCache);
 
             if (result.Code < 0 && throwIfError)
             {

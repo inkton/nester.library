@@ -98,7 +98,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ServicesViewModel(NesterService platform, App app) : base(platform, app)
+        public ServicesViewModel(BackendService backend, App app) : base(backend, app)
         {
             _upgradableAppTiers = new ObservableCollection<AppServiceTier>();
             _appServiceTierTable = new ObservableCollection<ServiceTableItem>();
@@ -122,7 +122,7 @@ namespace Inkton.Nester.ViewModels
             if (_appServices == null)
             {
                 // Only needed once
-                await QueryServicesAsync(Platform);
+                await QueryServicesAsync(Backend);
             }
 
             await QueryAppSubscriptions();
@@ -197,12 +197,12 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public static async Task QueryServicesAsync(NesterService platform)
+        public static async Task QueryServicesAsync(BackendService backend)
         {
             AppService serviceSeed = new AppService();
 
             ResultMultiple<AppService> result = await ResultMultipleUI<AppService>.WaitForObjectAsync(
-                platform, true, serviceSeed, true);
+                backend, true, serviceSeed, true);
 
             if (result.Code < 0)
             {
@@ -218,7 +218,7 @@ namespace Inkton.Nester.ViewModels
                 tierSeed.OwnedBy = service;
 
                 resultTier = await ResultMultipleUI<AppServiceTier>.WaitForObjectAsync(
-                    platform, true, tierSeed, true);
+                    backend, true, tierSeed, true);
 
                 if (result.Code == 0)
                 {
@@ -234,7 +234,7 @@ namespace Inkton.Nester.ViewModels
             forestSeeder.OwnedBy = teir;
 
             return await ResultMultipleUI<Forest>.WaitForObjectAsync(
-                Platform, throwIfError, forestSeeder, doCache);
+                Backend, throwIfError, forestSeeder, doCache);
         }
 
         public async Task<ResultSingle<AppServiceSubscription>> CreateSubscription(AppServiceTier tier,
@@ -247,7 +247,7 @@ namespace Inkton.Nester.ViewModels
 
             return await ResultSingleUI<AppServiceSubscription>.WaitForObjectAsync(
                 throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription, ResultSingle<AppServiceSubscription>>(
-                    Platform.CreateAsync), doCache);
+                    Backend.CreateAsync), doCache);
         }
 
         public async Task<ResultSingle<AppServiceSubscription>> RemoveSubscriptionAsync(AppServiceSubscription subscription,
@@ -255,7 +255,7 @@ namespace Inkton.Nester.ViewModels
         {
             return await ResultSingleUI<AppServiceSubscription>.WaitForObjectAsync(
                 throwIfError, subscription, new Cloud.CachedHttpRequest<AppServiceSubscription, ResultSingle<AppServiceSubscription>>(
-                    Platform.RemoveAsync), doCache);
+                    Backend.RemoveAsync), doCache);
         }
 
         public async Task<ResultMultiple<AppServiceSubscription>> QueryAppSubscriptions(App app = null,
@@ -265,7 +265,7 @@ namespace Inkton.Nester.ViewModels
             subSeeder.OwnedBy = (app == null ? _editApp : app);
 
             ResultMultiple<AppServiceSubscription> result = await ResultMultipleUI<AppServiceSubscription>.WaitForObjectAsync(
-                Platform, throwIfError, subSeeder, doCache);
+                Backend, throwIfError, subSeeder, doCache);
 
             if (result.Code >= 0)
             {
@@ -321,7 +321,7 @@ namespace Inkton.Nester.ViewModels
             tierSeed.OwnedBy = theService;
 
             ResultMultiple<AppServiceTier> result = await ResultMultipleUI<AppServiceTier>.WaitForObjectAsync(
-                Platform, throwIfError, tierSeed, doCache);
+                Backend, throwIfError, tierSeed, doCache);
 
             if (result.Code >= 0)
             {
@@ -345,7 +345,7 @@ namespace Inkton.Nester.ViewModels
 
             return await ResultSingleUI<AppServiceTier>.WaitForObjectAsync(
                 throwIfError, theTier, new Cloud.CachedHttpRequest<AppServiceTier, ResultSingle<AppServiceTier>>(
-                    Platform.UpdateAsync), doCache);
+                    Backend.UpdateAsync), doCache);
         }
 
         public static ServiceTableItem CreateServiceTableItem(AppServiceTier tier)

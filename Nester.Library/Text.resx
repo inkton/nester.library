@@ -332,7 +332,7 @@
     <value>The nest not found</value>
   </data>
   <data name="NEST_RESULT_ERROR_NPLATFORM_NFOUND" xml:space="preserve">
-    <value>Nest host platform not found</value>
+    <value>Nest host backend not found</value>
   </data>
   <data name="NEST_RESULT_ERROR_PAYMENT_BUSY" xml:space="preserve">
     <value>Payment server busy, please try again in a few minutes</value>

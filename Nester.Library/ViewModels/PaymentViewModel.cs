@@ -39,14 +39,14 @@ namespace Inkton.Nester.ViewModels
         private ObservableCollection<BillingCycle> _billingCycles;
         private ObservableCollection<UserBillingTask> _userBillingTasks;  
 
-        public PaymentViewModel(NesterService platform)
-            : base(platform)
+        public PaymentViewModel(BackendService backend)
+            : base(backend)
         {
             _editCredit = new Credit();
             _displayPaymentMethodEntry = false;
             _displayPaymentMethodEntry = false;
             _editPaymentMethod = new PaymentMethod();
-            _editPaymentMethod.OwnedBy = Platform.Permit.Owner;
+            _editPaymentMethod.OwnedBy = Backend.Permit.Owner;
         }
 
         public Credit EditCredit
@@ -111,7 +111,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Credit> result = await ResultSingleUI<Credit>.WaitForObjectAsync(
                 throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit, ResultSingle<Credit>>(
-                    Platform.QueryAsync), dCache, null, null);
+                    Backend.QueryAsync), dCache, null, null);
 
             if (result.Code >= 0)
             {
@@ -126,7 +126,7 @@ namespace Inkton.Nester.ViewModels
         {
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
-                    Platform.QueryAsync), dCache, null, null);
+                    Backend.QueryAsync), dCache, null, null);
 
             if (result.Code >= 0)
             {                
@@ -166,7 +166,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
-                    Platform.CreateAsync), doCache, data);
+                    Backend.CreateAsync), doCache, data);
 
             if (result.Code >= 0)
             {
@@ -199,7 +199,7 @@ namespace Inkton.Nester.ViewModels
             BillingCycle seed = new BillingCycle();
 
             ResultMultiple<BillingCycle> result = await ResultMultipleUI<BillingCycle>.WaitForObjectAsync(
-                Platform, throwIfError, seed, doCache);
+                Backend, throwIfError, seed, doCache);
 
             if (result.Code == 0)
             {
@@ -214,10 +214,10 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();
-            seed.OwnedBy = Platform.Permit.Owner;
+            seed.OwnedBy = Backend.Permit.Owner;
 
             ResultMultiple<UserBillingTask> result = await ResultMultipleUI<UserBillingTask>.WaitForObjectAsync(
-                Platform, throwIfError, seed, doCache, filter);
+                Backend, throwIfError, seed, doCache, filter);
 
             if (result.Code == 0)
             {

@@ -58,7 +58,7 @@ namespace Inkton.Nester.Cloud
     public delegate Task<ResultT> CachedHttpRequest<PayloadT, ResultT>(PayloadT seed,
         IDictionary<string, string> data, string subPath = null, bool doCache = true) where PayloadT : ICloudObject, new();
 
-    public interface INesterService
+    public interface IBackendService
     {
         int Version { get; set; }
         string DeviceSignature { get; set; }
@@ -82,7 +82,7 @@ namespace Inkton.Nester.Cloud
                 IDictionary<string, string> data = null, string subPath = null, bool doCache = false) where T : Inkton.Nest.Cloud.ICloudObject, new();
     }
 
-    public interface INesterServiceNotify
+    public interface IBackendServiceNotify
     {
         void BeginQuery();
         bool CanProgress(int attempt);
@@ -156,7 +156,7 @@ namespace Inkton.Nester.Cloud
         }
     }
 
-    public class NesterService : INesterService
+    public class BackendService : IBackendService
     {
         private int _version = 1;
         private string _deviceSignature;
@@ -167,9 +167,9 @@ namespace Inkton.Nester.Cloud
         private int _retryCount = 3;
         private int _retryBaseIntervalInSecs = 2;
         private StorageService _cache;
-        private INesterServiceNotify _notifier;
+        private IBackendServiceNotify _notifier;
 
-        public NesterService(
+        public BackendService(
             int version, string deviceSignature, StorageService cache)
         {
             _version = version;
@@ -226,7 +226,7 @@ namespace Inkton.Nester.Cloud
             set { _retryBaseIntervalInSecs = value; }
         }
 
-        public INesterServiceNotify Notifier
+        public IBackendServiceNotify Notifier
         {
             get { return _notifier; }
             set { _notifier = value; }

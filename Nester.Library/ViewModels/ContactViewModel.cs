@@ -64,7 +64,7 @@ namespace Inkton.Nester.ViewModels
             public string PermissionTag;
         }
 
-        public ContactViewModel(NesterService platform, App app) : base(platform, app)
+        public ContactViewModel(BackendService backend, App app) : base(backend, app)
         {
             _contacts = new ObservableCollection<Contact>();
             _editContact = new Contact();
@@ -184,7 +184,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             ResultMultiple<Invitation> result = await ResultMultipleUI<Invitation>.WaitForObjectAsync(
-                Platform, throwIfError, _editInvitation, doCache);
+                Backend, throwIfError, _editInvitation, doCache);
 
             if (result.Code >= 0)
             {
@@ -203,7 +203,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             ResultMultiple<Contact> result = await ResultMultipleUI<Contact>.WaitForObjectAsync(
-                Platform, throwIfError, _editContact, doCache);
+                Backend, throwIfError, _editContact, doCache);
 
             if (result.Code >= 0)
             {
@@ -220,7 +220,7 @@ namespace Inkton.Nester.ViewModels
                     await QueryPermissionsAsync(contact, throwIfError);
 
                     if (contact.UserId != null &&
-                        contact.UserId == Platform.Permit.Owner.Id)
+                        contact.UserId == Backend.Permit.Owner.Id)
                     {
                         _ownerContact = contact;
                         _editContact = contact;
@@ -242,7 +242,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Contact> result = await ResultSingleUI<Contact>.WaitForObjectAsync(
                 throwIfError, theContact, new Cloud.CachedHttpRequest<Contact, ResultSingle<Contact>>(
-                    Platform.QueryAsync), doCache, null, null);
+                    Backend.QueryAsync), doCache, null, null);
 
             if (result.Code >= 0)
             {
@@ -264,7 +264,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Contact> result = await ResultSingleUI<Contact>.WaitForObjectAsync(
                 throwIfError, theContact, new Cloud.CachedHttpRequest<Contact, ResultSingle<Contact>>(
-                    Platform.UpdateAsync), doCache);
+                    Backend.UpdateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -286,7 +286,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Contact> result = await Cloud.ResultSingleUI<Contact>.WaitForObjectAsync(
                 throwIfError, theContact, new Cloud.CachedHttpRequest<Contact, ResultSingle<Contact>>(
-                    Platform.CreateAsync), doCache);
+                    Backend.CreateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -311,7 +311,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Contact> result = await ResultSingleUI<Contact>.WaitForObjectAsync(
                 throwIfError, theContact, new Cloud.CachedHttpRequest<Contact, ResultSingle<Contact>>(
-                    Platform.RemoveAsync), doCache);
+                    Backend.RemoveAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -332,7 +332,7 @@ namespace Inkton.Nester.ViewModels
 
             return await ResultSingleUI<Contact>.WaitForObjectAsync(
                 throwIfError, theContact, new Cloud.CachedHttpRequest<Contact, ResultSingle<Contact>>(
-                    Platform.UpdateAsync), doCache);
+                    Backend.UpdateAsync), doCache);
         }
 
         public async Task<ResultMultiple<Permission>> QueryPermissionsAsync(Contact contact = null,
@@ -344,7 +344,7 @@ namespace Inkton.Nester.ViewModels
             ObservableCollection<Permission> permissions = new ObservableCollection<Permission>();
 
             ResultMultiple<Permission> result = await ResultMultipleUI<Permission>.WaitForObjectAsync(
-                Platform, throwIfError, seedPermission, doCache);
+                Backend, throwIfError, seedPermission, doCache);
 
             if (result.Code >= 0)
             {
@@ -408,7 +408,7 @@ namespace Inkton.Nester.ViewModels
 
                     result = await ResultSingleUI<Permission>.WaitForObjectAsync(
                         false, seedPermission, new Cloud.CachedHttpRequest<Permission, ResultSingle<Permission>>(
-                            Platform.CreateAsync), doCache, permission);
+                            Backend.CreateAsync), doCache, permission);
 
                     if (result.Code != Cloud.ServerStatus.NEST_RESULT_SUCCESS &&
                         result.Code != Cloud.ServerStatus.NEST_RESULT_ERROR_PERM_FOUND)
@@ -422,7 +422,7 @@ namespace Inkton.Nester.ViewModels
                 {
                     result = await ResultSingleUI<Permission>.WaitForObjectAsync(
                         false, seedPermission, new Cloud.CachedHttpRequest<Permission, ResultSingle<Permission>>(
-                            Platform.RemoveAsync), doCache);
+                            Backend.RemoveAsync), doCache);
 
                     if (result.Code != Cloud.ServerStatus.NEST_RESULT_SUCCESS &&
                         result.Code != Cloud.ServerStatus.NEST_RESULT_ERROR_PERM_NFOUND)
@@ -443,7 +443,7 @@ namespace Inkton.Nester.ViewModels
 
             ResultSingle<Collaboration> result = await ResultSingleUI<Collaboration>.WaitForObjectAsync(
                 throwIfError, theCollaboration, new Cloud.CachedHttpRequest<Collaboration, ResultSingle<Collaboration>>(
-                    Platform.QueryAsync), doCache, null, null);
+                    Backend.QueryAsync), doCache, null, null);
 
             if (result.Code >= 0)
             {

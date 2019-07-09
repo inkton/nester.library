@@ -32,7 +32,7 @@ namespace Inkton.Nester.ViewModels
 {
     public abstract class ViewModel : INotifyPropertyChanged
     {
-        protected NesterService _platform;
+        protected BackendService _backend;
         protected App _editApp;
 
         protected bool _validated;
@@ -41,21 +41,21 @@ namespace Inkton.Nester.ViewModels
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected ViewModel(NesterService platform, App app = null)
+        protected ViewModel(BackendService backend, App app = null)
         {
             _validated = false;
             _canUpdate = false;
             _isBusy = false;
 
-            _platform = platform;
+            _backend = backend;
             _editApp = app;
         }
 
-        public NesterService Platform
+        public BackendService Backend
         {
             get
             {
-                return _platform;
+                return _backend;
             }
         }
 
@@ -87,7 +87,7 @@ namespace Inkton.Nester.ViewModels
 
                 if (_editApp != null)
                 {
-                    isOwner = (_editApp.OwnedBy as User).Id == _platform.Permit.Owner.Id;
+                    isOwner = (_editApp.OwnedBy as User).Id == _backend.Permit.Owner.Id;
                 }
 
                 return isOwner;

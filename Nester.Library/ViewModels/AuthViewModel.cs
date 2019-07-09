@@ -31,11 +31,12 @@ namespace Inkton.Nester.ViewModels
 {
     public class AuthViewModel : ViewModel
     {
+        private ObservableCollection<Role> _roles;
         private ObservableCollection<UserEvent> _userEvents;
         private bool _canRecoverPassword;
 
-        public AuthViewModel(NesterService platform)
-            :base(platform)
+        public AuthViewModel(BackendService backend)
+            :base(backend)
         {
             _userEvents = new ObservableCollection<UserEvent>();
             _canRecoverPassword = false;
@@ -49,7 +50,19 @@ namespace Inkton.Nester.ViewModels
 
         public bool IsAuthenticated
         {
-            get { return Platform.Permit.Token.Length > 0; }
+            get { return Backend.Permit.Token.Length > 0; }
+        }
+
+        public ObservableCollection<Role> Roles
+        {
+            get { return _roles; }
+            set { SetProperty(ref _roles, value); }
+        }
+
+        public ObservableCollection<UserEvent> UserEvents
+        {
+            get { return _userEvents; }
+            set { SetProperty(ref _userEvents, value); }
         }
 
         public void UpdatePermit(ResultSingle<Permit> result, 
@@ -57,8 +70,8 @@ namespace Inkton.Nester.ViewModels
         {
             if (result.Code == 0)
             {
-                result.Data.Payload.Owner.CopyTo(Platform.Permit.Owner);
-                Platform.Permit.Token = result.Data.Payload.Token;
+                result.Data.Payload.Owner.CopyTo(Backend.Permit.Owner);
+                Backend.Permit.Token = result.Data.Payload.Token;
             }
             else if (throwIfError)
             {
@@ -69,10 +82,10 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<Permit>> SignupAsync(
             bool throwIfError = true)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(Platform.Permit.Owner.Email));
+            Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.Owner.Email));
 
             ResultSingle<Permit> result =
-                await Platform.SignupAsync();
+                await Backend.SignupAsync();
 
             UpdatePermit(result, throwIfError);
 
@@ -83,7 +96,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result = await
-                Platform.RecoverPasswordAsync();
+                Backend.RecoverPasswordAsync();
 
             if (result.Code < 0)
             {
@@ -98,7 +111,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result =
-                await Platform.QueryTokenAsync();
+                await Backend.QueryTokenAsync();
 
              UpdatePermit(result, throwIfError);
 
@@ -109,7 +122,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit> result = await
-                Platform.ResetTokenAsync();
+                Backend.ResetTokenAsync();
 
             UpdatePermit(result, throwIfError);
 
@@ -119,11 +132,11 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<User>> UpdateUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
-            User theUser = user == null ? Platform.Permit.Owner : user;
+            User theUser = user == null ? Backend.Permit.Owner : user;
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, user, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
-                    Platform.UpdateAsync), doCache);
+                    Backend.UpdateAsync), doCache);
 
             return result;
         }
@@ -131,11 +144,11 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<User>> DeleteUserAsync(User user = null,
             bool doCache = false, bool throwIfError = true)
         {
-            User theUser = user == null ? Platform.Permit.Owner : user;
+            User theUser = user == null ? Backend.Permit.Owner : user;
 
             ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
                 throwIfError, theUser, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
-                    Platform.RemoveAsync), doCache);
+                    Backend.RemoveAsync), doCache);
 
             return result;
         }
@@ -144,23 +157,69 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.OwnedBy = user == null ? Platform.Permit.Owner : user;
+            userEventSeed.OwnedBy = user == null ? Backend.Permit.Owner : user;
 
             ResultMultiple<UserEvent> result = await ResultMultipleUI<UserEvent>.WaitForObjectAsync(
-                Platform, throwIfError, userEventSeed, doCache);
+                Backend, throwIfError, userEventSeed, doCache);
 
             if (result.Code >= 0)
             {
-                _userEvents = result.Data.Payload;
+                UserEvents = result.Data.Payload;
             }
 
-            OnPropertyChanged("UserEvents");
             return result;
         }
 
-        public ObservableCollection<UserEvent> UserEvents
+        public async Task<ResultMultiple<Role>> QueryRolesAsync(
+            bool doCache = false, bool throwIfError = true)
         {
-            get { return _userEvents; }
+            Role roleSeed = new Role();
+
+            ResultMultiple<Role> result = await ResultMultipleUI<Role>.WaitForObjectAsync(
+                Backend, throwIfError, roleSeed, doCache);
+
+            if (result.Code >= 0)
+            {
+                Roles = result.Data.Payload;
+            }
+
+            return result;
+        }
+
+        public async Task<ResultMultiple<Role>> QueryUserRolesAsync(User user,
+            bool doCache = false, bool throwIfError = true)
+        {
+            Role userRoleSeed = new Role();
+            userRoleSeed.OwnedBy = user == null ? Backend.Permit.Owner : user;
+
+            ResultMultiple<Role> result = await ResultMultipleUI<Role>.WaitForObjectAsync(
+                Backend, throwIfError, userRoleSeed, doCache);
+
+            return result;
+        }
+
+        public async Task<ResultSingle<Role>> AddUserRoleAsync(User user,
+            Role role, bool doCache = false, bool throwIfError = true)
+        {
+            role.OwnedBy = user;
+
+            ResultSingle<Role> result = await ResultSingleUI<Role>.WaitForObjectAsync(
+                throwIfError, role, new Cloud.CachedHttpRequest<Role, ResultSingle<Role>>(
+                    Backend.CreateAsync), doCache);
+
+            return result;
+        }
+
+        public async Task<ResultSingle<Role>> RemoveUserRoleAsync(User user,
+            Role role, bool doCache = false, bool throwIfError = true)
+        {
+            role.OwnedBy = user;
+
+            ResultSingle<Role> result = await ResultSingleUI<Role>.WaitForObjectAsync(
+                throwIfError, role, new Cloud.CachedHttpRequest<Role, ResultSingle<Role>>(
+                    Backend.RemoveAsync), doCache);
+
+            return result;
         }
     }
 }

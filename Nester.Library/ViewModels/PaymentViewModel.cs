@@ -29,57 +29,30 @@ using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
-    public class PaymentViewModel : ViewModel
+    public class PaymentViewModel<UserT> : ViewModel<UserT>
+        where UserT : User, new()
     {
-        private Credit _editCredit;
-        private PaymentMethod _editPaymentMethod;
         private bool _displayPaymentMethodProof;
         private bool _displayPaymentMethodEntry;
         private string _paymentMethodProofDetail;
-        private ObservableCollection<BillingCycle> _billingCycles;
-        private ObservableCollection<UserBillingTask> _userBillingTasks;  
 
-        public PaymentViewModel(BackendService backend)
+        public PaymentViewModel(BackendService<UserT> backend)
             : base(backend)
         {
-            _editCredit = new Credit();
+            EditCredit = new Credit();
             _displayPaymentMethodEntry = false;
             _displayPaymentMethodEntry = false;
-            _editPaymentMethod = new PaymentMethod();
-            _editPaymentMethod.OwnedBy = Backend.Permit.Owner;
+            EditPaymentMethod = new PaymentMethod();
+            EditPaymentMethod.OwnedBy = Backend.Permit.User;
         }
 
-        public Credit EditCredit
-        {
-            get
-            {
-                return _editCredit;
-            }
-        }
+        public Credit EditCredit { get; private set; }
 
-        public PaymentMethod EditPaymentMethod
-        {
-            get
-            {
-                return _editPaymentMethod;
-            }
-        }
+        public PaymentMethod EditPaymentMethod { get; private set; }
 
-        public ObservableCollection<BillingCycle> BillingCycles
-        {
-            get
-            {
-                return _billingCycles;
-            }
-        }
+        public ObservableCollection<BillingCycle> BillingCycles { get; private set; }
 
-        public ObservableCollection<UserBillingTask> UserBillingTasks
-        {
-            get
-            {
-                return _userBillingTasks;
-            }
-        }
+        public ObservableCollection<UserBillingTask> UserBillingTasks { get; private set; }
 
         public bool DisplayPaymentMethodProof
         {
@@ -107,15 +80,15 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<Credit>> QueryCreditAsync(Credit credit = null,
             bool dCache = false, bool throwIfError = true)
         {
-            Credit theCredit = credit == null ? _editCredit : credit;
+            Credit theCredit = credit == null ? EditCredit : credit;
 
             ResultSingle<Credit> result = await ResultSingleUI<Credit>.WaitForObjectAsync(
-                throwIfError, theCredit, new Cloud.CachedHttpRequest<Credit, ResultSingle<Credit>>(
+                throwIfError, theCredit, new CachedHttpRequest<Credit, ResultSingle<Credit>>(
                     Backend.QueryAsync), dCache, null, null);
 
             if (result.Code >= 0)
             {
-                _editCredit = result.Data.Payload;
+                EditCredit = result.Data.Payload;
             }
 
             return result;
@@ -125,22 +98,22 @@ namespace Inkton.Nester.ViewModels
             bool dCache = false, bool throwIfError = true)
         {
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
-                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
+                throwIfError, EditPaymentMethod, new CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
                     Backend.QueryAsync), dCache, null, null);
 
             if (result.Code >= 0)
             {                
-                _editPaymentMethod = result.Data.Payload;
-                DisplayPaymentMethodProof = _editPaymentMethod.IsActive;
+                EditPaymentMethod = result.Data.Payload;
+                DisplayPaymentMethodProof = EditPaymentMethod.IsActive;
 
                 if (DisplayPaymentMethodProof)
                 {
                     DisplayPaymentMethodEntry = false;
 
                     PaymentMethodProofDetail = string.Format("{0}\nLast 4 Digits {1}\nExpiry {2}/{3}",
-                                    _editPaymentMethod.Proof.Brand,
-                                    _editPaymentMethod.Proof.Last4,
-                                    _editPaymentMethod.Proof.ExpMonth, _editPaymentMethod.Proof.ExpYear);
+                                    EditPaymentMethod.Proof.Brand,
+                                    EditPaymentMethod.Proof.Last4,
+                                    EditPaymentMethod.Proof.ExpMonth, EditPaymentMethod.Proof.ExpYear);
                 }
                 else
                 {
@@ -165,22 +138,22 @@ namespace Inkton.Nester.ViewModels
             data.Add("cvc", cvc);
 
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
-                throwIfError, _editPaymentMethod, new Cloud.CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
+                throwIfError, EditPaymentMethod, new CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
                     Backend.CreateAsync), doCache, data);
 
             if (result.Code >= 0)
             {
-                _editPaymentMethod = result.Data.Payload;
-                DisplayPaymentMethodProof = _editPaymentMethod.IsActive;
+                EditPaymentMethod = result.Data.Payload;
+                DisplayPaymentMethodProof = EditPaymentMethod.IsActive;
 
                 if (DisplayPaymentMethodProof)
                 {
                     DisplayPaymentMethodEntry = false;
 
                     PaymentMethodProofDetail = string.Format("{0}\nLast 4 Digits {1}\nExpiry {2}/{3}",
-                                    _editPaymentMethod.Proof.Brand,
-                                    _editPaymentMethod.Proof.Last4,
-                                    _editPaymentMethod.Proof.ExpMonth, _editPaymentMethod.Proof.ExpYear);
+                                    EditPaymentMethod.Proof.Brand,
+                                    EditPaymentMethod.Proof.Last4,
+                                    EditPaymentMethod.Proof.ExpMonth, EditPaymentMethod.Proof.ExpYear);
                 }
                 else
                 {
@@ -198,12 +171,13 @@ namespace Inkton.Nester.ViewModels
         {
             BillingCycle seed = new BillingCycle();
 
-            ResultMultiple<BillingCycle> result = await ResultMultipleUI<BillingCycle>.WaitForObjectAsync(
-                Backend, throwIfError, seed, doCache);
+            ResultMultiple<BillingCycle> result = await ResultMultipleUI<BillingCycle>.WaitForObjectsAsync(
+                true, seed, new CachedHttpRequest<BillingCycle, ResultMultiple<BillingCycle>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code == 0)
             {
-                _billingCycles = result.Data.Payload;
+                BillingCycles = result.Data.Payload;
                 OnPropertyChanged("BillingCycles");
             }
 
@@ -214,14 +188,15 @@ namespace Inkton.Nester.ViewModels
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();
-            seed.OwnedBy = Backend.Permit.Owner;
+            seed.OwnedBy = Backend.Permit.User;
 
-            ResultMultiple<UserBillingTask> result = await ResultMultipleUI<UserBillingTask>.WaitForObjectAsync(
-                Backend, throwIfError, seed, doCache, filter);
+            ResultMultiple<UserBillingTask> result = await ResultMultipleUI<UserBillingTask>.WaitForObjectsAsync(
+                true, seed, new CachedHttpRequest<UserBillingTask, ResultMultiple<UserBillingTask>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code == 0)
             {
-                _userBillingTasks = result.Data.Payload;
+                UserBillingTasks = result.Data.Payload;
                 OnPropertyChanged("UserBillingTasks");
             }
 

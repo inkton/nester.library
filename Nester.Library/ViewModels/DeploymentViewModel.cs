@@ -25,20 +25,18 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using Xamarin.Forms;
 using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
 using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
-    public class DeploymentViewModel : ViewModel
+    public class DeploymentViewModel<UserT> : ViewModel<UserT>
+        where UserT : User, new()
     {
         private Deployment _editDeployment;
         private AppBackup _editBackup;
         private AppAudit _editAudit;
-        private Credit _applyCredit;
-
         private ObservableCollection<Deployment> _deployments;
         private ObservableCollection<Forest> _forests;
         private Dictionary<string, Forest> _forestByTag;
@@ -48,7 +46,8 @@ namespace Inkton.Nester.ViewModels
 
         public ICommand SelectForestCommand { get; private set; }
 
-        public DeploymentViewModel(BackendService backend, App app) : base(backend, app)
+        public DeploymentViewModel(BackendService<UserT> backend, App app)
+            : base(backend, app)
         {
             _deployments = new ObservableCollection<Deployment>();
             _forests = new ObservableCollection<Forest>();
@@ -94,17 +93,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public Credit ApplyCredit
-        {
-            get
-            {
-                return _applyCredit;
-            }
-            set
-            {
-                _applyCredit = value;
-            }
-        }
+        public Credit ApplyCredit { get; set; }
 
         public Dictionary<string, Forest> ForestsByTag
         {
@@ -182,8 +171,9 @@ namespace Inkton.Nester.ViewModels
         {
             Forest forestSeed = new Forest();
 
-            ResultMultiple<Forest> result = await ResultMultipleUI<Forest>.WaitForObjectAsync(
-                Backend, throwIfError, forestSeed, doCache);
+            ResultMultiple<Forest> result = await ResultMultipleUI<Forest>.WaitForObjectsAsync(
+                true, forestSeed, new CachedHttpRequest<Forest, ResultMultiple<Forest>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code >= 0)
             {
@@ -207,8 +197,9 @@ namespace Inkton.Nester.ViewModels
             SoftwareFramework.Version versionSeed = new SoftwareFramework.Version();
             versionSeed.OwnedBy = frameworkSeed;
 
-            ResultMultiple<SoftwareFramework.Version> result = await ResultMultipleUI<SoftwareFramework.Version>.WaitForObjectAsync(
-                Backend, throwIfError, versionSeed, doCache);
+            ResultMultiple<SoftwareFramework.Version> result = await ResultMultipleUI<SoftwareFramework.Version>.WaitForObjectsAsync(
+                true, versionSeed, new CachedHttpRequest<SoftwareFramework.Version, ResultMultiple<SoftwareFramework.Version>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code >= 0)
             {
@@ -223,8 +214,10 @@ namespace Inkton.Nester.ViewModels
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
-            ResultMultiple<Deployment> result = await ResultMultipleUI<Deployment>.WaitForObjectAsync(
-                Backend, throwIfError, theDeployment, doCache);
+            ResultMultiple<Deployment> result = await ResultMultipleUI<Deployment>.WaitForObjectsAsync(
+                true, theDeployment, new CachedHttpRequest<Deployment, ResultMultiple<Deployment>>(
+                    Backend.QueryAsyncListAsync), true);
+
             _editApp.Deployment = null;
 
             if (result.Code >= 0)
@@ -246,7 +239,7 @@ namespace Inkton.Nester.ViewModels
             bool doCache = false, bool throwIfError = true)
         {
             ResultSingle<Devkit> result = await ResultSingleUI<Devkit>.WaitForObjectAsync(
-                throwIfError, devkit, new Cloud.CachedHttpRequest<Devkit, ResultSingle<Devkit>>(
+                throwIfError, devkit, new CachedHttpRequest<Devkit, ResultSingle<Devkit>>(
                     Backend.QueryAsync), doCache);
 
             if (result.Code >= 0)
@@ -264,13 +257,13 @@ namespace Inkton.Nester.ViewModels
 
             Dictionary<string, string> data = new Dictionary<string, string>();
 
-            if (_applyCredit != null)
+            if (ApplyCredit != null)
             {
-                data.Add("credit_id", _applyCredit.Id.ToString());
+                data.Add("credit_id", ApplyCredit.Id.ToString());
             }
 
             ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
+                throwIfError, theDeployment, new CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
                     Backend.CreateAsync), doCache, data);
 
             if (result.Code >= 0)
@@ -298,7 +291,7 @@ namespace Inkton.Nester.ViewModels
             data.Add("activity", activity);
 
             ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
+                throwIfError, theDeployment, new CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
                     Backend.UpdateAsync), doCache, data);
 
             if (result.Code >= 0)
@@ -316,7 +309,7 @@ namespace Inkton.Nester.ViewModels
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
             ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
-                throwIfError, theDeployment, new Cloud.CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
+                throwIfError, theDeployment, new CachedHttpRequest<Deployment, ResultSingle<Deployment>>(
                     Backend.RemoveAsync), doCache);
 
             if (result.Code == 0)
@@ -337,8 +330,9 @@ namespace Inkton.Nester.ViewModels
             AppBackup theBackup = appBackup == null ? _editBackup : appBackup;
             theBackup.OwnedBy = _editApp.Deployment;
 
-            ResultMultiple<AppBackup> result = await ResultMultipleUI<AppBackup>.WaitForObjectAsync(
-                Backend, throwIfError, theBackup, doCache);
+            ResultMultiple<AppBackup> result = await ResultMultipleUI<AppBackup>.WaitForObjectsAsync(
+                true, theBackup, new CachedHttpRequest<AppBackup, ResultMultiple<AppBackup>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code >= 0)
             {
@@ -356,7 +350,7 @@ namespace Inkton.Nester.ViewModels
             theBackup.OwnedBy = _editApp.Deployment;
 
             return await ResultSingleUI<AppBackup>.WaitForObjectAsync(
-                throwIfError, appBackup, new Cloud.CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
+                throwIfError, appBackup, new CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
                     Backend.UpdateAsync), doCache);
         }
 
@@ -367,7 +361,7 @@ namespace Inkton.Nester.ViewModels
             theBackup.OwnedBy = _editApp.Deployment;
 
             ResultSingle<AppBackup> result = await ResultSingleUI<AppBackup>.WaitForObjectAsync(
-                throwIfError, theBackup, new Cloud.CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
+                throwIfError, theBackup, new CachedHttpRequest<AppBackup, ResultSingle<AppBackup>>(
                     Backend.CreateAsync), doCache);
 
             if (result.Code >= 0)
@@ -397,8 +391,9 @@ namespace Inkton.Nester.ViewModels
         {
             AppAudit theAudit = appAudit == null ? _editAudit : appAudit;
 
-            ResultMultiple<AppAudit> result = await ResultMultipleUI<AppAudit>.WaitForObjectAsync(
-                Backend, throwIfError, theAudit, doCache, filter);
+            ResultMultiple<AppAudit> result = await ResultMultipleUI<AppAudit>.WaitForObjectsAsync(
+                true, theAudit, new CachedHttpRequest<AppAudit, ResultMultiple<AppAudit>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code >= 0)
             {

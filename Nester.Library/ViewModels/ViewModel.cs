@@ -20,19 +20,18 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-using System;
-using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Xamarin.Forms;
 using Inkton.Nest.Model;
-using Inkton.Nester.Cloud;
+using Inkton.Nest.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
-    public abstract class ViewModel : INotifyPropertyChanged
+    public abstract class ViewModel<UserT> : INotifyPropertyChanged
+        where UserT : User, new()
     {
-        protected BackendService _backend;
+        protected BackendService<UserT> _backend;
         protected App _editApp;
 
         protected bool _validated;
@@ -41,7 +40,7 @@ namespace Inkton.Nester.ViewModels
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected ViewModel(BackendService backend, App app = null)
+        protected ViewModel(BackendService<UserT> backend, App app = null)
         {
             _validated = false;
             _canUpdate = false;
@@ -51,7 +50,7 @@ namespace Inkton.Nester.ViewModels
             _editApp = app;
         }
 
-        public BackendService Backend
+        public BackendService<UserT> Backend
         {
             get
             {
@@ -87,7 +86,7 @@ namespace Inkton.Nester.ViewModels
 
                 if (_editApp != null)
                 {
-                    isOwner = (_editApp.OwnedBy as User).Id == _backend.Permit.Owner.Id;
+                    isOwner = (_editApp.OwnedBy as User).Id == _backend.Permit.User.Id;
                 }
 
                 return isOwner;
@@ -123,7 +122,7 @@ namespace Inkton.Nester.ViewModels
         protected bool SetProperty<T>(ref T storage, T value,
                                         [CallerMemberName] string propertyName = null)
         {
-            if (Object.Equals(storage, value))
+            if (Equals(storage, value))
                 return false;
 
             storage = value;
@@ -133,11 +132,7 @@ namespace Inkton.Nester.ViewModels
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null)
-            {
-                handler(this, new PropertyChangedEventArgs(propertyName));
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

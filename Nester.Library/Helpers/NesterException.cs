@@ -20,38 +20,19 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-namespace Inkton.Nester.ViewModels
+using System;
+
+namespace Inkton.Nester.Helpers
 {
-    public class NavigationMessage
+    public class NesterException : Exception
     {
-        public NavigationMessage(string type)
+        public Severity Severity = Severity.SeverityInfo;
+
+        public NesterException(string message,
+            Severity severity = Severity.SeverityInfo)
+            : base(message)
         {
-            Type = type;
+            Severity = severity;
         }
-
-        public string Type { get; set; } = string.Empty;
     }
-
-    public class AlertMessage : NavigationMessage
-    {
-        public AlertMessage(string type, string message)
-            :base(type)
-        {
-            Message = message;
-        }
-
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class ManagedObjectMessage<T> : NavigationMessage
-    {
-        public ManagedObjectMessage(string type, T Object)
-            : base(type)
-        {
-            this.Object = Object;
-        }
-
-        public T Object { get; set; } = default(T);
-    }
-
 }

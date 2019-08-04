@@ -26,23 +26,27 @@ using Xamarin.Forms;
 
 namespace Inkton.Nester.Helpers
 {
-    public enum LogSeverity
+    public interface ILogService
     {
-        LogSeverityInfo = 0,
-        LogSeverityWarning = 1,
-        LogSeverityCritical = 2
-    };
+        string Path { get; set; }
+        long MaxSize { get; set; }
+        long MaxFiles { get; set; }
+        Severity Severity { get; set; }
+        void Trace(
+            string info,
+            string location = "",
+            Severity severity = Severity.SeverityInfo);
+    }
 
     public class LogService
     {
-        private long _maxSize = 1024 * 256;
-        private long _maxFiles = 3;
-        private LogSeverity _severity = LogSeverity.LogSeverityInfo;
         private string _path;
 
-        public LogService(string path)
+        public LogService()
         {
-            Path = path;
+            Path = System.IO.Path.Combine(
+             System.IO.Path.GetTempPath(),
+                Application.Current.ClassId + "-log");
         }
 
         public string Path
@@ -61,30 +65,18 @@ namespace Inkton.Nester.Helpers
             }
         }
 
-        public long MaxSize
-        {
-            get { return _maxSize; }
-            set { _maxSize = value; }
-        }
+        public long MaxSize { get; set; } = 1024 * 256;
 
-        public long MaxFiles
-        {
-            get { return _maxFiles; }
-            set { _maxFiles = value; }
-        }
+        public long MaxFiles { get; set; } = 3;
 
-        public LogSeverity Severity
-        {
-            get { return _severity; }
-            set { _severity = value; }
-        }
+        public Severity Severity { get; set; } = Severity.SeverityInfo;
 
         public void Trace(
             string info,
             string location = "",
-            LogSeverity severity = LogSeverity.LogSeverityInfo)
+            Severity severity = Severity.SeverityInfo)
         {
-            if (severity <= _severity)
+            if (severity <= Severity)
             {
                 return;
             }
@@ -98,7 +90,7 @@ namespace Inkton.Nester.Helpers
                 {
                     FileInfo fi = new FileInfo(path);
 
-                    if (fi.Length >= _maxSize)
+                    if (fi.Length >= MaxSize)
                     {
                         string newPath = this.Path + string.Format(@"\{0}",
                                 System.DateTime.UtcNow.ToString("yyyy-MM-ddTHHZ"));
@@ -108,7 +100,7 @@ namespace Inkton.Nester.Helpers
                         string[] files = Directory.GetFiles(
                             this.Path, "*.*", SearchOption.TopDirectoryOnly);
 
-                        if (files.Length > _maxFiles)
+                        if (files.Length > MaxFiles)
                         {
                             string oldestFile = null;
                             DateTime earliestTime = DateTime.Now;

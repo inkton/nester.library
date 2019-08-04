@@ -19,116 +19,43 @@
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using System;
-using System.Net;
+
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.ObjectModel;
-using System.Resources;
-using System.Reflection;
-using System.Linq;
-using Xamarin.Forms;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Inkton.Nest.Cloud;
-using Inkton.Nest.Model;
+using Inkton.Nester.Helpers;
 
 namespace Inkton.Nester.Cloud
 {
-    public struct ResultHandler<T>
+    public class ResultSingleUI<PayloadT> : ResultSingle<PayloadT>
+        where PayloadT : ICloudObject, new()
     {
-        private Result<T> _result;
-
-        public ResultHandler(Result<T> result)
+        public static ResultSingle<PayloadT> WaitForObject(bool throwIfError,
+            PayloadT seed, CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request,
+            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
         {
-            _result = result;
-        }
-
-        public string GetMessage()
-        {
-            string message = string.Empty;
-
-            if (!string.IsNullOrEmpty(_result.Text))
-            {
-                try
-                {
-                    ResourceManager resmgr = (Application.Current as INesterClient).GetResourceManager();
-                    message = resmgr.GetString(_result.Text,
-                        System.Globalization.CultureInfo.CurrentUICulture);
-                }
-                catch (Exception e) 
-                {
-                    System.Console.Write(e.Message);
-                }
-
-                if (message == string.Empty)
-                {
-                    if (_result.Code >= 0)
-                    {
-                        message = "Sucess!";
-                    }
-                    else
-                    {
-                        message = "Oops! somthing went wrong!";
-                    }
-
-                    if (!string.IsNullOrEmpty(_result.Notes))
-                    {
-                        message += "\n" + _result.Notes;
-                    }
-                }
-                else
-                {
-                    if (_result.Text == "NEST_RESULT_HTTP_ERROR")
-                    {
-                        message += " - " + _result.HttpStatus.ToString();
-                    }
-                }
-            }
-
-            if (!string.IsNullOrEmpty(_result.Notes))
-            {
-                message += "\n" + _result.Notes;
-            }
-
-            return message;
-        }
-
-        public void Throw()
-        {
-            throw new Exception(GetMessage());
-        }
-    }
-
-    public class ResultSingleUI<PayloadT> : ResultSingle<PayloadT> where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
-    {
-        public static ResultSingle<PayloadT> WaitForObject(bool throwIfError, PayloadT seed,
-            CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request, bool doCache = true, IDictionary<string, string> data = null,
-            string subPath = null)
-        {
-            ResultSingle<PayloadT> result = Result<PayloadT>.WaitAsync(
+            ResultSingle<PayloadT> result = WaitAsync(
                 Task<ResultSingleUI<PayloadT>>.Run(async () => await request(seed, data, subPath, doCache))
                 ).Result;
 
             if (result.Code < 0 && throwIfError)
             {
-                new ResultHandler<PayloadT>(result).Throw();
+                MessageHandler.ThrowMessage(result);
             }
 
             return result;
         }
 
-        public static async Task<ResultSingle<PayloadT>> WaitForObjectAsync(bool throwIfError, PayloadT seed,
-            CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request, bool doCache = true, IDictionary<string, string> data = null,
-            string subPath = null)
+        public static async Task<ResultSingle<PayloadT>> WaitForObjectAsync(bool throwIfError,
+            PayloadT seed, CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request,
+            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
         {
             ResultSingle<PayloadT> result = await
                 request(seed, data, subPath, doCache);
 
             if (result.Code < 0 && throwIfError)
             {
-                new ResultHandler<PayloadT>(result).Throw();
+                MessageHandler.ThrowMessage(result);
             }
 
             return result;
@@ -136,36 +63,35 @@ namespace Inkton.Nester.Cloud
 
     }
 
-    public class ResultMultipleUI<PayloadT> : ResultMultiple<PayloadT> where PayloadT : Inkton.Nest.Cloud.ICloudObject, new()
+    public class ResultMultipleUI<PayloadT> : ResultMultiple<PayloadT>
+        where PayloadT : ICloudObject, new()
     {
-        public static ResultMultiple<PayloadT> WaitForObject(
-            BackendService backend, bool throwIfError, PayloadT seed,
-            bool doCache = true, IDictionary<string, string> data = null,
-            string subPath = null)
+        public static ResultMultiple<PayloadT> WaitForObjects(bool throwIfError,
+            PayloadT seed, CachedHttpRequest<PayloadT, ResultMultiple<PayloadT>> request,
+            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
         {
-            ResultMultiple<PayloadT> result = Result<PayloadT>.WaitAsync(
-                Task<ResultMultiple<PayloadT>>.Run(async () => await backend.QueryAsyncListAsync(seed, data, subPath, doCache))
+            ResultMultiple<PayloadT> result = WaitAsync(
+                Task<ResultMultiple<PayloadT>>.Run(async () => await request(seed, data, subPath, doCache))
                 ).Result;
 
             if (result.Code < 0 && throwIfError)
             {
-                new ResultHandler<ObservableCollection<PayloadT>>(result).Throw();
+                MessageHandler.ThrowMessage(result);
             }
-            
+
             return result;
         }
 
-        public static async Task<ResultMultiple<PayloadT>> WaitForObjectAsync(
-            BackendService backend, bool throwIfError, PayloadT seed,
-            bool doCache = true, IDictionary<string, string> data = null,
-            string subPath = null)
+        public static async Task<ResultMultiple<PayloadT>> WaitForObjectsAsync(bool throwIfError,
+            PayloadT seed, CachedHttpRequest<PayloadT, ResultMultiple<PayloadT>> request,
+            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
         {
             ResultMultiple<PayloadT> result = await
-                backend.QueryAsyncListAsync(seed, data, subPath, doCache);
+                request(seed, data, subPath, doCache);
 
             if (result.Code < 0 && throwIfError)
             {
-                new ResultHandler<ObservableCollection<PayloadT>>(result).Throw();
+                MessageHandler.ThrowMessage(result);
             }
 
             return result;

@@ -21,12 +21,6 @@
 */
 
 using System.Resources;
-using System.Threading.Tasks;
-using Inkton.Nester.ViewModels;
-using Inkton.Nest.Model;
-using Inkton.Nester.Cloud;
-using Inkton.Nester.Storage;
-using Inkton.Nester.Helpers;
 
 namespace Inkton.Nester
 {

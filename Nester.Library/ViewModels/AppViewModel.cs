@@ -21,25 +21,24 @@
 */
 
 using System;
-using System.IO;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Xamarin.Forms;
 using Inkton.Nest.Cloud;
 using Inkton.Nest.Model;
 using Inkton.Nester.Cloud;
-using Inkton.Nester.Storage;
 
 namespace Inkton.Nester.ViewModels
 {
-    public class AppViewModel : ViewModel
+    public class AppViewModel<UserT> : ViewModel<UserT>
+        where UserT : User, new()
     {
-        private ContactViewModel _contactViewModel;
-        private NestViewModel _nestViewModel;
-        private DomainViewModel _domainViewModel;
-        private DeploymentViewModel _deploymentViewModel;
-        private ServicesViewModel _servicesViewModel;
-        private LogViewModel _logViewModel;
+        private ContactViewModel<UserT> _contactViewModel;
+        private NestViewModel<UserT> _nestViewModel;
+        private DomainViewModel<UserT> _domainViewModel;
+        private DeploymentViewModel<UserT> _deploymentViewModel;
+        private ServicesViewModel<UserT> _servicesViewModel;
+        private LogViewModel<UserT> _logViewModel;
 
         private ObservableCollection<Notification> _notifications;
 
@@ -51,18 +50,16 @@ namespace Inkton.Nester.ViewModels
             public string Tag { get; set; }
         }
 
-        private ObservableCollection<AppType> _applicationTypes;
-
-        public AppViewModel(BackendService backend)
+        public AppViewModel(BackendService<UserT> backend)
             :base(backend)
         {
             // when editing this will 
             // select uniflow default
             _editApp = new App();
             _editApp.Type = "uniflow";
-            _editApp.OwnedBy = _backend.Permit.Owner;
+            _editApp.OwnedBy = _backend.Permit.User;
 
-            _applicationTypes = new ObservableCollection<AppType> {
+            ApplicationTypes = new ObservableCollection<AppType> {
                 new AppType {
                     Name ="Uniflow",
                     Description ="A Web Server",
@@ -77,20 +74,17 @@ namespace Inkton.Nester.ViewModels
                 }
             };
 
-            _contactViewModel = new ContactViewModel(_backend, _editApp);
-            _nestViewModel = new NestViewModel(_backend, _editApp);
-            _domainViewModel = new DomainViewModel(_backend, _editApp);
-            _deploymentViewModel = new DeploymentViewModel(_backend, _editApp);
-            _servicesViewModel = new ServicesViewModel(_backend, _editApp);
+            _contactViewModel = new ContactViewModel<UserT>(_backend, _editApp);
+            _nestViewModel = new NestViewModel<UserT>(_backend, _editApp);
+            _domainViewModel = new DomainViewModel<UserT>(_backend, _editApp);
+            _deploymentViewModel = new DeploymentViewModel<UserT>(_backend, _editApp);
+            _servicesViewModel = new ServicesViewModel<UserT>(_backend, _editApp);
 
-            StorageService cache = new StorageService(Path.Combine(
-                    Path.GetTempPath(), "NesterAppCache_" + _editApp.Tag));
-            cache.Clear();
+            BackendService<UserT> appBackend = new BackendService<UserT>();
+            appBackend.Version = backend.Version;
+            appBackend.DeviceSignature = backend.DeviceSignature;
 
-            BackendService appBackend = new BackendService(
-                backend.Version, backend.DeviceSignature, cache);
-
-            _logViewModel = new LogViewModel(appBackend, _editApp);
+            _logViewModel = new LogViewModel<UserT>(appBackend, _editApp);
         }
 
         override public App EditApp
@@ -142,7 +136,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ContactViewModel ContactViewModel
+        public ContactViewModel<UserT> ContactViewModel
         {
             get
             {
@@ -154,7 +148,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public NestViewModel NestViewModel
+        public NestViewModel<UserT> NestViewModel
         {
             get
             {
@@ -166,7 +160,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public DomainViewModel DomainViewModel
+        public DomainViewModel<UserT> DomainViewModel
         {
             get
             {
@@ -178,7 +172,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public DeploymentViewModel DeploymentViewModel
+        public DeploymentViewModel<UserT> DeploymentViewModel
         {
             get
             {
@@ -190,7 +184,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ServicesViewModel ServicesViewModel
+        public ServicesViewModel<UserT> ServicesViewModel
         {
             get
             {
@@ -202,7 +196,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public LogViewModel LogViewModel
+        public LogViewModel<UserT> LogViewModel
         {
             get
             {
@@ -214,13 +208,7 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ObservableCollection<AppType> ApplicationTypes
-        {
-            get
-            {
-                return _applicationTypes;
-            }
-        }
+        public ObservableCollection<AppType> ApplicationTypes { get; }
 
         public ObservableCollection<Notification> Notifications
         {
@@ -280,8 +268,9 @@ namespace Inkton.Nester.ViewModels
             Notification notificationSeed = new Notification();
             notificationSeed.OwnedBy = theApp;
 
-            ResultMultiple<Notification> result = await ResultMultipleUI<Notification>.WaitForObjectAsync(
-                Backend, throwIfError, notificationSeed, doCache);
+            ResultMultiple<Notification> result = await ResultMultipleUI<Notification>.WaitForObjectsAsync(
+                true, notificationSeed, new CachedHttpRequest<Notification, ResultMultiple<Notification>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code == 0)
             {
@@ -297,16 +286,16 @@ namespace Inkton.Nester.ViewModels
             App theApp = app == null ? _editApp : app;
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
+                throwIfError, theApp, new CachedHttpRequest<App, ResultSingle<App>>(
                     Backend.QueryAsync), doCache);
 
             if (result.Code == 0)   
             {
                 EditApp = result.Data.Payload;
 
-                if (_editApp.UserId == Backend.Permit.Owner.Id)
+                if (_editApp.UserId == Backend.Permit.User.Id)
                 {
-                    _editApp.OwnedBy = Backend.Permit.Owner;
+                    _editApp.OwnedBy = Backend.Permit.User;
                 }
 
                 if (app != null)
@@ -322,7 +311,7 @@ namespace Inkton.Nester.ViewModels
             App theApp = app == null ? _editApp : app;
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
+                throwIfError, theApp, new CachedHttpRequest<App, ResultSingle<App>>(
                     Backend.RemoveAsync), doCache);
 
             if (result.Code == 0)
@@ -339,7 +328,7 @@ namespace Inkton.Nester.ViewModels
             App theApp = app == null ? _editApp : app;
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
+                throwIfError, theApp, new CachedHttpRequest<App, ResultSingle<App>>(
                     Backend.UpdateAsync), doCache);
 
             if (result.Code == 0)
@@ -357,13 +346,13 @@ namespace Inkton.Nester.ViewModels
             theApp.ServiceTierId = tier.Id;
 
             ResultSingle<App> result = await ResultSingleUI<App>.WaitForObjectAsync(
-                throwIfError, theApp, new Cloud.CachedHttpRequest<App, ResultSingle<App>>(
+                throwIfError, theApp, new CachedHttpRequest<App, ResultSingle<App>>(
                     Backend.CreateAsync), doCache);
 
             if (result.Code == 0)
             {
                 EditApp = result.Data.Payload;
-                _editApp.OwnedBy = Backend.Permit.Owner;
+                _editApp.OwnedBy = Backend.Permit.User;
 
                 if (throwIfError && _editApp.Status != "assigned")
                 {
@@ -384,8 +373,9 @@ namespace Inkton.Nester.ViewModels
             Forest forestSeeder = new Forest();
             forestSeeder.OwnedBy = teir;
 
-            return await ResultMultipleUI<Forest>.WaitForObjectAsync(
-                Backend, throwIfError, forestSeeder, doCache);
+            return await ResultMultipleUI<Forest>.WaitForObjectsAsync(
+                throwIfError, forestSeeder, new CachedHttpRequest<Forest, ResultMultiple<Forest>>(
+                    Backend.QueryAsyncListAsync), doCache);
         }
     }
 }

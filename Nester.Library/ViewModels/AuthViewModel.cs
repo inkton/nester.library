@@ -23,19 +23,29 @@
 using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Inkton.Nest.Model;
 using Inkton.Nest.Cloud;
 using Inkton.Nester.Cloud;
+using Inkton.Nester.Helpers;
 
 namespace Inkton.Nester.ViewModels
 {
-    public class AuthViewModel : ViewModel
+    public class AuthViewModel<UserT> : ViewModel<UserT>
+        where UserT : User, new()
     {
-        private ObservableCollection<Role> _roles;
         private ObservableCollection<UserEvent> _userEvents;
         private bool _canRecoverPassword;
 
-        public AuthViewModel(BackendService backend)
+        public enum PermitAction
+        {
+            RequestEmailConfirmation,
+            ConfirmEmail,
+            Login,
+            ChangePassword
+        }
+
+        public AuthViewModel(BackendService<UserT> backend)
             :base(backend)
         {
             _userEvents = new ObservableCollection<UserEvent>();
@@ -50,13 +60,7 @@ namespace Inkton.Nester.ViewModels
 
         public bool IsAuthenticated
         {
-            get { return Backend.Permit.Token.Length > 0; }
-        }
-
-        public ObservableCollection<Role> Roles
-        {
-            get { return _roles; }
-            set { SetProperty(ref _roles, value); }
+            get { return Backend.Permit.AccessToken.Length > 0; }
         }
 
         public ObservableCollection<UserEvent> UserEvents
@@ -65,102 +69,167 @@ namespace Inkton.Nester.ViewModels
             set { SetProperty(ref _userEvents, value); }
         }
 
-        public void UpdatePermit(ResultSingle<Permit> result, 
-            bool throwIfError)
+        public async Task<ResultSingle<Permit<UserT>>> SignupAsync(
+            string password, bool throwIfError = true)
         {
-            if (result.Code == 0)
+            Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
+
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data["password"] = password;
+
+            ResultSingle<Permit<UserT>> result =
+                await Backend.SignupAsync(data);
+
+            if (result.Code < 0 && throwIfError)
             {
-                result.Data.Payload.Owner.CopyTo(Backend.Permit.Owner);
-                Backend.Permit.Token = result.Data.Payload.Token;
-            }
-            else if (throwIfError)
-            {
-                new ResultHandler<Permit>(result).Throw();
-            }
-        }
-
-        public async Task<ResultSingle<Permit>> SignupAsync(
-            bool throwIfError = true)
-        {
-            Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.Owner.Email));
-
-            ResultSingle<Permit> result =
-                await Backend.SignupAsync();
-
-            UpdatePermit(result, throwIfError);
-
-            return result;
-        }
-
-        public async Task<ResultSingle<Permit>> RecoverPasswordAsync(
-            bool throwIfError = true)
-        {
-            ResultSingle<Permit> result = await
-                Backend.RecoverPasswordAsync();
-
-            if (result.Code < 0)
-            {
-                if (throwIfError)
-                    new ResultHandler<Permit>(result).Throw();
+                MessageHandler.ThrowMessage(result);
             }
 
             return result;
         }
 
-        public async Task<ResultSingle<Permit>> QueryTokenAsync(
+        public async Task<ResultSingle<Permit<UserT>>> RequestEmailConfirmationAsync(
             bool throwIfError = true)
         {
-            ResultSingle<Permit> result =
-                await Backend.QueryTokenAsync();
+            Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
 
-             UpdatePermit(result, throwIfError);
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data["action"] = PermitAction.RequestEmailConfirmation.ToString();
+
+            ResultSingle<Permit<UserT>> result =
+                await Backend.SetupPermitAsync(data);
+
+            if (result.Code < 0 && throwIfError)
+            {
+                MessageHandler.ThrowMessage(result);
+            }
 
             return result;
         }
 
-        public async Task<ResultSingle<Permit>> ResetTokenAsync(
+        public async Task<ResultSingle<Permit<UserT>>> ConfirmEmailAsync(
+            string securityCode, string password, bool throwIfError = true)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
+
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data["action"] = PermitAction.ConfirmEmail.ToString();
+            data["securityCode"] = securityCode;
+            data["password"] = password;
+
+            ResultSingle<Permit<UserT>> result =
+                await Backend.SetupPermitAsync(data);
+
+            if (result.Code < 0 && throwIfError)
+            {
+                MessageHandler.ThrowMessage(result);
+            }
+
+            return result;
+        }
+
+        public async Task<ResultSingle<Permit<UserT>>> LoginAsync(
+            string password, bool throwIfError = true)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
+
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data["action"] = PermitAction.Login.ToString();
+            data["password"] = password;
+
+            ResultSingle<Permit<UserT>> result =
+                await Backend.SetupPermitAsync(data);
+
+            if (result.Code < 0 && throwIfError)
+            {
+                MessageHandler.ThrowMessage(result);
+            }
+
+            return result;
+        }
+
+        public async Task<ResultSingle<Permit<UserT>>> ChangePasswordAsync(
+            string securityCode, string password, bool throwIfError = true)
+        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
+
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            data["action"] = PermitAction.ChangePassword.ToString();
+            data["securityCode"] = securityCode;
+            data["password"] = password;
+
+            ResultSingle<Permit<UserT>> result =
+                await Backend.SetupPermitAsync(data);
+
+            if (result.Code < 0 && throwIfError)
+            {
+                MessageHandler.ThrowMessage(result);
+            }
+
+            return result;
+        }
+
+        public async Task<ResultSingle<Permit<UserT>>> RenewTokenAsync(
             bool throwIfError = true)
         {
-            ResultSingle<Permit> result = await
-                Backend.ResetTokenAsync();
+            ResultSingle<Permit<UserT>> result =
+                await Backend.RenewAccessAsync();
 
-            UpdatePermit(result, throwIfError);
-
-            return result;
-        }
-
-        public async Task<ResultSingle<User>> UpdateUserAsync(User user = null,
-            bool doCache = false, bool throwIfError = true)
-        {
-            User theUser = user == null ? Backend.Permit.Owner : user;
-
-            ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
-                throwIfError, user, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
-                    Backend.UpdateAsync), doCache);
+            if (result.Code < 0 && throwIfError)
+            {
+                MessageHandler.ThrowMessage(result);
+            }
 
             return result;
         }
 
-        public async Task<ResultSingle<User>> DeleteUserAsync(User user = null,
-            bool doCache = false, bool throwIfError = true)
+        public async Task<ResultSingle<Permit<UserT>>> RevokeTokenAsync(
+            bool throwIfError = true)
         {
-            User theUser = user == null ? Backend.Permit.Owner : user;
+            ResultSingle<Permit<UserT>> result = await
+                Backend.RenewAccessAsync();
 
-            ResultSingle<User> result = await ResultSingleUI<User>.WaitForObjectAsync(
-                throwIfError, theUser, new Cloud.CachedHttpRequest<User, ResultSingle<User>>(
+            if (result.Code < 0 && throwIfError)
+            {
+                MessageHandler.ThrowMessage(result);
+            }
+
+            return result;
+        }       
+
+        public async Task<ResultSingle<UserT>> UpdateUserAsync(UserT user = null,
+            bool doCache = false, bool throwIfError = true, Dictionary<string, string> data = null)
+        {
+            UserT theUser = user == null ? Backend.Permit.User : user;
+
+            ResultSingle<UserT> result = await ResultSingleUI<UserT>.WaitForObjectAsync(
+                throwIfError, user, new CachedHttpRequest<UserT, ResultSingle<UserT>>(
+                    Backend.UpdateAsync), doCache, data);
+
+            return result;
+        }
+
+        public async Task<ResultSingle<UserT>> DeleteUserAsync(UserT user = null,
+            bool doCache = false, bool throwIfError = true, Dictionary<string, string> data = null)
+        {
+            UserT theUser = user == null ? Backend.Permit.User : user;
+
+            ResultSingle<UserT> result = await ResultSingleUI<UserT>.WaitForObjectAsync(
+                throwIfError, theUser, new CachedHttpRequest<UserT, ResultSingle<UserT>>(
                     Backend.RemoveAsync), doCache);
 
             return result;
         }
 
-        public async Task<ResultMultiple<UserEvent>> QueryUserEventsAsync(User user,
-            bool doCache = false, bool throwIfError = true)
+        public async Task<ResultMultiple<UserEvent>> QueryUserEventsAsync(UserT user,
+            bool doCache = false, bool throwIfError = true, Dictionary<string, string> data = null)
         {
             UserEvent userEventSeed = new UserEvent();
-            userEventSeed.OwnedBy = user == null ? Backend.Permit.Owner : user;
+            userEventSeed.OwnedBy = user == null ? Backend.Permit.User : user;
 
-            ResultMultiple<UserEvent> result = await ResultMultipleUI<UserEvent>.WaitForObjectAsync(
-                Backend, throwIfError, userEventSeed, doCache);
+            ResultMultiple<UserEvent> result = await ResultMultipleUI<UserEvent>.WaitForObjectsAsync(
+                true, userEventSeed, new CachedHttpRequest<UserEvent, ResultMultiple<UserEvent>>(
+                    Backend.QueryAsyncListAsync), true);
 
             if (result.Code >= 0)
             {
@@ -168,58 +237,6 @@ namespace Inkton.Nester.ViewModels
             }
 
             return result;
-        }
-
-        public async Task<ResultMultiple<Role>> QueryRolesAsync(
-            bool doCache = false, bool throwIfError = true)
-        {
-            Role roleSeed = new Role();
-
-            ResultMultiple<Role> result = await ResultMultipleUI<Role>.WaitForObjectAsync(
-                Backend, throwIfError, roleSeed, doCache);
-
-            if (result.Code >= 0)
-            {
-                Roles = result.Data.Payload;
-            }
-
-            return result;
-        }
-
-        public async Task<ResultMultiple<Role>> QueryUserRolesAsync(User user,
-            bool doCache = false, bool throwIfError = true)
-        {
-            Role userRoleSeed = new Role();
-            userRoleSeed.OwnedBy = user == null ? Backend.Permit.Owner : user;
-
-            ResultMultiple<Role> result = await ResultMultipleUI<Role>.WaitForObjectAsync(
-                Backend, throwIfError, userRoleSeed, doCache);
-
-            return result;
-        }
-
-        public async Task<ResultSingle<Role>> AddUserRoleAsync(User user,
-            Role role, bool doCache = false, bool throwIfError = true)
-        {
-            role.OwnedBy = user;
-
-            ResultSingle<Role> result = await ResultSingleUI<Role>.WaitForObjectAsync(
-                throwIfError, role, new Cloud.CachedHttpRequest<Role, ResultSingle<Role>>(
-                    Backend.CreateAsync), doCache);
-
-            return result;
-        }
-
-        public async Task<ResultSingle<Role>> RemoveUserRoleAsync(User user,
-            Role role, bool doCache = false, bool throwIfError = true)
-        {
-            role.OwnedBy = user;
-
-            ResultSingle<Role> result = await ResultSingleUI<Role>.WaitForObjectAsync(
-                throwIfError, role, new Cloud.CachedHttpRequest<Role, ResultSingle<Role>>(
-                    Backend.RemoveAsync), doCache);
-
-            return result;
-        }
+        } 
     }
 }

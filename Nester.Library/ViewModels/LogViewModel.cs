@@ -31,14 +31,9 @@ using Inkton.Nester.Cloud;
 
 namespace Inkton.Nester.ViewModels
 {
-    public class LogViewModel : ViewModel
+    public class LogViewModel<UserT> : ViewModel<UserT>
+        where UserT : User, new()
     {
-        private ObservableCollection<NestLog> _nestLogs;
-        private ObservableCollection<SystemIOLog> _systemIOLogs;
-        private ObservableCollection<SystemRAMLog> _systemRamLogs;
-        private ObservableCollection<SystemCPULog> _systemCpuLogs;
-        private ObservableCollection<SystemIPLog> _ipLogs;
-
         [Flags]
         public enum QueryIndex : byte
         {
@@ -53,11 +48,6 @@ namespace Inkton.Nester.ViewModels
 
         private QueryIndex _queryIndexs = QueryIndex.QueryIndexAll;
         private NestLog _editNestLog;
-
-        private MultiSeriesData _ioSeries;
-        private MultiSeriesData _ramSeries;
-        private MultiSeriesData _cpuSeries;
-        private MultiSeriesData _ipSeries;
 
         #region Data Classes
 
@@ -103,48 +93,40 @@ namespace Inkton.Nester.ViewModels
                 }
             }
 
-            private Dictionary<string, DataSeriesPoints> _namedSeries;
-
             public MultiSeriesData()
             {
-                _namedSeries = new Dictionary<string, DataSeriesPoints>();
+                Series = new Dictionary<string, DataSeriesPoints>();
             }
 
-            public Dictionary<string, DataSeriesPoints> Series
-            {
-                get
-                {
-                    return _namedSeries;
-                }
-            }
+            public Dictionary<string, DataSeriesPoints> Series { get; }
 
             public void Init(string name)
             {
-                _namedSeries[name] = new MultiSeriesData.DataSeriesPoints();
+                Series[name] = new MultiSeriesData.DataSeriesPoints();
             }
 
             public void AddLog(Log log)
             {
                 foreach (string key in log.Fields.Keys)
                 {
-                    if (_namedSeries.Keys.Contains(key))
+                    if (Series.Keys.Contains(key))
                     {
-                        if (_namedSeries[key].Values == null)
+                        if (Series[key].Values == null)
                         {
-                            _namedSeries[key].Values = new ObservableCollection<DataSeriesPoints.Point>();
+                            Series[key].Values = new ObservableCollection<DataSeriesPoints.Point>();
                         }
 
                         DataSeriesPoints.Point point = new DataSeriesPoints.Point();
                         point.Time = log.Time;
                         point.Value = Convert.ToDouble(log.Fields[key]);
-                        _namedSeries[key].Values.Add(point);
+                        Series[key].Values.Add(point);
                     }
                 }
             }
 
             public void Clear()
             {
-                foreach (DataSeriesPoints points in _namedSeries.Values)
+                foreach (DataSeriesPoints points in Series.Values)
                 {
                     points.Clear();
                 }
@@ -153,28 +135,28 @@ namespace Inkton.Nester.ViewModels
 
         #endregion
 
-        public LogViewModel(BackendService backend, App app) : base(backend, app)
+        public LogViewModel(BackendService<UserT> backend, App app) : base(backend, app)
         {
-            _cpuSeries = new MultiSeriesData();
-            _cpuSeries.Init("User");
-            _cpuSeries.Init("System");
-            _cpuSeries.Init("IRQ");
-            _cpuSeries.Init("Nice");
-            _cpuSeries.Init("IOWait");
+            CpuSeries = new MultiSeriesData();
+            CpuSeries.Init("User");
+            CpuSeries.Init("System");
+            CpuSeries.Init("IRQ");
+            CpuSeries.Init("Nice");
+            CpuSeries.Init("IOWait");
 
-            _ioSeries = new MultiSeriesData();
-            _ioSeries.Init("In");
-            _ioSeries.Init("Out");
+            ioSeries = new MultiSeriesData();
+            ioSeries.Init("In");
+            ioSeries.Init("Out");
 
-            _ipSeries = new MultiSeriesData();
-            _ipSeries.Init("Sent");
-            _ipSeries.Init("Received");
+            IpSeries = new MultiSeriesData();
+            IpSeries.Init("Sent");
+            IpSeries.Init("Received");
 
-            _ramSeries = new MultiSeriesData();
-            _ramSeries.Init("Free");
-            _ramSeries.Init("Used");
-            _ramSeries.Init("Cached");
-            _ramSeries.Init("Buffers");
+            RamSeries = new MultiSeriesData();
+            RamSeries.Init("Free");
+            RamSeries.Init("Used");
+            RamSeries.Init("Cached");
+            RamSeries.Init("Buffers");
         }
 
         override public App EditApp
@@ -213,29 +195,17 @@ namespace Inkton.Nester.ViewModels
             }
         }
 
-        public ObservableCollection<NestLog> NestLogs
-        {
-            get
-            {
-                return _nestLogs;
-            }
-        }
+        public ObservableCollection<NestLog> NestLogs { get; private set; }
 
-        public MultiSeriesData CpuSeries
-        {
-            get
-            {
-                return _cpuSeries;
-            }
-        }
+        public MultiSeriesData CpuSeries { get; }
 
         public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> CpuSeriesUser
         {
             get
             {
-                if (_cpuSeries == null)
+                if (CpuSeries == null)
                     return null;
-                return _cpuSeries.Series["User"].Values;
+                return CpuSeries.Series["User"].Values;
             }
         }
 
@@ -243,9 +213,9 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_cpuSeries == null)
+                if (CpuSeries == null)
                     return null;
-                return _cpuSeries.Series["System"].Values;
+                return CpuSeries.Series["System"].Values;
             }
         }
 
@@ -253,9 +223,9 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_cpuSeries == null)
+                if (CpuSeries == null)
                     return null;
-                return _cpuSeries.Series["IRQ"].Values;
+                return CpuSeries.Series["IRQ"].Values;
             }
         }
 
@@ -263,9 +233,9 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_cpuSeries == null)
+                if (CpuSeries == null)
                     return null;
-                return _cpuSeries.Series["Nice"].Values;
+                return CpuSeries.Series["Nice"].Values;
             }
         }
 
@@ -273,35 +243,23 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_cpuSeries == null)
+                if (CpuSeries == null)
                     return null;
-                return _cpuSeries.Series["IOWait"].Values;
+                return CpuSeries.Series["IOWait"].Values;
             }
         }
 
-        public ObservableCollection<SystemCPULog> SystemCPULogs
-        {
-            get
-            { 
-                return _systemCpuLogs;
-            }
-        }
+        public ObservableCollection<SystemCPULog> SystemCPULogs { get; private set; }
 
-        public MultiSeriesData ioSeries
-        {
-            get
-            {
-                return _ioSeries;
-            }
-        }
+        public MultiSeriesData ioSeries { get; }
 
         public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> IoSeriesIn
         {
             get
             {
-                if (_ipSeries == null)
+                if (IpSeries == null)
                     return null;
-                return _ioSeries.Series["In"].Values;
+                return ioSeries.Series["In"].Values;
             }
         }
 
@@ -309,35 +267,23 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_ioSeries == null)
+                if (ioSeries == null)
                     return null;
-                return _ioSeries.Series["Out"].Values;
+                return ioSeries.Series["Out"].Values;
             }
         }
 
-        public ObservableCollection<SystemIOLog> SystemIOLogs
-        {
-            get
-            {
-                return _systemIOLogs;
-            }
-        }
+        public ObservableCollection<SystemIOLog> SystemIOLogs { get; private set; }
 
-        public MultiSeriesData IpSeries
-        {
-            get
-            {
-                return _ipSeries;
-            }
-        }
-        
+        public MultiSeriesData IpSeries { get; }
+
         public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> IpSeriesSent
         {
             get
             {
-                if (_ipSeries == null)
+                if (IpSeries == null)
                     return null;
-                return _ipSeries.Series["Sent"].Values;
+                return IpSeries.Series["Sent"].Values;
             }
         }
 
@@ -345,35 +291,23 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_ipSeries == null)
+                if (IpSeries == null)
                     return null;
-                return _ipSeries.Series["Received"].Values;
+                return IpSeries.Series["Received"].Values;
             }
         }
 
-        public ObservableCollection<SystemIPLog> SystemIPLogs
-        {
-            get
-            {
-                return _ipLogs;
-            }
-        }
+        public ObservableCollection<SystemIPLog> SystemIPLogs { get; private set; }
 
-        public MultiSeriesData RamSeries
-        {
-            get
-            {
-                return _ramSeries;
-            }
-        }
+        public MultiSeriesData RamSeries { get; }
 
         public ObservableCollection<MultiSeriesData.DataSeriesPoints.Point> RamSeriesFree
         {
             get
             {
-                if (_ramSeries == null)
+                if (RamSeries == null)
                     return null;
-                return _ramSeries.Series["Free"].Values;
+                return RamSeries.Series["Free"].Values;
             }
         }
 
@@ -381,9 +315,9 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_ramSeries == null)
+                if (RamSeries == null)
                     return null;
-                return _ramSeries.Series["Used"].Values;
+                return RamSeries.Series["Used"].Values;
             }
         }
 
@@ -391,9 +325,9 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_ramSeries == null)
+                if (RamSeries == null)
                     return null;
-                return _ramSeries.Series["Cached"].Values;
+                return RamSeries.Series["Cached"].Values;
             }
         }
 
@@ -401,26 +335,20 @@ namespace Inkton.Nester.ViewModels
         {
             get
             {
-                if (_ramSeries == null)
+                if (RamSeries == null)
                     return null;
-                return _ramSeries.Series["Buffers"].Values;
+                return RamSeries.Series["Buffers"].Values;
             }
         }
 
-        public ObservableCollection<SystemRAMLog> SystemRAMLogs
-        {
-            get
-            {
-                return _systemRamLogs;
-            }
-        }
+        public ObservableCollection<SystemRAMLog> SystemRAMLogs { get; private set; }
 
         public void ResetBackend()
         {
             // Set the backend address for querying logs and metrics
             Backend.Endpoint = string.Format(
                     "https://{0}/", EditApp.Hostname);
-            Backend.BasicAuth = new Inkton.Nester.Cloud.BasicAuth(true,
+            Backend.BasicAuth = new Inkton.Nest.Cloud.BasicAuth(true,
                     EditApp.Tag, EditApp.NetworkPassword);
         }
 
@@ -521,7 +449,7 @@ namespace Inkton.Nester.ViewModels
 
             if (result.Code == 0)
             {
-                _nestLogs = result.Data.Payload;
+                NestLogs = result.Data.Payload;
                 OnPropertyChanged("NestLogs");
             }
 
@@ -532,7 +460,7 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
-            _cpuSeries.Clear();
+            CpuSeries.Clear();
 
             string sql = FormSql("system_cpu", "*", filter, orderBy, limit);
             ResultMultiple<SystemCPULog> result = await QueryLogsAsync<SystemCPULog>(
@@ -540,11 +468,11 @@ namespace Inkton.Nester.ViewModels
 
             if (result.Code == 0)
             {
-                _systemCpuLogs = result.Data.Payload;
+                SystemCPULogs = result.Data.Payload;
 
-                if (_systemCpuLogs.Any())
+                if (SystemCPULogs.Any())
                 {
-                    _systemCpuLogs.All(log => { _cpuSeries.AddLog(log); return true; });
+                    SystemCPULogs.All(log => { CpuSeries.AddLog(log); return true; });
 
                     OnPropertyChanged("CpuSeriesUser");
                     OnPropertyChanged("CpuSeriesSystem");
@@ -567,11 +495,11 @@ namespace Inkton.Nester.ViewModels
 
             if (result.Code == 0)
             {
-                _systemIOLogs = result.Data.Payload;
+                SystemIOLogs = result.Data.Payload;
 
-                if (_systemIOLogs.Any())
+                if (SystemIOLogs.Any())
                 {
-                    _systemIOLogs.All(log => { _ioSeries.AddLog(log); return true; });
+                    SystemIOLogs.All(log => { ioSeries.AddLog(log); return true; });
 
                     OnPropertyChanged("IoSeriesIn");
                     OnPropertyChanged("IoSeriesOut");
@@ -585,7 +513,7 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
-            _ipSeries.Clear();
+            IpSeries.Clear();
 
             string sql = FormSql("system_ip", "*", filter, orderBy, limit);
             ResultMultiple<SystemIPLog> result = await QueryLogsAsync<SystemIPLog>(
@@ -593,11 +521,11 @@ namespace Inkton.Nester.ViewModels
 
             if (result.Code == 0)
             {
-                _ipLogs = result.Data.Payload;
+                SystemIPLogs = result.Data.Payload;
 
-                if (_ipLogs.Any())
+                if (SystemIPLogs.Any())
                 {
-                    _ipLogs.All(log => { _ipSeries.AddLog(log); return true; });
+                    SystemIPLogs.All(log => { IpSeries.AddLog(log); return true; });
 
                     OnPropertyChanged("IpSeriesSent");
                     OnPropertyChanged("IpSeriesReceived");
@@ -611,7 +539,7 @@ namespace Inkton.Nester.ViewModels
             string filter = null, string orderBy = null, int limit = -1,
             bool doCache = false, bool throwIfError = true)
         {
-            _ramSeries.Clear();
+            RamSeries.Clear();
 
             string sql = FormSql("system_ram", "*", filter, orderBy, limit);
             ResultMultiple<SystemRAMLog> result = await QueryLogsAsync<SystemRAMLog>(
@@ -619,11 +547,11 @@ namespace Inkton.Nester.ViewModels
 
             if (result.Code == 0)
             {
-                _systemRamLogs = result.Data.Payload;
+                SystemRAMLogs = result.Data.Payload;
 
-                if (_systemRamLogs.Any())
+                if (SystemRAMLogs.Any())
                 {
-                    _systemRamLogs.All(log => { _ramSeries.AddLog(log); return true; });
+                    SystemRAMLogs.All(log => { RamSeries.AddLog(log); return true; });
 
                     OnPropertyChanged("RamSeriesFree");
                     OnPropertyChanged("RamSeriesUsed");
@@ -642,8 +570,9 @@ namespace Inkton.Nester.ViewModels
             data.Add("sql", sql);
 
             T logsSeed = new T();
-            return await ResultMultipleUI<T>.WaitForObjectAsync(
-                Backend, doCache, logsSeed, throwIfError, data);
+            return await ResultMultipleUI<T>.WaitForObjectsAsync(
+                true, logsSeed, new CachedHttpRequest<T, ResultMultiple<T>>(
+                    Backend.QueryAsyncListAsync), true);
         }
     }
 }

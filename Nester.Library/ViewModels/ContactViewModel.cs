@@ -399,7 +399,7 @@ namespace Inkton.Nester.ViewModels
             };
 
             ResultSingle<Permission> result = new ResultSingle<Permission>(0);
-            Dictionary<string, string> permission = new Dictionary<string, string>();
+            Dictionary<string, object> permission = new Dictionary<string, object>();
              
             foreach (PermissionSwitch permSwitch in switches)
             {

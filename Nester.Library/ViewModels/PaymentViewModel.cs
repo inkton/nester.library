@@ -130,7 +130,7 @@ namespace Inkton.Nester.ViewModels
             string cardNumber, int expiryMonth, int expiryYear, string cvc, 
             bool doCache = false, bool throwIfError = true)
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data.Add("type", "cc");
             data.Add("number", cardNumber);
             data.Add("exp_month", expiryMonth.ToString());
@@ -184,7 +184,7 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<ResultMultiple<UserBillingTask>> QueryUserBillingTasksAsync(IDictionary<string, string> filter,
+        public async Task<ResultMultiple<UserBillingTask>> QueryUserBillingTasksAsync(IDictionary<string, object> filter,
             bool doCache = true, bool throwIfError = true)
         {
             UserBillingTask seed = new UserBillingTask();

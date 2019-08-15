@@ -74,7 +74,7 @@ namespace Inkton.Nester.ViewModels
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data["password"] = password;
 
             ResultSingle<Permit<UserT>> result =
@@ -93,7 +93,7 @@ namespace Inkton.Nester.ViewModels
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data["action"] = PermitAction.RequestEmailConfirmation.ToString();
 
             ResultSingle<Permit<UserT>> result =
@@ -112,7 +112,7 @@ namespace Inkton.Nester.ViewModels
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data["action"] = PermitAction.ConfirmEmail.ToString();
             data["securityCode"] = securityCode;
             data["password"] = password;
@@ -133,7 +133,7 @@ namespace Inkton.Nester.ViewModels
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data["action"] = PermitAction.Login.ToString();
             data["password"] = password;
 
@@ -153,7 +153,7 @@ namespace Inkton.Nester.ViewModels
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(Backend.Permit.User.Email));
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data["action"] = PermitAction.ChangePassword.ToString();
             data["securityCode"] = securityCode;
             data["password"] = password;
@@ -198,7 +198,7 @@ namespace Inkton.Nester.ViewModels
         }       
 
         public async Task<ResultSingle<UserT>> UpdateUserAsync(UserT user = null,
-            bool doCache = false, bool throwIfError = true, Dictionary<string, string> data = null)
+            bool doCache = false, bool throwIfError = true, Dictionary<string, object> data = null)
         {
             UserT theUser = user == null ? Backend.Permit.User : user;
 
@@ -210,7 +210,7 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<ResultSingle<UserT>> DeleteUserAsync(UserT user = null,
-            bool doCache = false, bool throwIfError = true, Dictionary<string, string> data = null)
+            bool doCache = false, bool throwIfError = true, Dictionary<string, object> data = null)
         {
             UserT theUser = user == null ? Backend.Permit.User : user;
 
@@ -222,7 +222,7 @@ namespace Inkton.Nester.ViewModels
         }
 
         public async Task<ResultMultiple<UserEvent>> QueryUserEventsAsync(UserT user,
-            bool doCache = false, bool throwIfError = true, Dictionary<string, string> data = null)
+            bool doCache = false, bool throwIfError = true, Dictionary<string, object> data = null)
         {
             UserEvent userEventSeed = new UserEvent();
             userEventSeed.OwnedBy = user == null ? Backend.Permit.User : user;

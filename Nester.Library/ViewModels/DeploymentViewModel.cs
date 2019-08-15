@@ -255,7 +255,7 @@ namespace Inkton.Nester.ViewModels
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
 
             if (ApplyCredit != null)
             {
@@ -287,7 +287,7 @@ namespace Inkton.Nester.ViewModels
         {
             Deployment theDeployment = deployment == null ? _editApp.Deployment : deployment;
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data.Add("activity", activity);
 
             ResultSingle<Deployment> result = await ResultSingleUI<Deployment>.WaitForObjectAsync(
@@ -386,7 +386,7 @@ namespace Inkton.Nester.ViewModels
             return result;
         }
 
-        public async Task<ResultMultiple<AppAudit>> QueryAppAuditsAsync(IDictionary<string, string> filter,
+        public async Task<ResultMultiple<AppAudit>> QueryAppAuditsAsync(IDictionary<string, object> filter,
             AppAudit appAudit = null, bool doCache = false, bool throwIfError = true)
         {
             AppAudit theAudit = appAudit == null ? _editAudit : appAudit;

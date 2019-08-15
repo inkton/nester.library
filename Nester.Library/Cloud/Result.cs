@@ -32,7 +32,7 @@ namespace Inkton.Nester.Cloud
     {
         public static ResultSingle<PayloadT> WaitForObject(bool throwIfError,
             PayloadT seed, CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request,
-            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
+            bool doCache = true, IDictionary<string, object> data = null, string subPath = null)
         {
             ResultSingle<PayloadT> result = WaitAsync(
                 Task<ResultSingleUI<PayloadT>>.Run(async () => await request(seed, data, subPath, doCache))
@@ -48,7 +48,7 @@ namespace Inkton.Nester.Cloud
 
         public static async Task<ResultSingle<PayloadT>> WaitForObjectAsync(bool throwIfError,
             PayloadT seed, CachedHttpRequest<PayloadT, ResultSingle<PayloadT>> request,
-            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
+            bool doCache = true, IDictionary<string, object> data = null, string subPath = null)
         {
             ResultSingle<PayloadT> result = await
                 request(seed, data, subPath, doCache);
@@ -68,7 +68,7 @@ namespace Inkton.Nester.Cloud
     {
         public static ResultMultiple<PayloadT> WaitForObjects(bool throwIfError,
             PayloadT seed, CachedHttpRequest<PayloadT, ResultMultiple<PayloadT>> request,
-            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
+            bool doCache = true, IDictionary<string, object> data = null, string subPath = null)
         {
             ResultMultiple<PayloadT> result = WaitAsync(
                 Task<ResultMultiple<PayloadT>>.Run(async () => await request(seed, data, subPath, doCache))
@@ -84,7 +84,7 @@ namespace Inkton.Nester.Cloud
 
         public static async Task<ResultMultiple<PayloadT>> WaitForObjectsAsync(bool throwIfError,
             PayloadT seed, CachedHttpRequest<PayloadT, ResultMultiple<PayloadT>> request,
-            bool doCache = true, IDictionary<string, string> data = null, string subPath = null)
+            bool doCache = true, IDictionary<string, object> data = null, string subPath = null)
         {
             ResultMultiple<PayloadT> result = await
                 request(seed, data, subPath, doCache);
@@ -96,5 +96,28 @@ namespace Inkton.Nester.Cloud
 
             return result;
         }
+
+        /*
+        public static async Task<ResultMultiple<PayloadT>> WaitForObjectsAsync(bool throwIfError,
+            PayloadT seed, CachedHttpRequest<PayloadT, ResultMultiple<PayloadT>> request,
+            bool doCache = true, IDictionary<string, object> data = null, string subPath = null)
+        {
+            var tcs = new TaskCompletionSource<ResultMultiple<PayloadT>>();
+            await Device.InvokeOnMainThreadAsync(async () =>
+            {
+                try
+                {
+                    var result = await request(seed, data, subPath, doCache);
+                    tcs.SetResult(result);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            });
+
+            return await tcs.Task;
+        }
+        */
     }
 }

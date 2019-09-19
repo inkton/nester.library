@@ -20,6 +20,7 @@
     OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -32,18 +33,19 @@ namespace Inkton.Nester.ViewModels
     public class PaymentViewModel<UserT> : ViewModel<UserT>
         where UserT : User, new()
     {
-        private bool _displayPaymentMethodProof;
-        private bool _displayPaymentMethodEntry;
-        private string _paymentMethodProofDetail;
+        private string _cardNumber;
+        private int _expiryMonth;
+        private int _expiryYear;
+        private string _cvc;
 
         public PaymentViewModel(BackendService<UserT> backend)
             : base(backend)
         {
             EditCredit = new Credit();
-            _displayPaymentMethodEntry = false;
-            _displayPaymentMethodEntry = false;
             EditPaymentMethod = new PaymentMethod();
-            EditPaymentMethod.OwnedBy = Backend.Permit.User;
+
+            _expiryMonth = DateTime.Now.Month;
+            _expiryYear = DateTime.Now.Year;
         }
 
         public Credit EditCredit { get; private set; }
@@ -54,22 +56,28 @@ namespace Inkton.Nester.ViewModels
 
         public ObservableCollection<UserBillingTask> UserBillingTasks { get; private set; }
 
-        public bool DisplayPaymentMethodProof
+        public string CardNumber
         {
-            get { return _displayPaymentMethodProof; }
-            set { SetProperty(ref _displayPaymentMethodProof, value); }
+            get { return _cardNumber; }
+            set { SetProperty(ref _cardNumber, value); }
         }
 
-        public bool DisplayPaymentMethodEntry
+        public int ExpiryMonth
         {
-            get { return _displayPaymentMethodEntry; }
-            set { SetProperty(ref _displayPaymentMethodEntry, value); }
+            get { return _expiryMonth; }
+            set { SetProperty(ref _expiryMonth, value); }
         }
 
-        public string PaymentMethodProofDetail
+        public int ExpiryYear
         {
-            get { return _paymentMethodProofDetail; }
-            set { SetProperty(ref _paymentMethodProofDetail, value); }
+            get { return _expiryYear; }
+            set { SetProperty(ref _expiryYear, value); }
+        }
+
+        public string Cvc
+        {
+            get { return _cvc; }
+            set { SetProperty(ref _cvc, value); }
         }
 
         public async Task InitAsync()
@@ -97,6 +105,8 @@ namespace Inkton.Nester.ViewModels
         public async Task<ResultSingle<PaymentMethod>> QueryPaymentMethodAsync(
             bool dCache = false, bool throwIfError = true)
         {
+            EditPaymentMethod.OwnedBy = Backend.Permit.User;
+
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, EditPaymentMethod, new CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
                     Backend.QueryAsync), dCache, null, null);
@@ -104,38 +114,22 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {                
                 EditPaymentMethod = result.Data.Payload;
-                DisplayPaymentMethodProof = EditPaymentMethod.IsActive;
-
-                if (DisplayPaymentMethodProof)
-                {
-                    DisplayPaymentMethodEntry = false;
-
-                    PaymentMethodProofDetail = string.Format("{0}\nLast 4 Digits {1}\nExpiry {2}/{3}",
-                                    EditPaymentMethod.Proof.Brand,
-                                    EditPaymentMethod.Proof.Last4,
-                                    EditPaymentMethod.Proof.ExpMonth, EditPaymentMethod.Proof.ExpYear);
-                }
-                else
-                {
-                    DisplayPaymentMethodEntry = true;
-
-                    PaymentMethodProofDetail = "";
-                }
             }
 
             return result;
         }
 
         public async Task<ResultSingle<PaymentMethod>> CreatePaymentMethodAsync(
-            string cardNumber, int expiryMonth, int expiryYear, string cvc, 
             bool doCache = false, bool throwIfError = true)
         {
+            EditPaymentMethod.OwnedBy = Backend.Permit.User;
+
             Dictionary<string, object> data = new Dictionary<string, object>();
             data.Add("type", "cc");
-            data.Add("number", cardNumber);
-            data.Add("exp_month", expiryMonth.ToString());
-            data.Add("exp_year", expiryYear.ToString());
-            data.Add("cvc", cvc);
+            data.Add("number", _cardNumber);
+            data.Add("exp_month", _expiryMonth);
+            data.Add("exp_year", _expiryYear);
+            data.Add("cvc", _cvc);
 
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, EditPaymentMethod, new CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
@@ -144,23 +138,6 @@ namespace Inkton.Nester.ViewModels
             if (result.Code >= 0)
             {
                 EditPaymentMethod = result.Data.Payload;
-                DisplayPaymentMethodProof = EditPaymentMethod.IsActive;
-
-                if (DisplayPaymentMethodProof)
-                {
-                    DisplayPaymentMethodEntry = false;
-
-                    PaymentMethodProofDetail = string.Format("{0}\nLast 4 Digits {1}\nExpiry {2}/{3}",
-                                    EditPaymentMethod.Proof.Brand,
-                                    EditPaymentMethod.Proof.Last4,
-                                    EditPaymentMethod.Proof.ExpMonth, EditPaymentMethod.Proof.ExpYear);
-                }
-                else
-                {
-                    DisplayPaymentMethodEntry = true;
-
-                    PaymentMethodProofDetail = "";
-                }
             }
 
             return result;

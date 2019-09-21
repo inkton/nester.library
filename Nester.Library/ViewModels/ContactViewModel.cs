@@ -414,8 +414,8 @@ namespace Inkton.Nester.ViewModels
                         false, seedPermission, new CachedHttpRequest<Permission, ResultSingle<Permission>>(
                             Backend.CreateAsync), doCache, permission);
 
-                    if (result.Code != Cloud.ServerStatus.NEST_RESULT_SUCCESS &&
-                        result.Code != Cloud.ServerStatus.NEST_RESULT_ERROR_PERM_FOUND)
+                    if (result.Code != ServerStatus.NEST_RESULT_SUCCESS &&
+                        result.Code != ServerStatus.NEST_RESULT_ERROR_PERM_FOUND)
                     {
                         break;
                     }
@@ -428,8 +428,8 @@ namespace Inkton.Nester.ViewModels
                         false, seedPermission, new CachedHttpRequest<Permission, ResultSingle<Permission>>(
                             Backend.RemoveAsync), doCache);
 
-                    if (result.Code != Cloud.ServerStatus.NEST_RESULT_SUCCESS &&
-                        result.Code != Cloud.ServerStatus.NEST_RESULT_ERROR_PERM_NFOUND)
+                    if (result.Code != ServerStatus.NEST_RESULT_SUCCESS &&
+                        result.Code != ServerStatus.NEST_RESULT_ERROR_PERM_NFOUND)
                     {
                         break;
                     }

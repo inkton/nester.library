@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Title>Inkton NesterLibrary</Title>
     <PackageId>Inkton.NesterLibrary</PackageId>
-    <PackageVersion>1.5.6</PackageVersion>
+    <PackageVersion>1.5.7</PackageVersion>
     <PackageTags>paas,docker,nest.yt</PackageTags>
     <Authors>nest.yt</Authors>
     <Description>A Client UI Library for Nest.yt</Description>
@@ -28,7 +28,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.2.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="System.AppContext" Version="4.3.0" />
@@ -43,21 +43,7 @@
     <PackageReference Include="System.Globalization.Calendars" Version="4.3.0" />
     <PackageReference Include="System.IO" Version="4.3.0" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
-    <PackageReference Include="Xamarin.Forms" Version="4.2.0.778463" />
-    <PackageReference Include="Inkton.NestModel" Version="1.1.7" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Update="Text.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <IncludeInPackage>true</IncludeInPackage>
-      <LastGenOutput>Text.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="Text.Designer.cs">
-      <DependentUpon>Text.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
+    <PackageReference Include="Xamarin.Forms" Version="4.2.0.815419" />
+    <PackageReference Include="Inkton.NestModel" Version="1.1.8" />
   </ItemGroup>
 </Project>

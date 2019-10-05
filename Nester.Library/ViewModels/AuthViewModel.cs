@@ -187,7 +187,7 @@ namespace Inkton.Nester.ViewModels
             bool throwIfError = true)
         {
             ResultSingle<Permit<UserT>> result = await
-                Backend.RenewAccessAsync();
+                Backend.RevokeAccessAsync();
 
             if (result.Code < 0 && throwIfError)
             {

@@ -346,8 +346,7 @@ namespace Inkton.Nester.ViewModels
         public void ResetBackend()
         {
             // Set the backend address for querying logs and metrics
-            Backend.Endpoint = string.Format(
-                    "https://{0}/", EditApp.Hostname);
+            Backend.Address = $"https://{EditApp.Hostname}/";
             Backend.BasicAuth = new Inkton.Nest.Cloud.BasicAuth(true,
                     EditApp.Tag, EditApp.NetworkPassword);
         }

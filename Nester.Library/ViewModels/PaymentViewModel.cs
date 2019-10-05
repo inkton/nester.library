@@ -33,56 +33,62 @@ namespace Inkton.Nester.ViewModels
     public class PaymentViewModel<UserT> : ViewModel<UserT>
         where UserT : User, new()
     {
-        private string _cardNumber;
-        private int _expiryMonth;
-        private int _expiryYear;
-        private string _cvc;
+        // The "edit" prefix is used as a convention to
+        // indicate the object currently being edited.
+
+        private PaymentMethod _editPaymentMethod;
+        private Credit _editCredit;
+
+        private ObservableCollection<BillingCycle> _billingCycles;
+        private ObservableCollection<UserBillingTask> _userBillingTasks;
 
         public PaymentViewModel(BackendService<UserT> backend)
             : base(backend)
         {
-            EditCredit = new Credit();
-            EditPaymentMethod = new PaymentMethod();
+            _editCredit = new Credit();
 
-            _expiryMonth = DateTime.Now.Month;
-            _expiryYear = DateTime.Now.Year;
+            _editPaymentMethod = new PaymentMethod();
         }
 
-        public Credit EditCredit { get; private set; }
-
-        public PaymentMethod EditPaymentMethod { get; private set; }
-
-        public ObservableCollection<BillingCycle> BillingCycles { get; private set; }
-
-        public ObservableCollection<UserBillingTask> UserBillingTasks { get; private set; }
-
-        public string CardNumber
+        public PaymentMethod EditPaymentMethod
         {
-            get { return _cardNumber; }
-            set { SetProperty(ref _cardNumber, value); }
+            get { return _editPaymentMethod; }
+            private set { SetProperty(ref _editPaymentMethod, value); }
         }
 
-        public int ExpiryMonth
+        public Credit EditCredit
         {
-            get { return _expiryMonth; }
-            set { SetProperty(ref _expiryMonth, value); }
+            get { return _editCredit; }
+            private set { SetProperty(ref _editCredit, value); }
         }
 
-        public int ExpiryYear
+        public ObservableCollection<BillingCycle> BillingCycles
         {
-            get { return _expiryYear; }
-            set { SetProperty(ref _expiryYear, value); }
+            get { return _billingCycles; }
+            private set { SetProperty(ref _billingCycles, value); }
         }
 
-        public string Cvc
+        public ObservableCollection<UserBillingTask> UserBillingTasks
         {
-            get { return _cvc; }
-            set { SetProperty(ref _cvc, value); }
+            get { return _userBillingTasks; }
+            private set { SetProperty(ref _userBillingTasks, value); }
         }
-
+      
         public async Task InitAsync()
         {
-            await QueryPaymentMethodAsync(false, false);
+            SetDefaults();
+
+            await QueryPaymentMethodAsync();
+        }
+
+        public void SetDefaults()
+        {
+            EditPaymentMethod.Id = 0;
+            EditPaymentMethod.Tag = "stripe_cc";
+            EditPaymentMethod.Type = "cc";
+            EditPaymentMethod.ExpMonth = DateTime.Now.Month;
+            EditPaymentMethod.ExpYear = DateTime.Now.Year;
+            EditPaymentMethod.Token = string.Empty;
         }
 
         public async Task<ResultSingle<Credit>> QueryCreditAsync(Credit credit = null,
@@ -124,16 +130,9 @@ namespace Inkton.Nester.ViewModels
         {
             EditPaymentMethod.OwnedBy = Backend.Permit.User;
 
-            Dictionary<string, object> data = new Dictionary<string, object>();
-            data.Add("type", "cc");
-            data.Add("number", _cardNumber);
-            data.Add("exp_month", _expiryMonth);
-            data.Add("exp_year", _expiryYear);
-            data.Add("cvc", _cvc);
-
             ResultSingle<PaymentMethod> result = await ResultSingleUI<PaymentMethod>.WaitForObjectAsync(
                 throwIfError, EditPaymentMethod, new CachedHttpRequest<PaymentMethod, ResultSingle<PaymentMethod>>(
-                    Backend.CreateAsync), doCache, data);
+                    Backend.CreateAsync), doCache);
 
             if (result.Code >= 0)
             {
@@ -155,7 +154,6 @@ namespace Inkton.Nester.ViewModels
             if (result.Code == 0)
             {
                 BillingCycles = result.Data.Payload;
-                OnPropertyChanged("BillingCycles");
             }
 
             return result;
@@ -174,7 +172,6 @@ namespace Inkton.Nester.ViewModels
             if (result.Code == 0)
             {
                 UserBillingTasks = result.Data.Payload;
-                OnPropertyChanged("UserBillingTasks");
             }
 
             return result;
